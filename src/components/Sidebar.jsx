@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar, toggleSidebar } from '../app/store'
-import { useState, useEffect } from 'react'
 import '../styles/sidebar.css'
 import {
   cilSpeedometer,
@@ -9,10 +8,7 @@ import {
   cilCalendar,
   cilCreditCard,
   cilBook,
-  cilMenu,
   cilAccountLogout,
-  cilSun,
-  cilMoon,
   cilX,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
@@ -20,24 +16,10 @@ import CIcon from '@coreui/icons-react'
 const Sidebar = () => {
   const dispatch = useDispatch()
   const open = useSelector((state) => state.ui.sidebarOpen)
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') === 'dark'
-  })
 
   const isMobile = window.innerWidth < 992
-
-  useEffect(() => {
-    const theme = isDark ? 'dark' : 'light'
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [isDark])
-
   const handleClick = () => {
     if (isMobile) dispatch(closeSidebar())
-  }
-
-  const handleThemeToggle = () => {
-    setIsDark(!isDark)
   }
 
   return (
@@ -106,19 +88,6 @@ const Sidebar = () => {
             </NavLink>
           </div>
         </nav>
-
-        {/* Footer */}
-        <div className="sidebar-footer">
-          <button 
-            className="theme-toggle-btn"
-            onClick={handleThemeToggle}
-            aria-label="Cambiar tema"
-            
-          >
-            <CIcon icon={isDark ? cilSun : cilMoon} size="lg" />
-             <span className="theme-text">{isDark ? 'Claro' : 'Oscuro'}</span> 
-          </button>
-        </div>
       </aside>
 
       {/* Overlay for mobile */}
