@@ -8,10 +8,34 @@
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
+  transition: width 0.3s ease;
   z-index: 1000;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Narrow unfoldable styles */
+.sidebar.sidebar-narrow-unfoldable {
+  width: 78px;
+}
+
+.sidebar.sidebar-narrow-unfoldable:hover {
+  width: 260px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Hide text in narrow mode */
+.sidebar.sidebar-narrow-unfoldable.nav-text {
+  width: 0;
+  opacity: 0;
+  display: none;
+}
+
+.sidebar.sidebar-narrow-unfoldable:hover .nav-text {
+  width: auto;
+  opacity: 1;
+  display: inline;
 }
 
 /* Sidebar Header */
@@ -23,6 +47,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  min-height: 70px;
 }
 
 .sidebar-logo {
@@ -32,11 +57,28 @@
   flex: 1;
 }
 
+.sidebar-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.sidebar-narrow-unfoldable .sidebar-brand {
+  display: none;
+}
+
+.sidebar.sidebar-narrow-unfoldable:hover .sidebar-brand {
+  display: block;
+}
+
 .logo-icon {
   width: 40px;
   height: 40px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,6 +99,8 @@
   flex: 1;
   padding: 20px 0;
   overflow-y: auto;
+  list-style: none;
+  margin: 0;
 }
 
 .nav-section {
@@ -64,7 +108,7 @@
   padding: 0 16px;
 }
 
-.nav-section-title {
+.nav-title {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -72,30 +116,54 @@
   color: var(--sidebar-text);
   margin-bottom: 12px;
   padding: 0 12px;
+  list-style: none;
+  cursor: default;
+}
+
+.sidebar.sidebar-narrow-unfoldable .nav-title {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.sidebar.sidebar-narrow-unfoldable:hover .nav-title {
+  opacity: 1;
+  height: auto;
+  padding: 0 12px;
+  margin-bottom: 12px;
 }
 
 /* Navigation Items */
 .nav-item {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0 16px;
+}
+
+.nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 12px;
-  margin: 4px 0;
-  border-radius: 8px;
+  border-radius: 3px;
   color: var(--sidebar-text);
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
   font-size: 15px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.nav-item:hover {
+.nav-link:hover {
   background: rgba(102, 126, 234, 0.1);
   color: var(--sidebar-text-hover);
 }
 
-.nav-item.active {
+.nav-link.active {
   background: var(--sidebar-active-bg);
   color: white;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
@@ -112,6 +180,20 @@
 
 .nav-text {
   flex: 1;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.sidebar-narrow-unfoldable .nav-text {
+  opacity: 0;
+  display: none;
+  width: 0;
+  overflow: hidden;
+}
+
+.sidebar.sidebar-narrow-unfoldable:hover .nav-text {
+  opacity: 1;
+  display: inline;
+  width: auto;
 }
 
 .badge {
@@ -125,6 +207,14 @@
   background: #ef4444;
   color: white;
   flex-shrink: 0;
+}
+
+.badge.bg-danger {
+  background: #dc2626;
+}
+
+.badge.ms-auto {
+  margin-left: auto;
 }
 
 /* Sidebar Footer */
@@ -158,11 +248,38 @@
 /* Mobile Styles */
 @media (max-width: 991px) {
   .sidebar {
+    width: 260px;
     transform: translateX(-100%);
   }
 
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  /* On mobile, always show full width and text */
+  .sidebar.sidebar-narrow-unfoldable.mobile {
+    width: 260px;
+  }
+
+  .sidebar.sidebar-narrow-unfoldable.mobile .nav-text {
+    opacity: 1;
+    display: inline;
+    width: auto;
+  }
+
+  .sidebar.sidebar-narrow-unfoldable.mobile .nav-title {
+    opacity: 1;
+    height: auto;
+    padding: 0 12px;
+    margin-bottom: 12px;
+  }
+
+  .sidebar.sidebar-narrow-unfoldable.mobile .sidebar-brand {
+    display: block;
+  }
+
+  .sidebar.sidebar-narrow-unfoldable.mobile:hover {
+    width: 260px;
   }
 }
 

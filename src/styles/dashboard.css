@@ -10,7 +10,7 @@
   margin: 0;
   background: var(--bg-secondary);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 1px 3px var(--card-shadow);
   transition: all 0.3s ease;
 }
@@ -38,7 +38,7 @@
 .dashboard-chart {
   background: var(--bg-secondary);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 1px 3px var(--card-shadow);
   margin-bottom: 30px;
   transition: all 0.3s ease;
@@ -47,7 +47,7 @@
 .chart-placeholder {
   height: 200px;
   background: linear-gradient(135deg, #f0f4ff 0%, #f9f7ff 100%);
-  border-radius: 8px;
+  border-radius: 3px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -66,7 +66,7 @@
 .dashboard-bottom .card {
   background: var(--bg-secondary);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 1px 3px var(--card-shadow);
   transition: all 0.3s ease;
 }

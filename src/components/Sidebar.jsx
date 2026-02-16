@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { closeSidebar, toggleSidebar } from '../app/store'
+import { closeSidebar } from '../app/store'
 import '../styles/sidebar.css'
 import {
   cilSpeedometer,
@@ -22,18 +22,31 @@ const Sidebar = () => {
     if (isMobile) dispatch(closeSidebar())
   }
 
+  const navItems = [
+    {
+      section: 'General',
+      items: [
+        { to: '/dashboard', icon: cilSpeedometer, label: 'Dashboard'},
+        { to: '/patients', icon: cilUser, label: 'Pacientes' },
+        { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
+        { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
+      ],
+    },
+    {
+      section: 'Extra',
+      items: [
+        { to: '/documentation', icon: cilBook, label: 'Documentación' },
+        { to: '/login', icon: cilAccountLogout, label: 'Cerrar Sesión' },
+      ],
+    },
+  ]
+
   return (
     <>
-      <aside className={`sidebar ${open ? 'open' : ''}`}>
+      <aside className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}>
         {/* Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <div className="logo-icon">
-              <span>R</span>
-            </div>
-            <span className="logo-text">RAVE</span>
-          </div>
-
+          <div className="sidebar-brand">RAVE</div>
           {isMobile && open && (
             <button 
               className="sidebar-close-btn"
@@ -46,48 +59,26 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="sidebar-nav">
-          {/* General Section */}
-          <div className="nav-section">
-            <h6 className="nav-section-title">General</h6>
-            
-            <NavLink to="/dashboard" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilSpeedometer} className="nav-icon" />
-              <span className="nav-text">Dashboard</span>
-              <span className="badge badge-danger">3</span>
-            </NavLink>
-
-            <NavLink to="/patients" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilUser} className="nav-icon" />
-              <span className="nav-text">Pacientes</span>
-            </NavLink>
-
-            <NavLink to="/calendar" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilCalendar} className="nav-icon" />
-              <span className="nav-text">Calendario</span>
-            </NavLink>
-
-            <NavLink to="/billing" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilCreditCard} className="nav-icon" />
-              <span className="nav-text">Pagos</span>
-            </NavLink>
-          </div>
-
-          {/* Extra Section */}
-          <div className="nav-section">
-            <h6 className="nav-section-title">Extra</h6>
-
-            <NavLink to="/documentation" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilBook} className="nav-icon" />
-              <span className="nav-text">Documentación</span>
-            </NavLink>
-
-            <NavLink to="/login" onClick={handleClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CIcon icon={cilAccountLogout} className="nav-icon" />
-              <span className="nav-text">Cerrar Sesión</span>
-            </NavLink>
-          </div>
-        </nav>
+        <ul className="sidebar-nav">
+          {navItems.map((section, sectionIdx) => (
+            <div key={sectionIdx}>
+              <li className="nav-title">{section.section}</li>
+              {section.items.map((item, itemIdx) => (
+                <li key={itemIdx} className="nav-item">
+                  <NavLink 
+                    to={item.to} 
+                    onClick={handleClick}
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  >
+                    <CIcon icon={item.icon} className="nav-icon" />
+                    <span className="nav-text">{item.label}</span>
+                    {item.badge && <span className="badge bg-danger ms-auto">{item.badge}</span>}
+                  </NavLink>
+                </li>
+              ))}
+            </div>
+          ))}
+        </ul>
       </aside>
 
       {/* Overlay for mobile */}
