@@ -4,7 +4,8 @@ import '../styles/dashboard.css'
 
 const Dashboard = () => {
   return (
-    <div className="dashboard">
+    <div className="page">
+      <h1>Dashboard</h1>
 
       {/* CARDS */}
       <div className="dashboard-cards">

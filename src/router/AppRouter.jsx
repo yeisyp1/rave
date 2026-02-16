@@ -4,13 +4,12 @@ import Dashboard from '../pages/Dashboard'
 import Patients from '../pages/Patients'
 import Calendar from '../pages/Calendar'
 import Billing from '../pages/Billing'
+import Documentation from '../pages/Documentation'
 import Login from '../pages/Login'
-import Sidebar from '../components/Sidebar'
 
 const AppRouter = () => {
   return (
     <BrowserRouter>
-    <Sidebar />
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -20,6 +19,7 @@ const AppRouter = () => {
           <Route path="/patients" element={<Patients />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/billing" element={<Billing />} />
+          <Route path="/documentation" element={<Documentation />} />
         </Route>
       </Routes>
     </BrowserRouter>

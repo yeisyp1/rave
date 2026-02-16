@@ -9,8 +9,9 @@ const Header = () => {
   return (
     <header className="header">
       <button
-        className="menu-btn"
+        className="header-menu-btn"
         onClick={() => dispatch(toggleSidebar())}
+        aria-label="Toggle sidebar"
       >
         <CIcon icon={cilMenu} size="lg" />
       </button>
