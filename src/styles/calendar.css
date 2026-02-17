@@ -20,6 +20,71 @@
   padding: 0;
 }
 
+/* Two-column layout: main calendar + right sidebar */
+.calendar-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.calendar-main {
+  flex: 1 1 auto;
+}
+
+.calendar-side {
+  width: 320px;
+  flex: 0 0 320px;
+}
+
+.sidebar-appointments {
+  position: sticky;
+  top: 90px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.mini-calendar {
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin: 12px;
+}
+
+.mini-calendar .rbc-month-row {
+  min-height: 40px;
+}
+
+.mini-calendar .rbc-date-cell {
+  font-size: 12px;
+}
+
+.mini-calendar .rbc-off-range {
+  opacity: 0.5;
+}
+
+.selected-range {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.selected-range div {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.clear-range-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.clear-range-btn:hover {
+  background: #f3f4ff;
+}
+
 /* Override react-big-calendar styles */
 .calendar-wrapper .rbc-calendar {
   font-family: inherit;

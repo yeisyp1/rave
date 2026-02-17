@@ -10,6 +10,9 @@ import {
   cilBook,
   cilAccountLogout,
   cilX,
+  cilAddressBook,
+  cilBeaker,
+  cilFolderOpen,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
@@ -30,12 +33,17 @@ const Sidebar = () => {
         { to: '/patients', icon: cilUser, label: 'Pacientes' },
         { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
         { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
+        { to: '/agendarcita', icon: cilAddressBook, label: 'Agendar Cita' },
+        { to: '/doctores', icon: cilUser, label: 'Doctores' },
+        { to: '/laboratorio', icon: cilBeaker, label: 'Laboratorio' },
+        { to: '/historial', icon: cilBook, label: 'Historial' },
+        
       ],
     },
     {
       section: 'Extra',
       items: [
-        { to: '/documentation', icon: cilBook, label: 'Documentación' },
+        { to: '/documentation', icon: cilFolderOpen, label: 'Documentación' },
         { to: '/login', icon: cilAccountLogout, label: 'Cerrar Sesión' },
       ],
     },
