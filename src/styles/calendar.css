@@ -1,0 +1,286 @@
+/* Calendar customization */
+.calendar-header-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.calendar-header-custom h1 {
+  margin: 0;
+}
+
+.calendar-wrapper {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px var(--card-shadow);
+  margin-bottom: 30px;
+  padding: 0;
+}
+
+/* Override react-big-calendar styles */
+.calendar-wrapper .rbc-calendar {
+  font-family: inherit;
+}
+
+.calendar-wrapper .rbc-header {
+  padding: 12px 4px;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-today {
+  background-color: rgba(102, 126, 234, 0.05);
+}
+
+.calendar-wrapper .rbc-off-range-bg {
+  background: transparent;
+}
+
+.calendar-wrapper .rbc-event {
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: none;
+}
+
+.calendar-wrapper .rbc-event-label {
+  font-size: 11px;
+}
+
+.calendar-wrapper .rbc-event-content {
+  padding: 4px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-wrapper .rbc-time-slot {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-time-content {
+  border-left: 1px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-time-header {
+  border-bottom: 2px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-day-bg {
+  border-right: 1px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-day-bg:last-child {
+  border-right: none;
+}
+
+.calendar-wrapper .rbc-toolbar {
+  padding: 15px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calendar-wrapper .rbc-toolbar button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.calendar-wrapper .rbc-toolbar button:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.calendar-wrapper .rbc-toolbar button.rbc-active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.calendar-wrapper .rbc-toolbar-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  flex-grow: 1;
+}
+
+.calendar-wrapper .rbc-month-view {
+  border: none;
+}
+
+.calendar-wrapper .rbc-month-row {
+  min-height: 80px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-date-cell {
+  padding: 4px;
+  text-align: right;
+}
+
+.calendar-wrapper .rbc-date-cell > a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.calendar-wrapper .rbc-day-bg > div {
+  min-height: 50px;
+}
+
+/* Week and Day views */
+.calendar-wrapper .rbc-time-view {
+  border-top: none;
+}
+
+.calendar-wrapper .rbc-time-header-content {
+  border-left: 1px solid var(--border-color);
+}
+
+.calendar-wrapper .rbc-current-time-indicator {
+  background-color: #667eea;
+  height: 2px;
+}
+
+.calendar-wrapper .rbc-slot-selecting .rbc-event {
+  opacity: 0.5;
+}
+
+/* Agenda view */
+.calendar-wrapper .rbc-agenda-view {
+  color: var(--text-primary);
+}
+
+.calendar-wrapper .rbc-agenda-view table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-wrapper .rbc-agenda-date-cell,
+.calendar-wrapper .rbc-agenda-time-cell {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.calendar-wrapper .rbc-agenda-date-cell {
+  width: 20%;
+}
+
+.calendar-wrapper .rbc-agenda-time-cell {
+  width: 15%;
+}
+
+.calendar-wrapper .rbc-agenda-event-cell {
+  width: 65%;
+  padding: 12px;
+}
+
+/* Appointments list */
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.appointment-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.appointment-item:hover {
+  background: var(--bg-primary);
+}
+
+.appointment-item:last-child {
+  border-bottom: none;
+}
+
+.appointment-time {
+  min-width: 70px;
+  font-weight: 600;
+  color: #667eea;
+  font-size: 14px;
+}
+
+.appointment-details {
+  flex: 1;
+}
+
+.appointment-patient {
+  margin: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.appointment-service {
+  margin: 4px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.appointment-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.appointment-status.confirmed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.appointment-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .calendar-header-custom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .calendar-wrapper .rbc-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .calendar-wrapper .rbc-toolbar-label {
+    width: 100%;
+    text-align: left;
+  }
+
+  .calendar-wrapper .rbc-month-row {
+    min-height: 60px;
+  }
+
+  .appointment-item {
+    flex-wrap: wrap;
+  }
+}

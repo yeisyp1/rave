@@ -20,6 +20,16 @@
   width: 78px;
 }
 
+.sidebar-brand-n {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #f0f4ff;
+}
+
 .sidebar.sidebar-narrow-unfoldable:hover {
   width: 260px;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);

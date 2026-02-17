@@ -46,7 +46,7 @@ const Sidebar = () => {
       <aside className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}>
         {/* Header */}
         <div className="sidebar-header">
-          <div className="sidebar-brand">RAVE</div>
+          <div className="sidebar-brand-n">RA</div>
           {isMobile && open && (
             <button 
               className="sidebar-close-btn"
