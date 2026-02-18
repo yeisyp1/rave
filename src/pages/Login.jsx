@@ -3,6 +3,7 @@ import { supabase } from "../Back/lib/supabase";
 import "../pages/Calendar";
 import "../styles/login.css";
 import {CIcon} from '@coreui/icons-react';
+import logo from "../assets/logo.png";
 
 import {
   cilAt,
@@ -40,12 +41,16 @@ const Login = () => {
   };
 
   return (
+    
     <div className="login-container">
-      <form className="form" onSubmit={handleLogin}>
+      
+      <div className="logo-center">
+        <div style={{ textAlign: "center", marginBottom: "5px" }}>
+          <img src={logo} alt="RAVE Logo" style={{ maxWidth: "250px", height: "auto" }} />
+        </div>
+      </div>
 
-        <h2 style={{ textAlign: "center", marginBottom: "15px" }}>
-          RAVE
-        </h2>
+      <form className="form" onSubmit={handleLogin}>
 
         {/* ERROR */}
         {errorMsg && (
@@ -108,10 +113,6 @@ const Login = () => {
         >
           {loading ? "Ingresando..." : "Iniciar Sesión"}
         </button>
-
-        <p className="p">
-          ¿No tienes cuenta? <span className="span">Regístrate</span>
-        </p>
 
         <p className="p line">O continúa con</p>
 
