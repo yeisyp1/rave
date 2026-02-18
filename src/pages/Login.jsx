@@ -1,23 +1,58 @@
 import { useState } from "react";
+import { supabase } from "../Back/lib/supabase";
+import "../pages/Calendar";
 import "../styles/login.css";
+import {CIcon} from '@coreui/icons-react';
+
+import {
+  cilAt,
+  cilLockLocked,
+  cibGoogle
+} from '@coreui/icons';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    console.log("Login:", { email, password });
+    setLoading(true);
+    setErrorMsg("");
 
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+
+    console.log("Usuario logueado:", data.user);
+
+    window.location.href = "/dashboard";
   };
 
   return (
     <div className="login-container">
       <form className="form" onSubmit={handleLogin}>
+
         <h2 style={{ textAlign: "center", marginBottom: "15px" }}>
-          RAVE Dental System
+          RAVE
         </h2>
+
+        {/* ERROR */}
+        {errorMsg && (
+          <p style={{ color: "red", textAlign: "center" }}>
+            {errorMsg}
+          </p>
+        )}
 
         {/* EMAIL */}
         <div className="flex-column">
@@ -25,19 +60,12 @@ const Login = () => {
         </div>
 
         <div className="inputForm">
-          <svg
-            height="20"
-            viewBox="0 0 32 32"
-            width="20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="m30.853 13.87a15 15 0 0 0 -29.729 4.082..." />
-          </svg>
+          <CIcon icon={cilAt} size="md" />
 
           <input
             type="email"
             className="input"
-            placeholder="Ingresa tu correo"
+            placeholder="Ingrese su correo"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -50,14 +78,7 @@ const Login = () => {
         </div>
 
         <div className="inputForm">
-          <svg
-            height="20"
-            viewBox="-64 0 512 512"
-            width="20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="m336 512h-288c-26.453125..." />
-          </svg>
+          <CIcon icon={cilLockLocked} size="md" />
 
           <input
             type="password"
@@ -80,22 +101,26 @@ const Login = () => {
         </div>
 
         {/* SUBMIT */}
-        <button className="button-submit" type="submit">
-          Iniciar Sesión
+        <button
+          className="button-submit"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Ingresando..." : "Iniciar Sesión"}
         </button>
 
-        <p className="p">¿No tienes cuenta? <span className="span">Regístrate</span></p>
+        <p className="p">
+          ¿No tienes cuenta? <span className="span">Regístrate</span>
+        </p>
 
         <p className="p line">O continúa con</p>
 
-        {/* GOOGLE LOGIN */}
-        <button
-          type="button"
-          className="btn google"
-          onClick={() => window.location.href = "http://localhost:3000/auth/google"}
-        >
+        {/* GOOGLE LOGIN (FUTURO) */}
+        <button type="button" className="btn google">
+          <CIcon icon={cibGoogle} size="md" />
           Google
         </button>
+
       </form>
     </div>
   );
