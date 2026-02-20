@@ -2,7 +2,6 @@ import { useState } from "react";
 import { supabase } from "../Back/lib/supabase";
 import logo from "../assets/logo.png";
 import "../styles/login.css";
-import { cibGoogle } from '@coreui/icons';
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -250,7 +249,7 @@ const Login = () => {
             </div>
 
             {/* GOOGLE */}
-            <button type="button" className="google-btn" onClick={handleGoogleLogin}>
+            <button type="button" className="google-btn" onClick={handleGoogleLogin}> 
               <svg viewBox="0 0 24 24" fill="none">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04

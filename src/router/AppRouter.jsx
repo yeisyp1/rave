@@ -3,6 +3,7 @@ import Layout from '../components/Layout'
 
 import Dashboard from '../pages/Dashboard'
 import Patients from '../pages/Patients'
+import HistoriaClinica from '../pages/HistoriaClinica'
 import Calendar from '../pages/Calendar'
 import Billing from '../pages/Billing'
 import Documentation from '../pages/Documentation'
@@ -33,7 +34,8 @@ const AppRouter = ({ user }) => {
           <Route path="/" element={<Navigate to="/dashboard" />} />
 
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/patients" element={<Patients />} />
+          <Route path="/pacientes" element={<Patients />} />
+          <Route path="/historia-clinica/:patientId" element={<HistoriaClinica />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/documentation" element={<Documentation />} />

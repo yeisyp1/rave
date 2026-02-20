@@ -39,7 +39,7 @@ const Sidebar = () => {
       section: 'General',
       items: [
         { to: '/dashboard', icon: cilSpeedometer, label: 'Dashboard'},
-        { to: '/patients', icon: cilUser, label: 'Pacientes' },
+        { to: '/pacientes', icon: cilUser, label: 'Pacientes' },
         { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
         { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
         { to: '/agendarcita', icon: cilAddressBook, label: 'Agendar Cita' },

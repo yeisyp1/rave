@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600&display=swap');
+
+
 /* Calendar customization */
 .calendar-header-custom {
   display: flex;
@@ -87,7 +90,7 @@
 
 /* Override react-big-calendar styles */
 .calendar-wrapper .rbc-calendar {
-  font-family: inherit;
+  font-family: 'Nunito', sans-serif;
 }
 
 .calendar-wrapper .rbc-header {
