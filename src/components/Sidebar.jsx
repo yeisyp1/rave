@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar } from '../app/store'
 import '../styles/sidebar.css'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../Back/lib/supabase'
 import {
   cilSpeedometer,
   cilUser,
@@ -19,6 +21,13 @@ import CIcon from '@coreui/icons-react'
 const Sidebar = () => {
   const dispatch = useDispatch()
   const open = useSelector((state) => state.ui.sidebarOpen)
+  const navigate = useNavigate()
+
+   const handleLogout = async () => {
+    await supabase.auth.signOut()
+    if (isMobile) dispatch(closeSidebar())
+    navigate("/login")
+  }
 
   const isMobile = window.innerWidth < 992
   const handleClick = () => {
@@ -44,7 +53,7 @@ const Sidebar = () => {
       section: 'Extra',
       items: [
         { to: '/documentation', icon: cilFolderOpen, label: 'Documentación' },
-        { to: '/login', icon: cilAccountLogout, label: 'Cerrar Sesión' },
+        { icon: cilAccountLogout, label: 'Cerrar Sesión', action: 'logout' },
       ],
     },
   ]
@@ -71,19 +80,35 @@ const Sidebar = () => {
           {navItems.map((section, sectionIdx) => (
             <div key={sectionIdx}>
               <li className="nav-title">{section.section}</li>
-              {section.items.map((item, itemIdx) => (
-                <li key={itemIdx} className="nav-item">
-                  <NavLink 
-                    to={item.to} 
-                    onClick={handleClick}
-                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  >
-                    <CIcon icon={item.icon} className="nav-icon" />
-                    <span className="nav-text">{item.label}</span>
-                    {item.badge && <span className="badge bg-danger ms-auto">{item.badge}</span>}
-                  </NavLink>
-                </li>
-              ))}
+              {section.items.map((item, itemIdx) => {
+
+                if (item.action === 'logout') {
+                  return (
+                    <li key={itemIdx} className="nav-item">
+                      <button
+                        onClick={handleLogout}
+                        className="nav-link logout-btn"
+                      >
+                        <CIcon icon={item.icon} className="nav-icon" />
+                        <span className="nav-text">{item.label}</span>
+                      </button>
+                    </li>
+                  )
+                }
+
+                return (
+                  <li key={itemIdx} className="nav-item">
+                    <NavLink
+                      to={item.to}
+                      onClick={handleClick}
+                      className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                      <CIcon icon={item.icon} className="nav-icon" />
+                      <span className="nav-text">{item.label}</span>
+                    </NavLink>
+                  </li>
+                )
+              })}
             </div>
           ))}
         </ul>

@@ -331,3 +331,37 @@
     opacity: 1;
   }
 }
+
+/* Logout button fix */
+.logout-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 12px;
+  border-radius: 3px;
+
+  color: var(--sidebar-text);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+/* Hover igual que links */
+.logout-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--sidebar-text-hover);
+}
+
+/* Quitar borde azul al hacer click */
+.logout-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
