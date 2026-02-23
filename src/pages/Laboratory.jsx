@@ -1,3 +1,3 @@
-const Laboratorio = () => {}
+const Laboratory = () => {}
 
-export default Laboratorio
+export default Laboratory

@@ -1,3 +1,3 @@
-const Doctores = () => {}
+const Doctors = () => {}
 
-export default Doctores
+export default Doctors

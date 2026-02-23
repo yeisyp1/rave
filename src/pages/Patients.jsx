@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../Back/lib/supabase";
-import ModalPatients from "../components/ModalPatients";
+import ModalPatients from "../modals/ModalPatients";
 import "../styles/Patients.css";
+import { CIcon } from '@coreui/icons-react'
+
+import {
+  cilNotes,
+  cilPencil,
+  cilTrash
+} from '@coreui/icons'
 
 /* ── Calcula edad automáticamente desde fecha_nacimiento ── */
 const calcAge = (dob) => {
@@ -143,9 +150,8 @@ const Patients = () => {
     <div className="pt-page">
 
       {/* ── HEADER ── */}
-      <div className="pt-header">
+      <div className="pt-header"> 
         <div className="pt-header-left">
-          <div className="pt-title-eyebrow">Clínica RAVE</div>
           <h1 className="pt-title">Pacientes</h1>
         </div>
         <button className="pt-btn-primary" onClick={openModal}>
@@ -193,6 +199,7 @@ const Patients = () => {
                   <th>Celular</th>
                   <th>EPS</th>
                   <th>Email</th>
+                  <th>Opciones</th>
                   <th></th>
                 </tr>
               </thead>
@@ -230,23 +237,36 @@ const Patients = () => {
                       <td>{p.celular || "—"}</td>
                       <td>{p.eps || "—"}</td>
                       <td>{p.email || "—"}</td>
+
                       <td className="pt-actions">
-                        <button className="pt-btn-ghost" onClick={() => viewHistory(p.id)} title="Ver historia clínica">
-                          <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a1 1 0 100 2H4a1 1 0 100 2h2a1 1 0 000 2H6a2 2 0 01-2-2v-4zm10 0a2 2 0 00-2-2 1 1 0 000 2h-2a1 1 0 100 2h2a1 1 0 100 2h-2a1 1 0 000 2h2a2 2 0 002-2v-4z" clipRule="evenodd"/>
-                          </svg>
+
+                        {/* Historia */}
+                        <button
+                          className="pt-btn-action"
+                          onClick={() => viewHistory(p.id)}
+                          title="Ver historia clínica"
+                        >
+                          <CIcon icon={cilNotes} size="sm" />
                         </button>
-                        <button className="pt-btn-ghost" onClick={() => editPatient(p)} title="Editar paciente">
-                          <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                          </svg>
+
+                        {/* Editar */}
+                        <button
+                          className="pt-btn-action"
+                          onClick={() => editPatient(p)}
+                          title="Editar paciente"
+                        >
+                          <CIcon icon={cilPencil} size="sm" />
                         </button>
-                        <button className="pt-btn-danger" onClick={() => deletePatient(p.id)} title="Eliminar paciente">
-                          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
-                          </svg>
+
+                        {/* Eliminar */}
+                        <button
+                          className="pt-btn-action pt-btn-action-danger"
+                          onClick={() => deletePatient(p.id)}
+                          title="Eliminar paciente"
+                        >
+                          <CIcon icon={cilTrash} size="sm" />
                         </button>
+
                       </td>
                     </tr>
                   ))

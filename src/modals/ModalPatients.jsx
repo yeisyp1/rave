@@ -200,6 +200,16 @@ export default function ModalPatients({
                 <label className="pt-label">EPS</label>
                 <input name="eps" value={form.eps} onChange={handleChange} placeholder="Ej. Sura, Nueva EPS..." className="pt-input"/>
               </div>
+
+              <div className="pt-field">
+                <label className="pt-label">Alergias</label>
+                <input name="alergias" value={form.alergias} onChange={handleChange} placeholder="Ej. Penicilina, Latex..." className="pt-input"/>
+              </div>
+
+              <div className="pt-field">
+                <label className="pt-label">Medicamentos</label>
+                <input name="medicamentos" value={form.medicamentos} onChange={handleChange} placeholder="Ej. Paracetamol, Ibuprofeno..." className="pt-input"/>
+              </div>
             </div>
           )}
 

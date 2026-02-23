@@ -15,6 +15,7 @@ import {
   cilAddressBook,
   cilBeaker,
   cilFolderOpen,
+  cilInbox,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
@@ -43,15 +44,16 @@ const Sidebar = () => {
         { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
         { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
         { to: '/agendarcita', icon: cilAddressBook, label: 'Agendar Cita' },
-        { to: '/doctores', icon: cilUser, label: 'Doctores' },
-        { to: '/laboratorio', icon: cilBeaker, label: 'Laboratorio' },
-        { to: '/historial', icon: cilBook, label: 'Historial' },
+        { to: '/doctors', icon: cilUser, label: 'Doctors' },
+        { to: '/laboratory', icon: cilBeaker, label: 'Laboratory' },
+        { to: '/histories', icon: cilBook, label: 'Histories' },
         
       ],
     },
     {
       section: 'Extra',
       items: [
+        { to: '/inventory', icon: cilInbox, label: 'Inventory' },
         { to: '/documentation', icon: cilFolderOpen, label: 'Documentación' },
         { icon: cilAccountLogout, label: 'Cerrar Sesión', action: 'logout' },
       ],
