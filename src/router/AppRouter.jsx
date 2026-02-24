@@ -14,6 +14,12 @@ import Inventory from '../pages/Inventory'
 import Histories from '../pages/Histories'
 import Doctors from '../pages/Doctors'
 import AgendarCita from '../pages/AgendarCita'
+import ModalViewPatients from '../modals/ModalViewPatients'
+import NewEventModal from '../modals/ModalNewEvent'
+
+import OAuthConsent from '../pages/OAuthConsent'
+
+
 
 const AppRouter = ({ user }) => {
   return (
@@ -35,8 +41,9 @@ const AppRouter = ({ user }) => {
 
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/pacientes" element={<Patients />} />
-          <Route path="/historia-clinica/:patientId" element={<HistoriaClinica />} />
+          <Route path="/modal-history/:patientId" element={<ModalViewPatients />} />
           <Route path="/calendar" element={<Calendar />} />
+          <Route path="/new-event-modal" element={<NewEventModal />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/laboratory" element={<Laboratory />} />
@@ -44,7 +51,7 @@ const AppRouter = ({ user }) => {
           <Route path="/histories" element={<Histories />} />
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/agendarcita" element={<AgendarCita />} />
-          <Route path="/oauth/consent" element={<Navigate to="/dashboard" />} />
+          <Route path="/oauth/consent" element={<OAuthConsent />} />
 
         </Route>
 

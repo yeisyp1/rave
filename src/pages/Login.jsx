@@ -36,15 +36,16 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:5173/oauth/consent"
+        scopes: "https://www.googleapis.com/auth/calendar",  
+        redirectTo: "http://localhost:5173/oauth/consent",
+        queryParams: {
+          access_type: "offline",  
+          prompt: "consent",       
+          include_granted_scopes: "true",
+        },
       }
     });
-
-
-
-    if (error) {
-      alert(error.message);
-    }
+    if (error) alert(error.message);
   };
 
 

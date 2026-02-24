@@ -1,0 +1,31 @@
+/* MODAL SOLO LECTURA */
+.pt-modal-view {
+  max-width: 520px;
+}
+
+.pt-view-body {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.pt-view-section h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pt-view-section p {
+  margin: 4px 0;
+  font-size: 13.5px;
+  color: var(--pt-text);
+}
+
+.pt-view-section b {
+  color: var(--pt-text-soft);
+  font-weight: 600;
+}

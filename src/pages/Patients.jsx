@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../Back/lib/supabase";
 import ModalPatients from "../modals/ModalPatients";
+import ModalViewPatient from "../modals/ModalViewPatients";
 import "../styles/Patients.css";
 import { CIcon } from '@coreui/icons-react'
 
@@ -52,6 +53,7 @@ const Patients = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [viewPatient, setViewPatient] = useState(null);
 
   /* ── Cargar pacientes ── */
   const getPatients = async () => {
@@ -87,8 +89,8 @@ const Patients = () => {
     setShowModal(true);
   };
 
-  const viewHistory = (patientId) => {
-    window.location.href = `/historia-clinica/${patientId}`;
+  const viewHistory = (patient) => {
+    setViewPatient(patient);
   };
 
   const handleSubmit = async (e) => {
@@ -243,7 +245,7 @@ const Patients = () => {
                         {/* Historia */}
                         <button
                           className="pt-btn-action"
-                          onClick={() => viewHistory(p.id)}
+                          onClick={() => viewHistory(p)}
                           title="Ver historia clínica"
                         >
                           <CIcon icon={cilNotes} size="sm" />
@@ -289,6 +291,15 @@ const Patients = () => {
         canNext={canNext}
         isEditing={!!editingId}
       />
+
+      {/* ── MODAL HISTORIA CLÍNICA (PORTAL) ── */}
+      <ModalViewPatient
+        show={!!viewPatient}
+        patient={viewPatient}
+        onClose={() => setViewPatient(null)}
+      />
+
+
     </div>
   );
 };
