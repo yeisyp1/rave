@@ -46,7 +46,7 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
 
         <div className="cl-modal-body">
           <div className="cl-field">
-            <label className="cl-label">Título / Paciente <span className="cl-req">*</span></label>
+            <label className="cl-label">Paciente <span className="cl-req">*</span></label>
             <input name="title" value={form.title} onChange={handleChange} placeholder="Ej. Juan Pérez - Limpieza" className="cl-input" autoFocus/>
           </div>
 

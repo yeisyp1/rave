@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../Back/lib/supabase";
 import ModalPatients from "../modals/ModalPatients";
 import ModalViewPatient from "../modals/ModalViewPatients";
 import "../styles/Patients.css";
 import { CIcon } from '@coreui/icons-react'
 
-import {
-  cilNotes,
-  cilPencil,
-  cilTrash
-} from '@coreui/icons'
+import * as icons from '@coreui/icons'
 
 /* ── Calcula edad automáticamente desde fecha_nacimiento ── */
 const calcAge = (dob) => {
@@ -46,6 +43,7 @@ const EMPTY_FORM = {
 const STEPS = ["Documento", "Datos personales", "Contacto & Salud", "Acudiente"];
 
 const Patients = () => {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,6 +89,10 @@ const Patients = () => {
 
   const viewHistory = (patient) => {
     setViewPatient(patient);
+  };
+
+  const scheduleAppointment = (patient) => {
+    navigate('/agendarcita', { state: { patient } });
   };
 
   const handleSubmit = async (e) => {
@@ -248,7 +250,16 @@ const Patients = () => {
                           onClick={() => viewHistory(p)}
                           title="Ver historia clínica"
                         >
-                          <CIcon icon={cilNotes} size="sm" />
+                          <CIcon icon={icons.cilNotes} size="sm" />
+                        </button>
+
+                        {/* Agendar Cita */}
+                        <button
+                          className="pt-btn-action"
+                          onClick={() => scheduleAppointment(p)}
+                          title="Agendar cita"
+                        >
+                          <CIcon icon={icons.cilAddressBook} size="sm" />
                         </button>
 
                         {/* Editar */}
@@ -257,7 +268,7 @@ const Patients = () => {
                           onClick={() => editPatient(p)}
                           title="Editar paciente"
                         >
-                          <CIcon icon={cilPencil} size="sm" />
+                          <CIcon icon={icons.cilPencil} size="sm" />
                         </button>
 
                         {/* Eliminar */}
@@ -266,7 +277,7 @@ const Patients = () => {
                           onClick={() => deletePatient(p.id)}
                           title="Eliminar paciente"
                         >
-                          <CIcon icon={cilTrash} size="sm" />
+                          <CIcon icon={icons.cilTrash} size="sm" />
                         </button>
 
                       </td>

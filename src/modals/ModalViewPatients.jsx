@@ -19,7 +19,6 @@ export default function ModalViewPatient({
         {/* Header */}
         <div className="pt-modal-header">
           <div>
-            <div className="pt-modal-eyebrow">Clínica RAVE</div>
             <h2 className="pt-modal-title">Información del paciente</h2>
           </div>
 

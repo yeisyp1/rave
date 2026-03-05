@@ -16,6 +16,8 @@ import {
   cilBeaker,
   cilFolderOpen,
   cilInbox,
+  cilGroup,
+
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
@@ -40,14 +42,13 @@ const Sidebar = () => {
       section: 'General',
       items: [
         { to: '/dashboard', icon: cilSpeedometer, label: 'Dashboard'},
-        { to: '/pacientes', icon: cilUser, label: 'Pacientes' },
+        { to: '/pacientes', icon: cilGroup, label: 'Pacientes' },
         { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
         { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
         { to: '/agendarcita', icon: cilAddressBook, label: 'Agendar Cita' },
-        { to: '/doctors', icon: cilUser, label: 'Doctors' },
+        { to: '/doctors', icon: cilUser, label: 'Doctores' },
         { to: '/laboratory', icon: cilBeaker, label: 'Laboratory' },
         { to: '/histories', icon: cilBook, label: 'Histories' },
-        
       ],
     },
     {

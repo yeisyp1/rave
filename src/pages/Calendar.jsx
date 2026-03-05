@@ -40,19 +40,19 @@ const gEventToRbc = (gEvent) => ({
   fromGoogle: true,
 })
 
-// Trae eventos de Google Calendar (próximos 60 días)
+// Trae eventos de Google Calendar (últimos 30 días + próximos 60 días)
 const fetchGoogleEvents = async (token) => {
-  const now      = new Date().toISOString()
+  const past     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const future   = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
 
   const res = await fetch(
     `${CALENDAR_API}/calendars/primary/events?` +
     new URLSearchParams({
-      timeMin:      now,
+      timeMin:      past,
       timeMax:      future,
       singleEvents: 'true',
       orderBy:      'startTime',
-      maxResults:   '100',
+      maxResults:   '250',
     }),
     { headers: { Authorization: `Bearer ${token}` } }
   )
