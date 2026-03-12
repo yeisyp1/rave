@@ -159,7 +159,7 @@ const CalendarPage = () => {
   const handleSelectEvent = async (event) => {
     if (!event.fromGoogle) return
     const confirm = window.confirm(
-      `¿Eliminar la cita "${event.title}"?\nEsto también la eliminará de tu Google Calendar.`
+      `¿Eliminar la cita "${event.title}"?`
     )
     if (!confirm) return
     try {

@@ -1,0 +1,9 @@
+/* basic wrapper for odontograma page */
+.odon-page {
+  padding: 1rem;
+}
+
+.odon-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
