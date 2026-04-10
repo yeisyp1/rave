@@ -45,6 +45,7 @@ const AppRouter = ({ user }) => {
           <Route path="/modal-history/:patientId" element={<ModalViewPatients />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/odontograma" element={<Odontograma />} />
+          <Route path="/odontograma/:patientId" element={<Odontograma />} />
           <Route path="/new-event-modal" element={<NewEventModal />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/documentation" element={<Documentation />} />

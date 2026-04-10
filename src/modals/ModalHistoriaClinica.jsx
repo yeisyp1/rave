@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { supabase } from "../Back/lib/supabase";
 import "../styles/modalHistoriaClinica.css";
 
 const ModalHistoriaClinica = ({ patient, onClose }) => {
+  const navigate = useNavigate();
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -96,11 +98,23 @@ const ModalHistoriaClinica = ({ patient, onClose }) => {
               {patient.nombre} {patient.apellidos}
             </p>
           </div>
-          <button className="mhc-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
-            </svg>
-          </button>
+          <div className="mhc-header-actions">
+            <button
+              className="mhc-btn-odontogram"
+              onClick={() => {
+                onClose();
+                navigate(`/odontograma/${patient.id}`);
+              }}
+              title="Ver odontograma del paciente"
+            >
+              🦷 Odontograma
+            </button>
+            <button className="mhc-modal-close" onClick={onClose}>
+              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Accent line */}
