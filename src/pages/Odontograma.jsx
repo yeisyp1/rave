@@ -10,6 +10,7 @@ const Odontograma = () => {
   const { patientId } = useParams();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(!!patientId);
+  const [numberingSystem, setNumberingSystem] = useState('FDI');
 
   useEffect(() => {
     if (patientId) {
@@ -33,6 +34,10 @@ const Odontograma = () => {
     setLoading(false);
   };
 
+  const odontogramTitle = patient
+    ? `Módulo de Odontograma - ${patient.nombre} ${patient.apellidos}`
+    : 'Módulo de Odontograma';
+
   return (
     <div className="odon-page">
       <h1 className="odon-title">
@@ -43,17 +48,10 @@ const Odontograma = () => {
         <div className="odon-loading">Cargando información del paciente...</div>
       ) : (
         <OdontogramApp
-          language="es"
-          numberingSystem="FDI"
-          darkMode={false}
-          onNumberingChange={(n) => console.log('numeración', n)}
-          themeConfig={{
-            colors: {
-              accent: '#0066cc',
-              background: '#ffffff',
-              text: '#333333',
-            },
-          }}
+          title={odontogramTitle}
+          numberingSystem={numberingSystem}
+          onNumberingChange={setNumberingSystem}
+          
         />
       )}
     </div>

@@ -166,11 +166,11 @@ button:focus {
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: #f1c7cb;
 }
 
 .btn-danger:hover {
-  background-color: #c82333;
+  background-color: #e45a68;
 }
 
 /* Typography */
