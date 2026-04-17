@@ -11,6 +11,9 @@ const Odontograma = () => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(!!patientId);
   const [numberingSystem, setNumberingSystem] = useState('FDI');
+  const patientName = patient
+    ? String(patient.numero_documento ?? '').trim()
+    : '';
 
   useEffect(() => {
     if (patientId) {
@@ -40,15 +43,13 @@ const Odontograma = () => {
 
   return (
     <div className="odon-page">
-      <h1 className="odon-title">
-        Odontograma
-        {patient && ` - ${patient.nombre} ${patient.apellidos}`}
-      </h1>
+
       {loading ? (
         <div className="odon-loading">Cargando información del paciente...</div>
       ) : (
         <OdontogramApp
           title={odontogramTitle}
+          patientName={patientName}
           numberingSystem={numberingSystem}
           onNumberingChange={setNumberingSystem}
           

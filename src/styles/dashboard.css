@@ -261,7 +261,7 @@
 .db-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, var(--gold) 0%, #a06828 100%);
+  background: linear-gradient(180deg, var(--gold) 0%, #123679 100%);
   border-radius: 6px 6px 0 0;
   transition: opacity 0.2s;
   opacity: 0.85;
@@ -311,7 +311,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), #a06828);
+  background: linear-gradient(135deg, var(--gold), #123679);
   display: flex;
   align-items: center;
   justify-content: center;

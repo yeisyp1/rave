@@ -104,7 +104,7 @@ const CalendarPage = () => {
   const [syncing,      setSyncing]      = useState(false)
   const [syncError,    setSyncError]    = useState(null)
   const [lastSync,     setLastSync]     = useState(null)
-  const [newSlot,      setNewSlot]      = useState(null)   // slot seleccionado para nueva cita
+  const [newSlot,      setNewSlot]      = useState(null)  
   const [saving,       setSaving]       = useState(false)
 
   /* ── Al montar: obtener token y cargar eventos ── */

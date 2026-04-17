@@ -4,13 +4,6 @@
    VARIABLES
 ───────────────────────────── */
 :root {
-  --gold:        #c9934a;
-  --gold-lt:     #dba96a;
-  --gold-pale:   rgba(201, 147, 74, 0.10);
-  --gold-border: rgba(201, 147, 74, 0.20);
-  --cl-success:  #4caf82;
-  --cl-danger:   #e05c5c;
-  --cl-pending:  #d4943a;
 
   --cl-bg:       var(--bg-primary);
   --cl-card:     var(--bg-secondary);
@@ -120,7 +113,7 @@
   gap: 7px;
   height: 40px;
   padding: 0 18px;
-  background: linear-gradient(135deg, var(--gold) 0%, #a06828 100%);
+  background: linear-gradient(135deg, var(--gold) 0%, #123679 100%);
   color: #fff;
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
@@ -128,12 +121,11 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(201,147,74,0.28);
+  box-shadow: 0 4px 16px #123679;
   transition: transform 0.15s, box-shadow 0.15s;
   white-space: nowrap;
 }
 
-.cl-btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,147,74,0.40); }
 .cl-btn-primary:active { transform: translateY(0); }
 .cl-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
