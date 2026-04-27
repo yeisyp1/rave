@@ -3,7 +3,7 @@ import { toggleSidebar } from '../app/store'
 import { cilMenu } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
-import '../styles/header.css'
+import '../styles/HeaderVW.css'
 import { useState, useEffect } from 'react'
 
 const Header = () => {

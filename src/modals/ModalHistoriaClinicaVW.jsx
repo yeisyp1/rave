@@ -1,21 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
-import { supabase } from "../Back/lib/supabase";
-import "../styles/modalHistoriaClinica.css";
+import {
+  createPatientHistoryCtrl,
+  HISTORIA_EMPTY_FORM,
+  loadPatientHistoriesCtrl,
+} from "../controllers/HistoriaClinicaCtrl";
+import "../styles/ModalHistoriaClinicaVW.css";
 
-const ModalHistoriaClinica = ({ patient, onClose }) => {
+const ModalHistoriaClinicaVW = ({ patient, onClose }) => {
   const navigate = useNavigate();
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    motivo_consulta: "",
-    diagnostico: "",
-    tratamiento: "",
-    notas: "",
-    fecha: new Date().toISOString().split("T")[0],
-  });
+  const [form, setForm] = useState(HISTORIA_EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
   // Cargar historias clínicas del paciente
@@ -25,16 +23,11 @@ const ModalHistoriaClinica = ({ patient, onClose }) => {
 
   const fetchHistories = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("clinical_histories")
-      .select("*")
-      .eq("patient_id", patient.id)
-      .order("fecha", { ascending: false });
-
-    if (error) {
+    try {
+      const data = await loadPatientHistoriesCtrl(patient.id);
+      setHistories(data);
+    } catch (error) {
       console.error("Error cargando historias:", error);
-    } else {
-      setHistories(data || []);
     }
     setLoading(false);
   };
@@ -46,36 +39,16 @@ const ModalHistoriaClinica = ({ patient, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!form.motivo_consulta.trim()) {
-      alert("El motivo de consulta es obligatorio");
-      return;
-    }
 
     setSaving(true);
-    const { error } = await supabase.from("clinical_histories").insert([
-      {
-        patient_id: patient.id,
-        motivo_consulta: form.motivo_consulta,
-        diagnostico: form.diagnostico,
-        tratamiento: form.tratamiento,
-        notas: form.notas,
-        fecha: form.fecha,
-      },
-    ]);
+    const result = await createPatientHistoryCtrl(patient.id, form);
 
-    if (error) {
-      console.error("Error guardando historia:", error);
-      alert("Error al guardar la historia clínica");
+    if (!result.ok) {
+      if (result.error) console.error("Error guardando historia:", result.error);
+      alert(result.message);
     } else {
-      alert("Historia clínica guardada exitosamente");
-      setForm({
-        motivo_consulta: "",
-        diagnostico: "",
-        tratamiento: "",
-        notas: "",
-        fecha: new Date().toISOString().split("T")[0],
-      });
+      alert(result.message);
+      setForm(HISTORIA_EMPTY_FORM);
       setShowForm(false);
       fetchHistories();
     }
@@ -215,7 +188,10 @@ const ModalHistoriaClinica = ({ patient, onClose }) => {
                 <h3>Historias Registradas</h3>
                 <button
                   className="mhc-btn-new"
-                  onClick={() => setShowForm(true)}
+                  onClick={() => {
+                    setForm(HISTORIA_EMPTY_FORM);
+                    setShowForm(true);
+                  }}
                 >
                   + Nueva Historia
                 </button>
@@ -288,4 +264,4 @@ const ModalHistoriaClinica = ({ patient, onClose }) => {
   );
 };
 
-export default ModalHistoriaClinica;
+export default ModalHistoriaClinicaVW;

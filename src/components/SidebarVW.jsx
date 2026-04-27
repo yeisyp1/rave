@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar } from '../app/store'
-import '../styles/sidebar.css'
+import '../styles/SidebarVW.css'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../Back/lib/supabase'
+import { supabase } from '../dao/SupabaseDAO'
 import {
   cilSpeedometer,
   cilUser,

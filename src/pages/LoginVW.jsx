@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { supabase } from "../Back/lib/supabase";
+import { supabase } from "../dao/SupabaseDAO";
 import logo from "../assets/logo.png";
-import "../styles/login.css";
+import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {

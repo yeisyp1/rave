@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
-import { supabase } from '../Back/lib/supabase';
+import { supabase } from '../dao/SupabaseDAO';
 
-import '../styles/odontograma.css';
+import '../styles/OdontogramaVW.css';
 
 const Odontograma = () => {
   const { patientId } = useParams();

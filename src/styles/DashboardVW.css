@@ -1,14 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
 
-/* ─────────────────────────────
-   VARIABLES — heredan del sistema
-   light/dark global (index.css)
-───────────────────────────── */
 :root {
-  --gold:        #c9934a;
-  --gold-lt:     #dba96a;
-  --gold-pale:   rgba(201, 147, 74, 0.10);
-  --gold-border: rgba(201, 147, 74, 0.20);
+
   --db-success:  #4caf82;
   --db-danger:   #e05c5c;
 
@@ -80,7 +73,6 @@
   font-weight: 600;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: var(--gold);
   margin-bottom: 4px;
 }
 
@@ -137,11 +129,10 @@
   height: 38px;
   border-radius: 10px;
   background: var(--db-icon-bg);
-  border: 1px solid var(--gold-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gold);
+  color: var(--blue);
   flex-shrink: 0;
 }
 
@@ -221,14 +212,14 @@
   border: none;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--blue);
   cursor: pointer;
   font-family: 'Nunito', sans-serif;
   transition: color 0.2s;
   padding: 0;
 }
 
-.db-card-action:hover { color: var(--gold-lt); }
+.db-card-action:hover { color: var(--blue); }
 
 /* ─────────────────────────────
    CHART CARD
@@ -258,15 +249,19 @@
   gap: 8px;
 }
 
+/* ─────────────────────────────
+   barras
+───────────────────────────── */
 .db-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, var(--gold) 0%, #123679 100%);
+  background: linear-gradient(180deg, #2a70f1, #123679 100%);
   border-radius: 6px 6px 0 0;
   transition: opacity 0.2s;
   opacity: 0.85;
   min-height: 4px;
 }
+
 
 .db-bar-wrap:hover .db-bar { opacity: 1; }
 
@@ -311,7 +306,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), #123679);
+  background: linear-gradient(135deg, #2a70f1, #123679);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -345,7 +340,6 @@
 .db-list-time {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gold);
   white-space: nowrap;
 }
 

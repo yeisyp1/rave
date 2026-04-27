@@ -3,101 +3,24 @@ import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/es'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import '../styles/calendar.css'
-import { supabase } from '../Back/lib/supabase'
-import NewEventModal from '../modals/ModalNewEvent'
+import '../styles/CalendarVW.css'
+import {
+  connectGoogleCalendarCtrl,
+  createGoogleEventCtrl,
+  deleteGoogleEventCtrl,
+  getGoogleTokenCtrl,
+  syncGoogleEventsCtrl,
+} from '../controllers/CalendarCtrl'
+import ModalNewEventVW from '../modals/ModalNewEventVW'
 
 moment.locale('es')
 moment.updateLocale('es', { week: { dow: 1 } })
 const localizer = momentLocalizer(moment)
 
-/* GOOGLE CALENDAR API HELPERS */
-
-const CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
-
-// Obtiene el access token de Google desde la sesión activa de Supabase
-const getGoogleToken = async () => {
-  const { data: { session } } = await supabase.auth.getSession()
-  return session?.provider_token ?? null
-}
-
-// Convierte un evento de Google Calendar al formato de react-big-calendar
-const gEventToRbc = (gEvent) => ({
-  id:       gEvent.id,
-  title:    gEvent.summary ?? '(Sin título)',
-  start:    new Date(gEvent.start?.dateTime ?? gEvent.start?.date),
-  end:      new Date(gEvent.end?.dateTime   ?? gEvent.end?.date),
-  allDay:   !gEvent.start?.dateTime,
-  resource: {
-    patient:     gEvent.summary ?? '',
-    service:     gEvent.description ?? 'Cita',
-    status:      gEvent.status === 'confirmed' ? 'confirmed' : 'pending',
-    googleId:    gEvent.id,
-    htmlLink:    gEvent.htmlLink,
-    description: gEvent.description ?? '',
-    location:    gEvent.location ?? '',
-  },
-  fromGoogle: true,
-})
-
-// Trae eventos de Google Calendar (últimos 30 días + próximos 60 días)
-const fetchGoogleEvents = async (token) => {
-  const past     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const future   = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
-
-  const res = await fetch(
-    `${CALENDAR_API}/calendars/primary/events?` +
-    new URLSearchParams({
-      timeMin:      past,
-      timeMax:      future,
-      singleEvents: 'true',
-      orderBy:      'startTime',
-      maxResults:   '250',
-    }),
-    { headers: { Authorization: `Bearer ${token}` } }
-  )
-
-  if (!res.ok) throw new Error(`Google API error: ${res.status}`)
-  const data = await res.json()
-  return (data.items ?? []).map(gEventToRbc)
-}
-
-// Crea un evento en Google Calendar
-const createGoogleEvent = async (token, { title, start, end, description = '', location = '' }) => {
-  const res = await fetch(
-    `${CALENDAR_API}/calendars/primary/events`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization:  `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        summary:     title,
-        description,
-        location,
-        start: { dateTime: start.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        end:   { dateTime: end.toISOString(),   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-      }),
-    }
-  )
-  if (!res.ok) throw new Error(`Error creando evento: ${res.status}`)
-  return res.json()
-}
-
-// Elimina un evento de Google Calendar
-const deleteGoogleEvent = async (token, googleId) => {
-  const res = await fetch(
-    `${CALENDAR_API}/calendars/primary/events/${googleId}`,
-    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
-  )
-  if (!res.ok && res.status !== 204) throw new Error(`Error eliminando evento: ${res.status}`)
-}
-
 /* ─────────────────────────────
    CALENDAR PAGE
 ───────────────────────────── */
-const CalendarPage = () => {
+const CalendarVW = () => {
   const [events,       setEvents]       = useState([])
   const [currentDate,  setCurrentDate]  = useState(new Date())
   const [googleToken,  setGoogleToken]  = useState(null)
@@ -110,7 +33,7 @@ const CalendarPage = () => {
   /* ── Al montar: obtener token y cargar eventos ── */
   useEffect(() => {
     const init = async () => {
-      const token = await getGoogleToken()
+      const token = await getGoogleTokenCtrl()
       setGoogleToken(token)
       if (token) await syncEvents(token)
     }
@@ -123,7 +46,7 @@ const CalendarPage = () => {
     setSyncing(true)
     setSyncError(null)
     try {
-      const gEvents = await fetchGoogleEvents(token)
+      const gEvents = await syncGoogleEventsCtrl(token)
       setEvents(gEvents)
       setLastSync(new Date())
     } catch (err) {
@@ -143,8 +66,7 @@ const CalendarPage = () => {
   const handleSaveEvent = async ({ title, description, location, start, end }) => {
     setSaving(true)
     try {
-      const gEvent = await createGoogleEvent(googleToken, { title, start, end, description, location })
-      const newEv  = gEventToRbc(gEvent)
+      const newEv = await createGoogleEventCtrl(googleToken, { title, start, end, description, location })
       setEvents((prev) => [...prev, newEv])
       setNewSlot(null)
     } catch (err) {
@@ -163,7 +85,7 @@ const CalendarPage = () => {
     )
     if (!confirm) return
     try {
-      await deleteGoogleEvent(googleToken, event.resource.googleId)
+      await deleteGoogleEventCtrl(googleToken, event.resource.googleId)
       setEvents((prev) => prev.filter((e) => e.id !== event.id))
     } catch (err) {
       alert('Error al eliminar la cita')
@@ -172,14 +94,7 @@ const CalendarPage = () => {
 
   /* ── Conectar con Google (si no hay token, redirige a OAuth) ── */
   const handleConnectGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        scopes: 'https://www.googleapis.com/auth/calendar',
-        redirectTo: `${window.location.origin}/calendar`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
-      },
-    })
+    await connectGoogleCalendarCtrl()
   }
 
   /* ── Estilos de eventos ── */
@@ -322,7 +237,7 @@ const CalendarPage = () => {
 
       {/* ── MODAL NUEVA CITA ── */}
       {newSlot && (
-        <NewEventModal
+        <ModalNewEventVW
           slot={newSlot}
           onSave={handleSaveEvent}
           onClose={() => setNewSlot(null)}
@@ -333,4 +248,4 @@ const CalendarPage = () => {
   )
 }
 
-export default CalendarPage
+export default CalendarVW

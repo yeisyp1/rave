@@ -1,54 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../Back/lib/supabase";
-import ModalPatients from "../modals/ModalPatients";
-import ModalViewPatient from "../modals/ModalViewPatients";
-import "../styles/Patients.css";
+import {
+  calcPatientAgeCtrl,
+  canNextPatientStepCtrl,
+  deletePatientCtrl,
+  filterPatientsCtrl,
+  loadPatientsCtrl,
+  PATIENT_EMPTY_FORM,
+  savePatientCtrl,
+} from "../controllers/PatientsCtrl";
+import ModalPatientsVW from "../modals/ModalPatientsVW";
+import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
+import "../styles/PatientsVW.css";
 import { CIcon } from '@coreui/icons-react'
 
 import * as icons from '@coreui/icons'
 
-/* ── Calcula edad automáticamente desde fecha_nacimiento ── */
-const calcAge = (dob) => {
-  if (!dob) return "";
-  const today = new Date();
-  const birth = new Date(dob);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age >= 0 ? age : "";
-};
-
-const EMPTY_FORM = {
-  tipo_documento: "",
-  numero_documento: "",
-  nombre: "",
-  apellidos: "",
-  fecha_nacimiento: "",
-  edad: "",
-  direccion: "",
-  telefono: "",
-  celular: "",
-  ocupacion: "",
-  sexo: "",
-  email: "",
-  tipo_sangre: "",
-  eps: "",
-  acudiente_nombre: "",
-  acudiente_direccion: "",
-  acudiente_parentesco: "",
-  acudiente_celular: "",
-};
-
-const STEPS = ["Documento", "Datos personales", "Contacto & Salud", "Acudiente"];
-
-const Patients = () => {
+const PatientsVW = () => {
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(PATIENT_EMPTY_FORM);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [viewPatient, setViewPatient] = useState(null);
@@ -56,12 +30,12 @@ const Patients = () => {
   /* ── Cargar pacientes ── */
   const getPatients = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("patients")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) console.error("Error cargando pacientes:", error);
-    else setPatients(data);
+    try {
+      const data = await loadPatientsCtrl();
+      setPatients(data);
+    } catch (error) {
+      console.error("Error cargando pacientes:", error);
+    }
     setLoading(false);
   };
 
@@ -71,11 +45,11 @@ const Patients = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     const updated = { ...form, [name]: value };
-    if (name === "fecha_nacimiento") updated.edad = String(calcAge(value));
+    if (name === "fecha_nacimiento") updated.edad = calcPatientAgeCtrl(value);
     setForm(updated);
   };
 
-  const resetForm = () => { setForm(EMPTY_FORM); setStep(0); };
+  const resetForm = () => { setForm(PATIENT_EMPTY_FORM); setStep(0); };
 
   const openModal = () => { resetForm(); setEditingId(null); setShowModal(true); };
   const closeModal = () => { setShowModal(false); resetForm(); setEditingId(null); };
@@ -97,58 +71,30 @@ const Patients = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.tipo_documento || !form.numero_documento) return alert("Documento obligatorio");
-    if (!form.nombre || !form.apellidos) return alert("Nombre y apellidos obligatorios");
-
-    if (editingId) {
-      // Actualizar paciente
-      const { error } = await supabase
-        .from("patients")
-        .update(form)
-        .eq("id", editingId);
-      if (error) {
-        console.error(error);
-        alert("Error al actualizar");
-        return;
-      }
-      alert("Paciente actualizado");
-    } else {
-      // Crear nuevo paciente
-      const { error } = await supabase.from("patients").insert([form]);
-      if (error) {
-        if (error.code === "23505") alert("Este documento ya existe");
-        else { console.error(error); alert("Error al guardar"); }
-        return;
-      }
-      alert("Paciente registrado");
+    const result = await savePatientCtrl({ form, editingId });
+    if (!result.ok) {
+      if (result.error) console.error(result.error);
+      alert(result.message);
+      return;
     }
+
+    alert(result.message);
     closeModal();
     getPatients();
   };
 
   const deletePatient = async (id) => {
     if (!confirm("¿Eliminar paciente?")) return;
-    const { error } = await supabase.from("patients").delete().eq("id", id);
-    if (error) alert("Error al eliminar");
+    const result = await deletePatientCtrl(id);
+    if (!result.ok) alert(result.message);
     else getPatients();
   };
 
   /* ── Validación por paso ── */
-  const canNext = () => {
-    if (step === 0) return form.tipo_documento && form.numero_documento;
-    if (step === 1) return form.nombre && form.apellidos && form.fecha_nacimiento;
-    return true;
-  };
+  const canNext = () => canNextPatientStepCtrl(step, form);
 
   /* ── Filtro de búsqueda ── */
-  const filtered = patients.filter((p) => {
-    const q = search.toLowerCase();
-    return (
-      `${p.nombre} ${p.apellidos}`.toLowerCase().includes(q) ||
-      p.numero_documento?.includes(q) ||
-      p.email?.toLowerCase().includes(q)
-    );
-  });
+  const filtered = filterPatientsCtrl(patients, search);
 
   return (
     <div className="pt-page">
@@ -291,7 +237,7 @@ const Patients = () => {
       </div>
 
       {/* ── MODAL ── */}
-      <ModalPatients
+      <ModalPatientsVW
         showModal={showModal}
         closeModal={closeModal}
         form={form}
@@ -304,7 +250,7 @@ const Patients = () => {
       />
 
       {/* ── MODAL HISTORIA CLÍNICA (PORTAL) ── */}
-      <ModalViewPatient
+      <ModalViewPatientsVW
         show={!!viewPatient}
         patient={viewPatient}
         onClose={() => setViewPatient(null)}
@@ -315,4 +261,4 @@ const Patients = () => {
   );
 };
 
-export default Patients;
+export default PatientsVW;

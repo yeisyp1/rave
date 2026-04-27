@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import "../styles/modalViewPatients.css";
+import "../styles/ModalViewPatientsVW.css";
 
 export default function ModalViewPatient({
   show,

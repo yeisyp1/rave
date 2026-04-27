@@ -1,14 +1,14 @@
 import { Outlet } from 'react-router-dom'
-import Header from './Header'
-import Sidebar from './Sidebar'
-import '../styles/layout.css'
+import HeaderVW from '../components/HeaderVW'
+import SidebarVW from '../components/SidebarVW'
+import '../styles/LayoutVW.css'
 
-const Layout = () => {
+const AppLayoutVW = () => {
   return (
     <div className="app-layout">
-      <Sidebar />
+      <SidebarVW />
       <div className="main-area">
-        <Header />
+        <HeaderVW />
         <div className="content">
           <Outlet />
         </div>
@@ -17,4 +17,4 @@ const Layout = () => {
   )
 }
 
-export default Layout
+export default AppLayoutVW

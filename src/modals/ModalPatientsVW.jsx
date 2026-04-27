@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import "../styles/modalPatients.css";
+import "../styles/ModalPatientsVW.css";
 
 const calcAge = (dob) => {
   if (!dob) return "";
