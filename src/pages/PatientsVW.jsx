@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  calcPatientAgeCtrl,
-  canNextPatientStepCtrl,
   deletePatientCtrl,
   filterPatientsCtrl,
   loadPatientsCtrl,
-  PATIENT_EMPTY_FORM,
-  savePatientCtrl,
 } from "../controllers/PatientsCtrl";
+import { usePatientModal } from "../hooks/usePatientModal";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
 import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
+import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
 import { CIcon } from '@coreui/icons-react'
 
@@ -19,13 +17,12 @@ import * as icons from '@coreui/icons'
 const PatientsVW = () => {
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
-  const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState(PATIENT_EMPTY_FORM);
   const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState(null);
   const [viewPatient, setViewPatient] = useState(null);
+
+  // Usar el custom hook para la lógica del modal
+  const patientModal = usePatientModal(() => getPatients());
 
   /* ── Cargar pacientes ── */
   const getPatients = async () => {
@@ -42,25 +39,6 @@ const PatientsVW = () => {
   useEffect(() => { getPatients(); }, []);
 
   /* ── Handlers ── */
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const updated = { ...form, [name]: value };
-    if (name === "fecha_nacimiento") updated.edad = calcPatientAgeCtrl(value);
-    setForm(updated);
-  };
-
-  const resetForm = () => { setForm(PATIENT_EMPTY_FORM); setStep(0); };
-
-  const openModal = () => { resetForm(); setEditingId(null); setShowModal(true); };
-  const closeModal = () => { setShowModal(false); resetForm(); setEditingId(null); };
-
-  const editPatient = (patient) => {
-    setForm(patient);
-    setEditingId(patient.id);
-    setStep(0);
-    setShowModal(true);
-  };
-
   const viewHistory = (patient) => {
     setViewPatient(patient);
   };
@@ -69,29 +47,12 @@ const PatientsVW = () => {
     navigate('/agendarcita', { state: { patient } });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const result = await savePatientCtrl({ form, editingId });
-    if (!result.ok) {
-      if (result.error) console.error(result.error);
-      alert(result.message);
-      return;
-    }
-
-    alert(result.message);
-    closeModal();
-    getPatients();
-  };
-
   const deletePatient = async (id) => {
     if (!confirm("¿Eliminar paciente?")) return;
     const result = await deletePatientCtrl(id);
     if (!result.ok) alert(result.message);
     else getPatients();
   };
-
-  /* ── Validación por paso ── */
-  const canNext = () => canNextPatientStepCtrl(step, form);
 
   /* ── Filtro de búsqueda ── */
   const filtered = filterPatientsCtrl(patients, search);
@@ -104,7 +65,7 @@ const PatientsVW = () => {
         <div className="pt-header-left">
           <h1 className="pt-title">Pacientes</h1>
         </div>
-        <button className="pt-btn-primary" onClick={openModal}>
+        <button className="pt-btn-primary" onClick={() => patientModal.openEditModal()}>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
           </svg>
@@ -127,17 +88,14 @@ const PatientsVW = () => {
         </div>
         <div className="pt-stat">
           <span className="pt-stat-num">{patients.length}</span>
-          <span className="pt-stat-label">pacientes</span>
+          <span className="pt-stat-label">Pacientes</span>
         </div>
       </div>
 
       {/* ── TABLA ── */}
       <div className="pt-card">
         {loading ? (
-          <div className="pt-loading">
-            <div className="pt-spinner" />
-            <span>Cargando pacientes...</span>
-          </div>
+          <LoaderVW text="Cargando pacientes..." className="loader-inline" />
         ) : (
           <div className="pt-table-wrap">
             <table className="pt-table">
@@ -167,7 +125,7 @@ const PatientsVW = () => {
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id} className="pt-row">
+                    <tr key={p.id} className="pt-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/pacientes/${p.id}`)}>
                       <td>
                         <span className="pt-doc-badge">{p.tipo_documento}</span>
                         {p.numero_documento}
@@ -193,7 +151,7 @@ const PatientsVW = () => {
                         {/* Historia */}
                         <button
                           className="pt-btn-action"
-                          onClick={() => viewHistory(p)}
+                          onClick={(e) => { e.stopPropagation(); viewHistory(p); }}
                           title="Ver historia clínica"
                         >
                           <CIcon icon={icons.cilNotes} size="sm" />
@@ -202,7 +160,7 @@ const PatientsVW = () => {
                         {/* Agendar Cita */}
                         <button
                           className="pt-btn-action"
-                          onClick={() => scheduleAppointment(p)}
+                          onClick={(e) => { e.stopPropagation(); scheduleAppointment(p); }}
                           title="Agendar cita"
                         >
                           <CIcon icon={icons.cilAddressBook} size="sm" />
@@ -211,7 +169,7 @@ const PatientsVW = () => {
                         {/* Editar */}
                         <button
                           className="pt-btn-action"
-                          onClick={() => editPatient(p)}
+                          onClick={(e) => { e.stopPropagation(); patientModal.openEditModal(p); }}
                           title="Editar paciente"
                         >
                           <CIcon icon={icons.cilPencil} size="sm" />
@@ -220,7 +178,7 @@ const PatientsVW = () => {
                         {/* Eliminar */}
                         <button
                           className="pt-btn-action pt-btn-action-danger"
-                          onClick={() => deletePatient(p.id)}
+                          onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
                           title="Eliminar paciente"
                         >
                           <CIcon icon={icons.cilTrash} size="sm" />
@@ -238,15 +196,15 @@ const PatientsVW = () => {
 
       {/* ── MODAL ── */}
       <ModalPatientsVW
-        showModal={showModal}
-        closeModal={closeModal}
-        form={form}
-        setForm={setForm}
-        step={step}
-        setStep={setStep}
-        handleSubmit={handleSubmit}
-        canNext={canNext}
-        isEditing={!!editingId}
+        showModal={patientModal.showModal}
+        closeModal={patientModal.closeModal}
+        form={patientModal.form}
+        setForm={patientModal.setForm}
+        step={patientModal.step}
+        setStep={patientModal.setStep}
+        handleSubmit={patientModal.handleSubmit}
+        canNext={patientModal.canNext}
+        isEditing={!!patientModal.editingId}
       />
 
       {/* ── MODAL HISTORIA CLÍNICA (PORTAL) ── */}

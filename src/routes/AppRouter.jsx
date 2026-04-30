@@ -3,6 +3,7 @@ import AppLayoutVW from '../layouts/AppLayoutVW'
 
 import DashboardVW from '../pages/DashboardVW'
 import PatientsVW from '../pages/PatientsVW'
+import PatientDetailVW from '../pages/PatientDetailVW'
 import HistoriaClinicaVW from '../pages/HistoriaClinicaVW'
 import CalendarVW from '../pages/CalendarVW'
 import BillingVW from '../pages/BillingVW'
@@ -18,7 +19,11 @@ import ModalViewPatientsVW from '../modals/ModalViewPatientsVW'
 import NewEventModalVW from '../modals/ModalNewEventVW'
 import OAuthConsentVW from '../pages/OAuthConsentVW'
 
-const AppRouter = ({ user }) => {
+const AdminRoute = ({ profile, children }) => {
+  return profile?.role === 'admin' ? children : <Navigate to="/dashboard" replace />
+}
+
+const AppRouter = ({ user, profile }) => {
   return (
     <BrowserRouter>
       <Routes>
@@ -27,21 +32,22 @@ const AppRouter = ({ user }) => {
           element={user ? <Navigate to="/dashboard" /> : <LoginVW />}
         />
 
-        <Route element={user ? <AppLayoutVW /> : <Navigate to="/login" />}>
+        <Route element={user ? <AppLayoutVW user={user} profile={profile} /> : <Navigate to="/login" />}>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<DashboardVW />} />
           <Route path="/pacientes" element={<PatientsVW />} />
+          <Route path="/pacientes/:patientId" element={<PatientDetailVW />} />
           <Route path="/modal-history/:patientId" element={<ModalViewPatientsVW />} />
           <Route path="/calendar" element={<CalendarVW />} />
           <Route path="/odontograma" element={<OdontogramaVW />} />
           <Route path="/odontograma/:patientId" element={<OdontogramaVW />} />
           <Route path="/new-event-modal" element={<NewEventModalVW />} />
-          <Route path="/billing" element={<BillingVW />} />
-          <Route path="/documentation" element={<DocumentationVW />} />
-          <Route path="/laboratory" element={<LaboratoryVW />} />
-          <Route path="/inventory" element={<InventoryVW />} />
+          <Route path="/billing" element={<AdminRoute profile={profile}><BillingVW /></AdminRoute>} />
+          <Route path="/documentation" element={<AdminRoute profile={profile}><DocumentationVW /></AdminRoute>} />
+          <Route path="/laboratory" element={<AdminRoute profile={profile}><LaboratoryVW /></AdminRoute>} />
+          <Route path="/inventory" element={<AdminRoute profile={profile}><InventoryVW /></AdminRoute>} />
           <Route path="/histories" element={<HistoriaClinicaVW />} />
-          <Route path="/doctors" element={<DoctorsVW />} />
+          <Route path="/doctors" element={<AdminRoute profile={profile}><DoctorsVW /></AdminRoute>} />
           <Route path="/agendarcita" element={<AgendarCitaVW />} />
           <Route path="/oauth/consent" element={<OAuthConsentVW />} />
         </Route>

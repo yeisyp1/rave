@@ -99,7 +99,7 @@
 }
 
 .mhc-btn-odontogram {
-  background: #A2CDFF;
+  background: var(--blue-soft);
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;
@@ -123,7 +123,7 @@
 /* ── MODAL ACCENT ── */
 .mhc-modal-accent {
   height: 3px;
-  background: linear-gradient(90deg, var(--gold, #c9934a), #a97a3d);
+  background: linear-gradient(90deg, var(--gold, var(--gold)), var(--gold-deep));
 }
 
 /* ── MODAL BODY ── */
@@ -181,7 +181,7 @@
 
 .mhc-input:focus {
   outline: none;
-  border-color: var(--gold, #c9934a);
+  border-color: var(--gold, var(--gold));
   box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.1);
 }
 
@@ -197,7 +197,7 @@
 
 .mhc-textarea:focus {
   outline: none;
-  border-color: var(--gold, #c9934a);
+  border-color: var(--gold, var(--gold));
   box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.1);
 }
 
@@ -249,14 +249,14 @@
 }
 
 .mhc-history-card:hover {
-  border-color: var(--gold, #c9934a);
+  border-color: var(--gold, var(--gold));
   background: #fefaf5;
 }
 
 .mhc-history-date {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--gold, #c9934a);
+  color: var(--gold, var(--gold));
   text-transform: uppercase;
   letter-spacing: 0.3px;
   margin-bottom: 0.75rem;
@@ -316,7 +316,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid #f0f0f0;
-  border-top-color: var(--gold, #c9934a);
+  border-top-color: var(--gold, var(--gold));
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -330,7 +330,7 @@
 /* ── BUTTONS ── */
 .mhc-btn-primary {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--gold, #c9934a), #a97a3d);
+  background: linear-gradient(135deg, var(--gold, var(--gold)), var(--gold-deep));
   color: white;
   border: none;
   border-radius: 6px;
@@ -374,7 +374,7 @@
 
 .mhc-btn-new {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, var(--gold, #c9934a), #a97a3d);
+  background: linear-gradient(135deg, var(--gold, var(--gold)), var(--gold-deep));
   color: white;
   border: none;
   border-radius: 6px;

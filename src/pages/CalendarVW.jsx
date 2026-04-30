@@ -196,14 +196,6 @@ const CalendarVW = () => {
 
       {/* ── LEYENDA ── */}
       <div className="cl-legend">
-        <div className="cl-legend-item">
-          <span className="cl-legend-dot confirmed" />
-          Confirmada
-        </div>
-        <div className="cl-legend-item">
-          <span className="cl-legend-dot pending" />
-          Pendiente
-        </div>
         {syncing && (
           <div className="cl-legend-item syncing">
             <span className="cl-spinner-sm" />

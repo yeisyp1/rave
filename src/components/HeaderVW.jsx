@@ -1,14 +1,23 @@
-import { useDispatch} from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { toggleSidebar } from '../app/store'
-import { cilMenu } from '@coreui/icons'
-import CIcon from '@coreui/icons-react'
-
 import '../styles/HeaderVW.css'
 import { useState, useEffect } from 'react'
+import {
+  FiBell,
+  FiChevronDown,
+  FiMenu,
+  FiMoon,
+  FiSearch,
+  FiSettings,
+  FiSun,
+} from 'react-icons/fi'
+import { DiAptana } from "react-icons/di";
 
-const Header = () => {
+
+const Header = ({ user, profile }) => {
 
   const dispatch = useDispatch()
+  const [searchValue, setSearchValue] = useState('')
   const [isDark, setIsDark] = useState(() => {
       return localStorage.getItem('theme') === 'dark'
     })
@@ -24,106 +33,79 @@ const Header = () => {
         setIsDark(!isDark)
     }
 
+  const fullName =
+    profile?.full_name ??
+    user?.user_metadata?.full_name ??
+    user?.user_metadata?.name ??
+    user?.user_metadata?.display_name ??
+    'Dr. Alex Rivera'
+
+  const roleLabel = profile?.role === 'admin' ? 'Administrador' : 'Equipo Clinico'
+
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase()
+
 
   return (
-    <header className="header">
-      <button
-        className="header-menu-btn"
-        onClick={() => dispatch(toggleSidebar())}
-        aria-label="Toggle sidebar"
-      >
-        <CIcon icon={cilMenu} size="lg" />
-      </button>
+    <header className="header header-modern">
+      <div className="header-left">
+        <button
+          className="header-menu-btn"
+          onClick={() => dispatch(toggleSidebar())}
+          aria-label="Abrir menú lateral"
+        >
+          <FiMenu />
+        </button>
 
-      <h3>RAVE Dental System</h3>
-
-      <div>
-        <label className="switch">
-  <input
-    id="input"
-    type="checkbox"
-    checked={isDark}
-    onChange={handleThemeToggle}
-  />
-
-  <div className="slider round">
-    <div className="sun-moon">
-
-      <svg id="moon-dot-1" className="moon-dot" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="moon-dot-2" className="moon-dot" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="moon-dot-3" className="moon-dot" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="light-ray-1" className="light-ray" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="light-ray-2" className="light-ray" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="light-ray-3" className="light-ray" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-1" className="cloud-dark" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-2" className="cloud-dark" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-3" className="cloud-dark" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-4" className="cloud-light" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-5" className="cloud-light" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-      <svg id="cloud-6" className="cloud-light" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="50" />
-      </svg>
-
-    </div>
-
-    <div className="stars">
-
-      <svg id="star-1" className="star" viewBox="0 0 20 20">
-        <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z" />
-      </svg>
-
-      <svg id="star-2" className="star" viewBox="0 0 20 20">
-        <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z" />
-      </svg>
-
-      <svg id="star-3" className="star" viewBox="0 0 20 20">
-        <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z" />
-      </svg>
-
-      <svg id="star-4" className="star" viewBox="0 0 20 20">
-        <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z" />
-      </svg>
-
-    </div>
-  </div>
-</label>
-
+        <div className="header-search">
+          <FiSearch className="header-search-icon" aria-hidden="true" />
+          <input
+            type="search"
+            className="header-search-input"
+            placeholder="Buscar pacientes, personal o historiales médicos..."
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            aria-label="Buscar en el sistema"
+          />
+        </div>
       </div>
 
-      
+      <div className="header-actions">
+        <button
+          type="button"
+          className="header-icon-btn"
+          onClick={handleThemeToggle}
+          aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        >
+          {isDark ? <FiSun /> : <FiMoon />}
+        </button>
+
+        <button type="button" className="header-icon-btn" aria-label="Notificaciones">
+          <FiBell />
+        </button>
+
+        <button type="button" className="header-icon-btn" aria-label="Configuración">
+          <DiAptana />
+        </button>
+
+        <span className="header-divider" aria-hidden="true" />
+
+        <div type="button" className="header-profile" aria-label={`Perfil de ${fullName}`}>
+          <div className="header-avatar" aria-hidden="true">
+            {initials}
+          </div>
+
+          <div className="header-profile-copy">
+            <span className="header-profile-name">{fullName}</span>
+            <span className="header-profile-role">{roleLabel}</span>
+          </div>
+        </div>
+      </div>
     </header>
   )
 }

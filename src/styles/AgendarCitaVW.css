@@ -1,42 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
 
-/* ─────────────────────────────
-   VARIABLES
-───────────────────────────── */
-:root {
-
-  --cl-bg:       var(--bg-primary);
-  --cl-card:     var(--bg-secondary);
-  --cl-text:     var(--text-primary);
-  --cl-soft:     var(--text-secondary);
-  --cl-border:   var(--border-color);
-  --cl-muted:    rgba(100, 116, 139, 0.6);
-  --cl-hover:    rgba(0, 0, 0, 0.025);
-  --cl-input-bg: var(--bg-primary);
-  --cl-rbc-bg:   var(--bg-secondary);
-  --cl-rbc-off:  rgba(0, 0, 0, 0.02);
-  --cl-rbc-now:  rgba(201, 147, 74, 0.06);
-  --cl-rbc-head: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="dark"] {
-  --cl-bg:       #0f2236;
-  --cl-card:     #162d47;
-  --cl-text:     #e2e8f0;
-  --cl-soft:     rgba(255, 255, 255, 0.55);
-  --cl-border:   rgba(255, 255, 255, 0.08);
-  --cl-muted:    rgba(255, 255, 255, 0.28);
-  --cl-hover:    rgba(255, 255, 255, 0.025);
-  --cl-input-bg: rgba(255, 255, 255, 0.05);
-  --cl-rbc-bg:   #162d47;
-  --cl-rbc-off:  rgba(255, 255, 255, 0.015);
-  --cl-rbc-now:  rgba(201, 147, 74, 0.08);
-  --cl-rbc-head: rgba(255, 255, 255, 0.02);
-}
-
-/* ─────────────────────────────
-   PAGE
-───────────────────────────── */
 .cl-page {
   min-height: 100vh;
   background: var(--cl-bg);
@@ -52,7 +15,7 @@
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(ellipse 55% 40% at 90% 10%, rgba(201,147,74,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 90% 10%, var(--gold-pale-soft) 0%, transparent 60%),
     radial-gradient(ellipse 40% 50% at 5% 85%,  rgba(26,58,92,0.45)  0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
@@ -113,15 +76,15 @@
   gap: 7px;
   height: 40px;
   padding: 0 18px;
-  background: linear-gradient(135deg, var(--gold) 0%, #123679 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--blue-deep) 100%);
+  color: var(--white);
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
   font-size: 13.5px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 16px #123679;
+  box-shadow: 0 4px 16px var(--blue-deep);
   transition: transform 0.15s, box-shadow 0.15s;
   white-space: nowrap;
 }
@@ -156,16 +119,16 @@
 .cl-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .cl-btn-connect {
-  border-color: rgba(66, 133, 244, 0.35);
-  color: #4285F4;
+  border-color: var(--google-blue-border);
+  color: var(--google-blue);
 }
 
-[data-theme="dark"] .cl-btn-connect { color: #8ab4f8; border-color: rgba(138,180,248,0.25); }
+[data-theme="dark"] .cl-btn-connect { color: var(--google-blue-dark); border-color: var(--google-blue-dark-border, rgba(138, 180, 248, 0.25)); }
 
 .cl-btn-connect:hover {
-  background: rgba(66,133,244,0.08) !important;
-  border-color: rgba(66,133,244,0.5) !important;
-  color: #4285F4 !important;
+  background: var(--google-blue-bg) !important;
+  border-color: var(--google-blue-border-strong) !important;
+  color: var(--google-blue) !important;
 }
 
 /* ─────────────────────────────
@@ -175,8 +138,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(224,92,92,0.08);
-  border: 1px solid rgba(224,92,92,0.22);
+  background: var(--danger-bg-soft);
+  border: 1px solid var(--danger-border);
   border-radius: 10px;
   padding: 10px 16px;
   color: var(--cl-danger);
@@ -199,7 +162,7 @@
   transition: background 0.2s;
 }
 
-.cl-error-btn:hover { background: rgba(224,92,92,0.10); }
+.cl-error-btn:hover { background: var(--danger-bg); }
 
 /* ─────────────────────────────
    LEGEND
@@ -240,7 +203,7 @@
   border: 1px solid var(--cl-border);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 12px var(--card-shadow, rgba(0,0,0,0.07));
+  box-shadow: 0 2px 12px var(--card-shadow, var(--surface-card-shadow));
   transition: background 0.3s;
 }
 
@@ -564,7 +527,7 @@
 
 .cl-input:focus {
   border-color: rgba(201,147,74,0.65);
-  background: rgba(201,147,74,0.05);
+  background: var(--gold-pale-soft);
   box-shadow: 0 0 0 3px rgba(201,147,74,0.09);
 }
 
@@ -602,7 +565,7 @@
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
+  border-top-color: var(--white);
   border-radius: 50%;
   display: inline-block;
   animation: cl-spin 0.7s linear infinite;

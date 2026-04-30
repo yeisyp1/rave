@@ -3,12 +3,12 @@ import HeaderVW from '../components/HeaderVW'
 import SidebarVW from '../components/SidebarVW'
 import '../styles/LayoutVW.css'
 
-const AppLayoutVW = () => {
+const AppLayoutVW = ({ user, profile }) => {
   return (
     <div className="app-layout">
-      <SidebarVW />
+      <SidebarVW profile={profile} />
       <div className="main-area">
-        <HeaderVW />
+        <HeaderVW user={user} profile={profile} />
         <div className="content">
           <Outlet />
         </div>

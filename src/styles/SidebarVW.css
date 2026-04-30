@@ -4,7 +4,7 @@
   left: 0;
   top: 0;
   height: 100vh;
-  width: 260px;
+  width: var(--sidebar-expanded-width, 260px);
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
 
 /* Narrow unfoldable styles */
 .sidebar.sidebar-narrow-unfoldable {
-  width: 78px;
+  width: var(--sidebar-collapsed-width, 78px);
 }
 
 .sidebar-brand-n {
@@ -30,7 +30,7 @@
 }
 
 .sidebar.sidebar-narrow-unfoldable:hover {
-  width: 260px;
+  width: var(--sidebar-expanded-width, 260px);
   box-shadow: 2px 0 10px var(--sidebar-shadow);
 }
 
@@ -46,7 +46,7 @@
   opacity: 1;
   display: inline;
 }
-
+ 
 /* Sidebar Header */
 .sidebar-header {
   padding: 20px;
@@ -56,7 +56,8 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
-  min-height: 70px;
+  height: var(--app-header-height, 72px);
+  min-height: var(--app-header-height, 72px);
 }
 
 .sidebar-logo {
@@ -257,7 +258,7 @@
 /* Mobile Styles */
 @media (max-width: 991px) {
   .sidebar {
-    width: 260px;
+    width: var(--sidebar-expanded-width, 260px);
     transform: translateX(-100%);
   }
 
@@ -267,7 +268,7 @@
 
   /* On mobile, always show full width and text */
   .sidebar.sidebar-narrow-unfoldable.mobile {
-    width: 260px;
+    width: var(--sidebar-expanded-width, 260px);
   }
 
   .sidebar.sidebar-narrow-unfoldable.mobile .nav-text {
@@ -288,7 +289,7 @@
   }
 
   .sidebar.sidebar-narrow-unfoldable.mobile:hover {
-    width: 260px;
+    width: var(--sidebar-expanded-width, 260px);
   }
 }
 

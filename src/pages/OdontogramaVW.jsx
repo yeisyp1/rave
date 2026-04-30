@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
 import { supabase } from '../dao/SupabaseDAO';
+import LoaderVW from '../components/LoaderVW';
 
 import '../styles/OdontogramaVW.css';
 
@@ -45,7 +46,7 @@ const Odontograma = () => {
     <div className="odon-page">
 
       {loading ? (
-        <div className="odon-loading">Cargando información del paciente...</div>
+        <LoaderVW text="Cargando informacion del paciente..." />
       ) : (
         <OdontogramApp
           title={odontogramTitle}

@@ -4,6 +4,7 @@ import {
   loadHistoriaPatientsCtrl,
 } from '../controllers/HistoriaClinicaCtrl'
 import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW'
+import LoaderVW from '../components/LoaderVW'
 import '../styles/HistoriaClinicaVW.css'
 
 const HistoriaClinicaVW = () => {
@@ -72,10 +73,7 @@ const HistoriaClinicaVW = () => {
 
       <div className="hc-card">
         {loading ? (
-          <div className="hc-loading">
-            <div className="hc-spinner" />
-            <span>Cargando pacientes...</span>
-          </div>
+          <LoaderVW text="Cargando pacientes..." className="loader-inline" />
         ) : (
           <div className="hc-table-wrap">
             <table className="hc-table">

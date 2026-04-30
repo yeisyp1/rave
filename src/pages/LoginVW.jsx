@@ -3,6 +3,7 @@ import { supabase } from "../dao/SupabaseDAO";
 import logo from "../assets/logo.png";
 import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Login = () => {
   const [email, setEmail]               = useState("");
@@ -13,6 +14,18 @@ const Login = () => {
   const [focused, setFocused]           = useState("");
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const flag = localStorage.getItem('no_autorizado');
+      if (flag) {
+        setErrorMsg('Tu cuenta no está autorizada para usar esta aplicación. Contacta al administrador.');
+        localStorage.removeItem('no_autorizado');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
 
   const handleLogin = async (e) => {
@@ -82,8 +95,8 @@ const Login = () => {
               />
               <path
                 d="M18 14 C16 16 14 20 14 25"
-                stroke="rgba(255,255,255,0.35)"
-                strokeWidth="2"
+                stroke="rgba(255, 255, 255, 0.93)"
+                strokeWidth="3"
                 strokeLinecap="round"
               />
             </svg>

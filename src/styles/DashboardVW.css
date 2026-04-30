@@ -1,35 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
-
-:root {
-
-  --db-success:  #4caf82;
-  --db-danger:   #e05c5c;
-
-  --db-bg:       var(--bg-primary);
-  --db-card:     var(--bg-secondary);
-  --db-text:     var(--text-primary);
-  --db-soft:     var(--text-secondary);
-  --db-border:   var(--border-color);
-  --db-muted:    rgba(100, 116, 139, 0.6);
-  --db-hover:    rgba(0, 0, 0, 0.025);
-  --db-icon-bg:  rgba(201, 147, 74, 0.10);
-  --db-bar-bg:   rgba(201, 147, 74, 0.12);
-  --db-chart-bg: rgba(0, 0, 0, 0.02);
-}
-
-[data-theme="dark"] {
-  --db-bg:       #0f2236;
-  --db-card:     #162d47;
-  --db-text:     #e2e8f0;
-  --db-soft:     rgba(255, 255, 255, 0.55);
-  --db-border:   rgba(255, 255, 255, 0.08);
-  --db-muted:    rgba(255, 255, 255, 0.28);
-  --db-hover:    rgba(255, 255, 255, 0.025);
-  --db-icon-bg:  rgba(201, 147, 74, 0.12);
-  --db-bar-bg:   rgba(201, 147, 74, 0.15);
-  --db-chart-bg: rgba(255, 255, 255, 0.02);
-}
-
 /* ─────────────────────────────
    PAGE
 ───────────────────────────── */
@@ -150,12 +119,12 @@
 
 .db-trend.up {
   color: var(--db-success);
-  background: rgba(76, 175, 130, 0.12);
+  background: var(--success-bg);
 }
 
 .db-trend.down {
   color: var(--db-danger);
-  background: rgba(224, 92, 92, 0.10);
+  background: var(--danger-bg);
 }
 
 .db-stat-value {
@@ -255,7 +224,7 @@
 .db-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, #2a70f1, #123679 100%);
+  background: linear-gradient(180deg, var(--blue-vivid), var(--blue-deep) 100%);
   border-radius: 6px 6px 0 0;
   transition: opacity 0.2s;
   opacity: 0.85;
@@ -306,13 +275,13 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2a70f1, #123679);
+  background: linear-gradient(135deg, var(--blue-vivid), var(--blue-deep));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--white);
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(201,147,74,0.28);
 }
@@ -360,12 +329,12 @@
 }
 
 .db-pay-status.paid {
-  background: rgba(76,175,130,0.12);
+  background: var(--success-bg);
   color: var(--db-success);
 }
 
 .db-pay-status.pending {
-  background: rgba(224,92,92,0.10);
+  background: var(--danger-bg);
   color: var(--db-danger);
 }
 
