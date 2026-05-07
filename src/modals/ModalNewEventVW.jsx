@@ -9,6 +9,7 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
     location:    '',
     startTime:   moment(slot?.start).format('HH:mm'),
     endTime:     moment(slot?.end).format('HH:mm'),
+    date:        moment(slot?.start).format('YYYY-MM-DD'),
   })
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -16,11 +17,13 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
   const handleSave = () => {
     if (!form.title.trim()) return alert('El título es obligatorio')
 
-    const start = new Date(slot.start)
+    // Build start/end from selected date + times
+    const [year, month, day] = form.date.split('-').map(Number)
+    const start = new Date(year, month - 1, day)
     const [sh, sm] = form.startTime.split(':')
     start.setHours(Number(sh), Number(sm), 0, 0)
 
-    const end = new Date(slot.start)
+    const end = new Date(year, month - 1, day)
     const [eh, em] = form.endTime.split(':')
     end.setHours(Number(eh), Number(em), 0, 0)
 
@@ -73,9 +76,7 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
 
           <div className="cl-field">
             <label className="cl-label">Fecha</label>
-            <div className="cl-date-display">
-              {moment(slot?.start).format('dddd, D [de] MMMM [de] YYYY')}
-            </div>
+            <input type="date" name="date" value={form.date} onChange={handleChange} className="cl-input" />
           </div>
         </div>
 
@@ -86,10 +87,7 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
               <><span className="cl-spinner" /> Guardando...</>
             ) : (
               <>
-                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
-                </svg>
-                Guardar en Google Calendar
+                Guardar
               </>
             )}
           </button>

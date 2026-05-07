@@ -73,6 +73,40 @@ export const deleteGoogleEventDAO = async (token, googleId) => {
   }
 };
 
+export const updateGoogleEventDAO = async (
+  token,
+  googleId,
+  { title, start, end, description = "", location = "" },
+) => {
+  const response = await fetch(
+    `${CALENDAR_API}/calendars/primary/events/${googleId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        summary: title,
+        description,
+        location,
+        start: {
+          dateTime: start.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: end.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      }),
+    },
+  );
+
+  if (!response.ok)
+    throw new Error(`Error actualizando evento: ${response.status}`);
+  return response.json();
+};
+
 export const signInGoogleCalendarDAO = async () => {
   return supabase.auth.signInWithOAuth({
     provider: "google",

@@ -10,8 +10,10 @@ import {
   deleteGoogleEventCtrl,
   getGoogleTokenCtrl,
   syncGoogleEventsCtrl,
+  updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
+import ModalViewEventVW from '../modals/ModalViewEventVW'
 
 moment.locale('es')
 moment.updateLocale('es', { week: { dow: 1 } })
@@ -29,6 +31,8 @@ const CalendarVW = () => {
   const [lastSync,     setLastSync]     = useState(null)
   const [newSlot,      setNewSlot]      = useState(null)  
   const [saving,       setSaving]       = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [deleting,      setDeleting]      = useState(false)
 
   /* ── Al montar: obtener token y cargar eventos ── */
   useEffect(() => {
@@ -77,18 +81,40 @@ const CalendarVW = () => {
     }
   }
 
-  /* ── Eliminar evento ── */
-  const handleSelectEvent = async (event) => {
+  /* ── Ver detalles de evento ── */
+  const handleSelectEvent = (event) => {
     if (!event.fromGoogle) return
-    const confirm = window.confirm(
-      `¿Eliminar la cita "${event.title}"?`
-    )
-    if (!confirm) return
+    setSelectedEvent(event)
+  }
+
+  /* ── Editar evento ── */
+  const handleEditEvent = async (payload) => {
+    if (!selectedEvent) return
     try {
-      await deleteGoogleEventCtrl(googleToken, event.resource.googleId)
-      setEvents((prev) => prev.filter((e) => e.id !== event.id))
+      const updatedEvent = await updateGoogleEventCtrl(googleToken, selectedEvent.resource.googleId, payload)
+      setEvents((prev) =>
+        prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
+      )
+      setSelectedEvent(null)
     } catch (err) {
+      console.error(err)
+      alert('Error al actualizar la cita')
+    }
+  }
+
+  /* ── Eliminar evento ── */
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return
+    setDeleting(true)
+    try {
+      await deleteGoogleEventCtrl(googleToken, selectedEvent.resource.googleId)
+      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id))
+      setSelectedEvent(null)
+    } catch (err) {
+      console.error(err)
       alert('Error al eliminar la cita')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -234,6 +260,17 @@ const CalendarVW = () => {
           onSave={handleSaveEvent}
           onClose={() => setNewSlot(null)}
           saving={saving}
+        />
+      )}
+
+      {/* ── MODAL VER/EDITAR CITA ── */}
+      {selectedEvent && (
+        <ModalViewEventVW
+          event={selectedEvent}
+          onEdit={handleEditEvent}
+          onDelete={handleDeleteEvent}
+          onClose={() => setSelectedEvent(null)}
+          deleting={deleting}
         />
       )}
     </div>

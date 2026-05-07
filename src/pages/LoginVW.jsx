@@ -246,7 +246,7 @@ const Login = () => {
             {/* SUBMIT */}
             <button className="submit-btn" type="submit" disabled={loading}>
               {loading ? (
-                <span className="btn-inner">
+                <span className="btn-inner"> 
                   <span className="spinner" />
                   Verificando...
                 </span>

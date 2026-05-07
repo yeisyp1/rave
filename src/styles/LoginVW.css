@@ -440,7 +440,7 @@
   height: 54px;
   border: none;
   border-radius: 12px;
-  background: var(--blue-deep)7e;
+  background: var(--navy-mid);
   color: var(--white);
   font-family: 'Tenor Sans';
   font-weight: 600;
@@ -462,7 +462,7 @@
 }
 
 .submit-btn:hover::before  { opacity: 1; }
-.submit-btn:hover          { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(74, 93, 201, 0.45); }
+.submit-btn:hover          { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(74, 93, 201, 0.171); }
 .submit-btn:active         { transform: translateY(0); }
 .submit-btn:disabled       { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 

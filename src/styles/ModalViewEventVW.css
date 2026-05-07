@@ -1,0 +1,79 @@
+/* ─────────────────────────────
+   MODAL VER EVENTO
+───────────────────────────── */
+
+.cl-view-field {
+  margin-bottom: 1rem;
+}
+
+.cl-view-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.375rem;
+  display: block;
+}
+
+.cl-view-value {
+  font-size: 0.95rem;
+  color: #1f2937;
+  margin: 0;
+  padding: 0.625rem;
+  background: #f9fafb;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+  word-break: break-word;
+}
+
+.cl-view-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.cl-btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.625rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.cl-btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.cl-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cl-btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+}
+
+.cl-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: cl-spin 0.6s linear infinite;
+}
+
+@keyframes cl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

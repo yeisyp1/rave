@@ -24,8 +24,6 @@ export default function OAuthConsent() {
         return;
       }
 
-      console.log("Sesión Google:", data.session);
-
       const accessToken = data.session.provider_token;
       const refreshToken =
         data.session.provider_refresh_token ||
