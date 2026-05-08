@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import "../styles/ModalPatientsVW.css";
+import { FiX, FiCheck, FiChevronDown } from 'react-icons/fi'
 
 const calcAge = (dob) => {
   if (!dob) return "";
@@ -44,9 +45,7 @@ export default function ModalPatients({
             <h2 className="pt-modal-title">{isEditing ? "Editar Paciente" : "Nuevo Paciente"}</h2>
           </div>
           <button className="pt-modal-close" onClick={closeModal}>
-            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
-            </svg>
+            <FiX size={18} />
           </button>
         </div>
 
@@ -55,11 +54,7 @@ export default function ModalPatients({
           {STEPS.map((s, i) => (
             <div key={i} className={`pt-step ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}>
               <div className="pt-step-dot">
-                {i < step ? (
-                  <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                  </svg>
-                ) : i + 1}
+                {i < step ? (<FiCheck size={12} />) : i + 1}
               </div>
               <span className="pt-step-label">{s}</span>
               {i < STEPS.length - 1 && <div className={`pt-step-line ${i < step ? "done" : ""}`} />}
@@ -88,9 +83,7 @@ export default function ModalPatients({
                     <option value="PA">Pasaporte</option>
                     <option value="RC">Registro Civil</option>
                   </select>
-                  <svg className="pt-select-arrow" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
-                  </svg>
+                  <FiChevronDown size={14} />
                 </div>
               </div>
 
@@ -141,9 +134,7 @@ export default function ModalPatients({
                     <option value="F">Femenino</option>
                     <option value="O">Otro</option>
                   </select>
-                  <svg className="pt-select-arrow" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
-                  </svg>
+                  <FiChevronDown size={14} />
                 </div>
               </div>
 
@@ -190,9 +181,7 @@ export default function ModalPatients({
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                  <svg className="pt-select-arrow" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
-                  </svg>
+                  <FiChevronDown size={14} />
                 </div>
               </div>
 
@@ -266,9 +255,7 @@ export default function ModalPatients({
               </button>
             ) : (
               <button type="button" className="pt-btn-primary" onClick={handleSubmit}>
-                <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
+                <FiCheck size={15} />
                 {isEditing ? "Actualizar" : "Guardar"} paciente
               </button>
             )}

@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dao/SupabaseDAO';
-import { CIcon } from '@coreui/icons-react';
-import * as icons from '@coreui/icons';
+import {
+  FiArrowLeft,
+  FiAlertTriangle,
+  FiPhone,
+  FiMail,
+  FiEdit,
+  FiPlus,
+  FiChevronDown,
+  FiImage,
+  FiSave,
+} from 'react-icons/fi'
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
 import ModalPatientsVW from '../modals/ModalPatientsVW';
+import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW';
 import { usePatientModal } from '../hooks/usePatientModal';
 import LoaderVW from '../components/LoaderVW';
 import '../styles/PatientDetailVW.css';
@@ -23,6 +33,7 @@ const PatientDetailVW = () => {
   const [mediaOpen, setMediaOpen] = useState(false);
   const [selectedRadiographies, setSelectedRadiographies] = useState([]);
   const [clinicalNote, setClinicalNote] = useState('');
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => fetchPatientData());
@@ -105,7 +116,7 @@ const PatientDetailVW = () => {
       {/* ── HEADER ── */}
       <div className="pd-header">
         <button className="pd-btn-back" onClick={() => navigate('/pacientes')} title="Volver">
-          <CIcon icon={icons.cilArrowLeft} size="lg" />
+          <FiArrowLeft size={20} />
         </button>
 
         <div className="pd-header-info">
@@ -116,7 +127,7 @@ const PatientDetailVW = () => {
             <div className="pd-name-badge">
               <h1>{patient.nombre} {patient.apellidos}</h1>
               <span className="pd-status-badge">
-                <CIcon icon={icons.cilBellExclamation} size="sm" />
+                <FiAlertTriangle size={14} />
                 {patient.alergias}</span>
             </div>
             <div className="pd-header-details">
@@ -129,11 +140,11 @@ const PatientDetailVW = () => {
               </div>
               <div className="pd-contact-info">
                 <span className="pd-phone">
-                  <CIcon icon={icons.cilPhone} size="sm" />
+                  <FiPhone size={14} />
                   {patient.celular || '—'}
                 </span>
                 <span className="pd-email">
-                  <CIcon icon={icons.cilEnvelopeClosed} size="sm" />
+                  <FiMail size={14} />
                   {patient.email || '—'}
                 </span>
               </div>
@@ -145,12 +156,12 @@ const PatientDetailVW = () => {
 
           <button className="pd-btn-action-primary" 
           onClick={() => patientModal.openEditModal(patient)}>
-            <CIcon icon={icons.cilPencil} size="sm" />
+            <FiEdit size={14} />
             Editar
           </button>
 
           <button className="pd-btn-action-secondary">
-            <CIcon icon={icons.cilPlus} size="sm" />
+            <FiPlus size={14} />
             Nueva cita
           </button>
         </div>
@@ -249,7 +260,13 @@ const PatientDetailVW = () => {
         {activeTab === 'history' && (
           <div className="pd-tab-content">
             <div className="pd-section">
-              <h3 className="pd-section-title">Procedimientos Recientes</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                <h3 className="pd-section-title" style={{ margin: 0 }}>Procedimientos Recientes</h3>
+                <button className="pd-btn-action-primary" type="button" onClick={() => setHistoryModalOpen(true)}>
+                  <FiPlus size={14} />
+                  Nueva historia clínica
+                </button>
+              </div>
               {procedures.length > 0 ? (
                 <div className="pd-procedures-table">
                   <table>
@@ -286,7 +303,7 @@ const PatientDetailVW = () => {
             <details className="pd-accordion pd-accordion-odontogram" open={odontogramOpen} onToggle={(event) => setOdontogramOpen(event.currentTarget.open)}>
               <summary className="pd-accordion-summary">
                 <span>Odontograma</span>
-                <span className="pd-accordion-chevron">▾</span>
+                <span className="pd-accordion-chevron"><FiChevronDown size={14} /></span>
               </summary>
               <div className="pd-accordion-body pd-section-odontogram">
                 <div className="pd-odontogram-container">
@@ -303,7 +320,7 @@ const PatientDetailVW = () => {
             <details className="pd-accordion pd-accordion-media" open={mediaOpen} onToggle={(event) => setMediaOpen(event.currentTarget.open)}>
               <summary className="pd-accordion-summary">
                 <span>Radiografías y notas clínicas</span>
-                <span className="pd-accordion-chevron">▾</span>
+                <span className="pd-accordion-chevron"><FiChevronDown size={14} /></span>
               </summary>
               <div className="pd-accordion-body">
                 <div className="pd-media-grid">
@@ -325,7 +342,7 @@ const PatientDetailVW = () => {
                       <div className="pd-upload-list">
                         {selectedRadiographies.map((file) => (
                           <div key={`${file.name}-${file.lastModified}`} className="pd-upload-item">
-                            <CIcon icon={icons.cilImage} size="sm" />
+                            <FiImage size={14} />
                             <span>{file.name}</span>
                           </div>
                         ))}
@@ -343,7 +360,7 @@ const PatientDetailVW = () => {
                     />
                     <div className="pd-media-actions">
                       <button className="pd-btn-primary" type="button">
-                        <CIcon icon={icons.cilSave} size="sm" />
+                        <FiSave size={14} />
                         Guardar nota
                       </button>
                     </div>
@@ -364,7 +381,7 @@ const PatientDetailVW = () => {
                             />
                           ) : (
                             <div className="pd-radiography-placeholder">
-                              <CIcon icon={icons.cilImage} size="xl" />
+                              <FiImage size={24} />
                             </div>
                           )}
                           <p className="pd-radiography-type">{radio.type || 'Radiografía'}</p>
@@ -394,6 +411,14 @@ const PatientDetailVW = () => {
         canNext={patientModal.canNext}
         isEditing={!!patientModal.editingId}
       />
+
+      {historyModalOpen && (
+        <ModalHistoriaClinicaVW
+          patient={patient}
+          onClose={() => setHistoryModalOpen(false)}
+          startInForm={true}
+        />
+      )}
     </div>
   );
 };

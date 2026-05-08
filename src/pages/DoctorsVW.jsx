@@ -168,7 +168,7 @@ const DoctorsVW = () => {
                 value={form.role}
                 onChange={(event) => setForm({ ...form, role: event.target.value })}
               >
-                <option value="user">Equipo clinico</option>
+                <option value="user">Equipo clínico</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -193,7 +193,7 @@ const DoctorsVW = () => {
             </div>
             <div className="admin-list-row">
               <div>
-                <div className="admin-row-title">Equipo clinico</div>
+                <div className="admin-row-title">Equipo clínico</div>
                 <div className="admin-row-sub">Pacientes, citas, historias clinicas y odontograma.</div>
               </div>
               <span className="admin-pill good">user</span>
@@ -228,7 +228,7 @@ const DoctorsVW = () => {
                     <tr key={row.id ?? row.email}>
                       <td>{row.full_name || profile?.full_name || '-'}</td>
                       <td>{row.email}</td>
-                      <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Equipo clinico'}</span></td>
+                      <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Equipo clínico'}</span></td>
                       <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
                       <td>{profile?.id ?? '-'}</td>
                       <td>

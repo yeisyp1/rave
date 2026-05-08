@@ -1,21 +1,56 @@
 import { useState } from 'react'
+import { FiX } from 'react-icons/fi'
 import moment from 'moment'
 
 /* MODAL NUEVA CITA */
-const NewEventModal = ({ slot, onSave, onClose, saving }) => {
+const NewEventModal = ({
+  slot,
+  onSave,
+  onClose,
+  saving,
+  patientOptions = [],
+  serviceOptions = [],
+}) => {
+  const getPatientLabel = (patient) => {
+    const fullName = `${patient?.nombre ?? ''} ${patient?.apellidos ?? ''}`.trim()
+    const document = patient?.numero_documento ? ` - ${patient.numero_documento}` : ''
+    return `${fullName}${document}`.trim()
+  }
+
   const [form, setForm] = useState({
-    title:       '',
+    title: '',
     description: '',
-    location:    '',
-    startTime:   moment(slot?.start).format('HH:mm'),
-    endTime:     moment(slot?.end).format('HH:mm'),
-    date:        moment(slot?.start).format('YYYY-MM-DD'),
+    location: '',
+    startTime: moment(slot?.start).format('HH:mm'),
+    endTime: moment(slot?.end).format('HH:mm'),
+    date: moment(slot?.start).format('YYYY-MM-DD'),
+    serviceType: '',
   })
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const handlePatientChange = (e) => {
+    const label = e.target.value
+    const selectedPatient = patientOptions.find((patient) => getPatientLabel(patient) === label)
+
+    setForm((prev) => ({
+      ...prev,
+      title: selectedPatient ? getPatientLabel(selectedPatient) : label,
+    }))
+  }
+
+  const handleServiceTypeChange = (e) => {
+    const serviceType = e.target.value
+    setForm((prev) => ({
+      ...prev,
+      serviceType,
+      description: serviceType,
+    }))
+  }
+
   const handleSave = () => {
     if (!form.title.trim()) return alert('El título es obligatorio')
+    if (!form.serviceType.trim()) return alert('El tipo de servicio es obligatorio')
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -28,7 +63,14 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
     end.setHours(Number(eh), Number(em), 0, 0)
 
     if (end <= start) return alert('La hora de fin debe ser posterior a la de inicio')
-    onSave({ ...form, start, end })
+
+    onSave({
+      ...form,
+      title: `${form.title} - ${form.serviceType}`,
+      description: form.serviceType,
+      start,
+      end,
+    })
   }
 
   return (
@@ -39,9 +81,7 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
             <h2 className="cl-modal-title">Nueva Cita</h2>
           </div>
           <button className="cl-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
-            </svg>
+            <FiX size={16} />
           </button>
         </div>
 
@@ -50,12 +90,37 @@ const NewEventModal = ({ slot, onSave, onClose, saving }) => {
         <div className="cl-modal-body">
           <div className="cl-field">
             <label className="cl-label">Paciente <span className="cl-req">*</span></label>
-            <input name="title" value={form.title} onChange={handleChange} placeholder="Ej. Juan Pérez - Limpieza" className="cl-input" autoFocus/>
+            <input
+              name="title"
+              list="patient-list"
+              value={form.title}
+              onChange={handlePatientChange}
+              placeholder="Buscar paciente por nombre o documento"
+              className="cl-input"
+              autoFocus
+            />
+            <datalist id="patient-list">
+              {patientOptions.map((patient) => (
+                <option key={patient.id} value={getPatientLabel(patient)} />
+              ))}
+            </datalist>
           </div>
 
           <div className="cl-field">
-            <label className="cl-label">Descripción / Servicio</label>
-            <input name="description" value={form.description} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
+            <label className="cl-label">Tipo de servicio <span className="cl-req">*</span></label>
+            <input
+              name="serviceType"
+              list="service-type-list"
+              value={form.serviceType}
+              onChange={handleServiceTypeChange}
+              placeholder="Buscar tipo de servicio"
+              className="cl-input"
+            />
+            <datalist id="service-type-list">
+              {serviceOptions.map((service) => (
+                <option key={service} value={service} />
+              ))}
+            </datalist>
           </div>
 
           <div className="cl-field">

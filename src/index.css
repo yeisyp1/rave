@@ -261,43 +261,10 @@
   padding: 0;
 }
 
-/* SVG Icons (CoreUI) */
+/* Base SVG alignment; do not force fill to keep Feather icons outlined */
 svg {
   display: inline-block;
-  vertical-align: -0.125em;
-  fill: currentColor;
-}
-
-/* CoreUI Icons React classes */
-.icon {
-  display: inline-block;
-  color: inherit;
-  text-align: center;
-  fill: currentColor;
-}
-
-.icon:not(.icon-c-s):not(.icon-custom-size) {
-  width: 1rem;
-  height: 1rem;
-  font-size: 1rem;
-}
-
-.icon:not(.icon-c-s):not(.icon-custom-size).icon-sm {
-  width:1rem;
-  height: 0.875rem;
-  font-size: 0.875rem;
-}
-
-.icon:not(.icon-c-s):not(.icon-custom-size).icon-lg {
-  width: 1.25rem;
-  height: 1.25rem;
-  font-size: 1.25rem;
-}
-
-.icon:not(.icon-c-s):not(.icon-custom-size).icon-xl {
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 1.5rem;
+  vertical-align: middle;
 }
 
 .icon:not(.icon-c-s):not(.icon-custom-size).icon-xxl {

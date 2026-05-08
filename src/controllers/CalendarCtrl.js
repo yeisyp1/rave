@@ -3,6 +3,8 @@ import {
   deleteGoogleEventDAO,
   fetchGoogleEventsDAO,
   getGoogleTokenDAO,
+  listAppointmentPatientsDAO,
+  listAppointmentServiceTypesDAO,
   signInGoogleCalendarDAO,
 } from "../dao/CalendarDAO";
 import { CalendarEventModel } from "../models/CalendarEventModel";
@@ -22,6 +24,8 @@ export const createGoogleEventCtrl = async (token, payload) => {
 
 export const deleteGoogleEventCtrl = deleteGoogleEventDAO;
 export const connectGoogleCalendarCtrl = signInGoogleCalendarDAO;
+export const listAppointmentPatientsCtrl = listAppointmentPatientsDAO;
+export const listAppointmentServiceTypesCtrl = listAppointmentServiceTypesDAO;
 export const updateGoogleEventCtrl = async (token, googleId, payload) => {
   const event = await updateGoogleEventDAO(token, googleId, payload);
   return CalendarEventModel.fromGoogleEvent(event);

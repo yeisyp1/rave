@@ -28,9 +28,9 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(131, 120, 120, 0.3);
-  max-width: 700px;
+  max-width: min(1280px, calc(100vw - 2rem));
   width: 100%;
-  max-height: 90vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
@@ -147,10 +147,170 @@
   border-bottom: 2px solid #f0f0f0;
 }
 
+.mhc-form-title-inline {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2f2f2f;
+}
+
 .mhc-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.mhc-form-toolbar {
+  margin-bottom: 1rem;
+}
+
+.mhc-accordion {
+  border: 1px solid #ece7df;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.04);
+}
+
+.mhc-accordion + .mhc-accordion {
+  margin-top: 0.35rem;
+}
+
+.mhc-accordion-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(180deg, #fff, #fcfbf8);
+  color: #2c2c2c;
+  font-weight: 700;
+  border-bottom: 1px solid #f2ede5;
+}
+
+.mhc-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mhc-accordion[open] .mhc-accordion-icon {
+  transform: rotate(180deg);
+}
+
+.mhc-accordion-icon {
+  transition: transform 0.2s ease;
+  color: var(--gold, var(--gold));
+  flex-shrink: 0;
+}
+
+.mhc-accordion-body {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.mhc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.mhc-stack-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mhc-two-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.mhc-four-columns {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.mhc-mini-panel {
+  border: 1px solid #efe7dd;
+  border-radius: 12px;
+  padding: 0.95rem;
+  background: #fdfcf9;
+}
+
+.mhc-mini-panel-full {
+  grid-column: span 1;
+}
+
+.mhc-mini-title {
+  margin: 0 0 0.9rem 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2d2d2d;
+}
+
+.mhc-mini-inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.mhc-select-wrap {
+  position: relative;
+}
+
+.mhc-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent;
+  padding-right: 2.25rem;
+}
+
+.mhc-select-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #8f7e68;
+}
+
+.mhc-status-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.mhc-status-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.mhc-status-label {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.35;
+}
+
+.mhc-status-select {
+  min-width: 120px;
+}
+
+.mhc-history-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.mhc-history-summary span b {
+  color: #333;
 }
 
 /* ── FORM FIELD ── */
@@ -409,5 +569,16 @@
   .mhc-histories-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .mhc-grid-2,
+  .mhc-two-panels,
+  .mhc-four-columns,
+  .mhc-mini-inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .mhc-status-row {
+    grid-template-columns: 1fr;
   }
 }

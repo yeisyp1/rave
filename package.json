@@ -10,8 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@coreui/icons": "^3.0.1",
-    "@coreui/icons-react": "^2.3.0",
     "@reduxjs/toolkit": "^2.11.2",
     "@supabase/supabase-js": "^2.96.0",
     "dotenv": "^17.3.1",

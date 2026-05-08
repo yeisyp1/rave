@@ -117,3 +117,30 @@ export const signInGoogleCalendarDAO = async () => {
     },
   });
 };
+
+export const listAppointmentPatientsDAO = async () => {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("id,nombre,apellidos,numero_documento")
+    .order("nombre", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+};
+
+export const listAppointmentServiceTypesDAO = async () => {
+  const { data, error } = await supabase
+    .from("procedure_catalog")
+    .select("name")
+    .eq("active", true)
+    .order("name", { ascending: true })
+    .limit(500);
+
+  if (error) throw error;
+
+  const serviceNames = (data ?? [])
+    .map((row) => String(row.name || "").trim())
+    .filter(Boolean);
+
+  return [...new Set(serviceNames)];
+};

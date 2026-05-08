@@ -10,9 +10,7 @@ import ModalPatientsVW from "../modals/ModalPatientsVW";
 import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
-import { CIcon } from '@coreui/icons-react'
-
-import * as icons from '@coreui/icons'
+import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2 } from 'react-icons/fi'
 
 const PatientsVW = () => {
   const navigate = useNavigate();
@@ -66,9 +64,7 @@ const PatientsVW = () => {
           <h1 className="pt-title">Pacientes</h1>
         </div>
         <button className="pt-btn-primary" onClick={() => patientModal.openEditModal()}>
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
-          </svg>
+          <FiPlus size={16} />
           Nuevo Paciente
         </button>
       </div>
@@ -76,9 +72,7 @@ const PatientsVW = () => {
       {/* ── SEARCH + STATS ── */}
       <div className="pt-toolbar">
         <div className="pt-search-wrap">
-          <svg className="pt-search-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
-          </svg>
+          <FiSearch className="pt-search-icon" />
           <input
             className="pt-search"
             placeholder="Buscar por nombre, documento o correo..."
@@ -116,9 +110,7 @@ const PatientsVW = () => {
                   <tr>
                     <td colSpan="7" className="pt-empty">
                       <div className="pt-empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                        </svg>
+                        <FiUser size={48} />
                       </div>
                       <p>{search ? "Sin resultados para la búsqueda" : "No hay pacientes registrados"}</p>
                     </td>
@@ -154,7 +146,7 @@ const PatientsVW = () => {
                           onClick={(e) => { e.stopPropagation(); viewHistory(p); }}
                           title="Ver historia clínica"
                         >
-                          <CIcon icon={icons.cilNotes} size="sm" />
+                          <FiFileText size={16} />
                         </button>
 
                         {/* Agendar Cita */}
@@ -163,7 +155,7 @@ const PatientsVW = () => {
                           onClick={(e) => { e.stopPropagation(); scheduleAppointment(p); }}
                           title="Agendar cita"
                         >
-                          <CIcon icon={icons.cilAddressBook} size="sm" />
+                          <FiBookOpen size={16} />
                         </button>
 
                         {/* Editar */}
@@ -172,7 +164,7 @@ const PatientsVW = () => {
                           onClick={(e) => { e.stopPropagation(); patientModal.openEditModal(p); }}
                           title="Editar paciente"
                         >
-                          <CIcon icon={icons.cilPencil} size="sm" />
+                          <FiEdit size={16} />
                         </button>
 
                         {/* Eliminar */}
@@ -181,7 +173,7 @@ const PatientsVW = () => {
                           onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
                           title="Eliminar paciente"
                         >
-                          <CIcon icon={icons.cilTrash} size="sm" />
+                          <FiTrash2 size={16} />
                         </button>
 
                       </td>

@@ -3,6 +3,7 @@ import {
   filterHistoriaPatientsCtrl,
   loadHistoriaPatientsCtrl,
 } from '../controllers/HistoriaClinicaCtrl'
+import { FiSearch, FiUser } from 'react-icons/fi'
 import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW'
 import LoaderVW from '../components/LoaderVW'
 import '../styles/HistoriaClinicaVW.css'
@@ -51,13 +52,7 @@ const HistoriaClinicaVW = () => {
 
       <div className="hc-toolbar">
         <div className="hc-search-wrap">
-          <svg className="hc-search-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <FiSearch className="hc-search-icon" />
           <input
             className="hc-search"
             placeholder="Buscar paciente por nombre o documento..."
@@ -92,13 +87,7 @@ const HistoriaClinicaVW = () => {
                   <tr>
                     <td colSpan="6" className="hc-empty">
                       <div className="hc-empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                          />
-                        </svg>
+                        <FiUser size={48} />
                       </div>
                       <p>{search ? 'Sin resultados para la busqueda' : 'No hay pacientes registrados'}</p>
                     </td>

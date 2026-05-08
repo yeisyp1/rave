@@ -4,19 +4,18 @@ import { closeSidebar } from '../app/store'
 import { supabase } from '../dao/SupabaseDAO'
 import '../styles/SidebarVW.css'
 import {
-  cilAccountLogout,
-  cilAddressBook,
-  cilBeaker,
-  cilCalendar,
-  cilCreditCard,
-  cilFolderOpen,
-  cilGroup,
-  cilInbox,
-  cilSpeedometer,
-  cilUser,
-  cilX,
-} from '@coreui/icons'
-import CIcon from '@coreui/icons-react'
+  FiActivity,
+  FiUsers,
+  FiCalendar,
+  FiBookOpen,
+  FiCreditCard,
+  FiUser,
+  FiThermometer,
+  FiInbox,
+  FiFolder,
+  FiLogOut,
+  FiX,
+} from 'react-icons/fi'
 
 const Sidebar = ({ profile }) => {
   const dispatch = useDispatch()
@@ -39,27 +38,27 @@ const Sidebar = ({ profile }) => {
     {
       section: 'Pacientes',
       items: [
-        { to: '/dashboard', icon: cilSpeedometer, label: 'Dashboard' },
-        { to: '/pacientes', icon: cilGroup, label: 'Pacientes' },
-        { to: '/calendar', icon: cilCalendar, label: 'Calendario' },
-        { to: '/agendarcita', icon: cilAddressBook, label: 'Agendar Cita' },
+        { to: '/dashboard', icon: FiActivity, label: 'Dashboard' },
+        { to: '/pacientes', icon: FiUsers, label: 'Pacientes' },
+        { to: '/calendar', icon: FiCalendar, label: 'Calendario' },
+        { to: '/agendarcita', icon: FiBookOpen, label: 'Agendar Cita' },
       ],
     },
     {
       section: 'Admin',
       adminOnly: true,
       items: [
-        { to: '/billing', icon: cilCreditCard, label: 'Pagos' },
-        { to: '/doctors', icon: cilUser, label: 'Doctores' },
-        { to: '/laboratory', icon: cilBeaker, label: 'Laboratorio' },
-        { to: '/inventory', icon: cilInbox, label: 'Inventario' },
-        { to: '/documentation', icon: cilFolderOpen, label: 'Documentacion' },
+        { to: '/billing', icon: FiCreditCard, label: 'Pagos' },
+        { to: '/doctors', icon: FiUser, label: 'Doctores' },
+        { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
+        { to: '/inventory', icon: FiInbox, label: 'Inventario' },
+        { to: '/documentation', icon: FiFolder, label: 'Documentacion' },
       ],
     },
     {
       section: 'Extra',
       items: [
-        { icon: cilAccountLogout, label: 'Cerrar Sesion', action: 'logout' },
+        { icon: FiLogOut, label: 'Cerrar Sesion', action: 'logout' },
       ],
     },
   ].filter((section) => !section.adminOnly || isAdmin)
@@ -75,7 +74,7 @@ const Sidebar = ({ profile }) => {
               onClick={() => dispatch(closeSidebar())}
               aria-label="Cerrar sidebar"
             >
-              <CIcon icon={cilX} size="lg" />
+              <FiX size={20} />
             </button>
           )}
         </div>
@@ -89,7 +88,7 @@ const Sidebar = ({ profile }) => {
                   return (
                     <li key={itemIdx} className="nav-item">
                       <button onClick={handleLogout} className="nav-link logout-btn">
-                        <CIcon icon={item.icon} className="nav-icon" />
+                        <item.icon className="nav-icon" size={18} />
                         <span className="nav-text">{item.label}</span>
                       </button>
                     </li>
@@ -103,7 +102,7 @@ const Sidebar = ({ profile }) => {
                       onClick={handleClick}
                       className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     >
-                      <CIcon icon={item.icon} className="nav-icon" />
+                      <item.icon className="nav-icon" size={18} />
                       <span className="nav-text">{item.label}</span>
                     </NavLink>
                   </li>
