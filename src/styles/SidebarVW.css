@@ -29,6 +29,36 @@
   text-overflow: ellipsis;
 }
 
+.sidebar-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.sidebar-brand-img {
+  display: block;
+  max-width: 100%;
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-img-dark {
+  display: none;
+}
+
+[data-theme="dark"] .sidebar-brand-img-light {
+  display: none;
+}
+
+[data-theme="dark"] .sidebar-brand-img-dark {
+  display: block;
+}
+
 .sidebar.sidebar-narrow-unfoldable:hover {
   width: var(--sidebar-expanded-width, 260px);
   box-shadow: 2px 0 10px var(--sidebar-shadow);

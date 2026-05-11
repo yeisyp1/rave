@@ -96,8 +96,8 @@ const Login = () => {
               />
               <path
                 d="M18 14 C16 16 14 20 14 25"
-                stroke="rgba(255, 255, 255, 0.93)"
-                strokeWidth="3"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth="2"
                 strokeLinecap="round"
               />
             </svg>

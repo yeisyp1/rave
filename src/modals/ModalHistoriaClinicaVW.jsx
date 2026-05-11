@@ -182,7 +182,6 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false }) => {
               </option>
             ))}
           </select>
-          <FiChevronDown className="mhc-select-icon" size={16} />
         </div>
       ) : listId ? (
         <>
@@ -331,7 +330,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false }) => {
           {showForm ? (
             <div className="mhc-form-container">
               <div className="mhc-histories-header mhc-form-toolbar">
-                <h3 className="mhc-form-title-inline">Nueva Historia Clínica Odontológica</h3>
+                <h3 className="mhc-form-title-inline">Nueva Historia</h3>
                 <button
                   className="mhc-btn-new"
                   type="button"
@@ -340,18 +339,17 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false }) => {
                     setShowForm(false);
                   }}
                 >
-                  <FiX size={14} />
-                  Cerrar formulario
+                  <FiX size={18} /> Cerrar 
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="mhc-form">
                 <details className="mhc-accordion" open>
                   <summary className="mhc-accordion-summary">
-                    <span>Primer recuadro</span>
+                    <span></span>
                     <FiChevronDown className="mhc-accordion-icon" size={16} />
                   </summary>
-                  <div className="mhc-accordion-body mhc-grid-2">
+                  <div className="mhc-accordion-body mhc-grid-2 mhc-grid-compact">
                     {renderField({ label: "Medio de remisión", name: "medio_remision", placeholder: "Ej. Referido por consulta externa" })}
                     {renderField({ label: "Fecha", name: "fecha", type: "datetime-local" })}
                   </div>
@@ -362,7 +360,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false }) => {
                     <span>I. Datos de identificación</span>
                     <FiChevronDown className="mhc-accordion-icon" size={16} />
                   </summary>
-                  <div className="mhc-accordion-body mhc-grid-2">
+                  <div className="mhc-accordion-body mhc-grid-id">
                     {renderField({ label: "Nombre", name: "nombre", placeholder: "Nombre" })}
                     {renderField({ label: "Apellidos", name: "apellidos", placeholder: "Apellidos" })}
                     {renderField({ label: "Tipo de identificación", name: "tipo_identificacion", as: "select", options: [

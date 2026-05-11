@@ -73,7 +73,6 @@ const AgendarCitaVW = () => {
       <div className="admin-header">
         <div>
           <h1 className="admin-title">Agendar cita</h1>
-          <p className="admin-subtitle">Crea una cita rapida para el paciente y guardala en Google Calendar.</p>
         </div>
         <div className="admin-actions">
           {!googleToken && (

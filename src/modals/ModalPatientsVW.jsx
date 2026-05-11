@@ -83,7 +83,6 @@ export default function ModalPatients({
                     <option value="PA">Pasaporte</option>
                     <option value="RC">Registro Civil</option>
                   </select>
-                  <FiChevronDown size={14} />
                 </div>
               </div>
 
@@ -134,7 +133,6 @@ export default function ModalPatients({
                     <option value="F">Femenino</option>
                     <option value="O">Otro</option>
                   </select>
-                  <FiChevronDown size={14} />
                 </div>
               </div>
 
@@ -181,7 +179,6 @@ export default function ModalPatients({
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
-                  <FiChevronDown size={14} />
                 </div>
               </div>
 

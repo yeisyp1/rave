@@ -270,8 +270,8 @@
   gap: 8px;
   height: 44px;
   padding: 0 20px;
-  background: var(--sidebar-active-bg);
-  color: var(sidebar-brand-text);
+  background: linear-gradient(135deg, var(--gold) 0%, #a06828 100%);
+  color: #fff;
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -293,6 +293,28 @@
   color: var(--gold);
   background: var(--gold-pale);
 }
+
+.pt-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--pt-text-soft);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pt-btn-ghost:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold-border);
+  color: var(--gold);
+}
+
 
 .pt-btn-danger {
   display: inline-flex;
@@ -358,24 +380,4 @@
   color: var(--pt-danger);
 }
 
-.pt-btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  background: transparent;
-  color: var(--pt-text-soft);
-  border: 1px solid transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pt-btn-ghost:hover {
-  background: var(--gold-pale);
-  border-color: var(--gold-border);
-  color: var(--gold);
-}
 

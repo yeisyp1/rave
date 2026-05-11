@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar } from '../app/store'
 import { supabase } from '../dao/SupabaseDAO'
 import '../styles/SidebarVW.css'
+import logoLight from '../assets/logo1.png'
+import logoDark from '../assets/logo.png'
 import {
   FiActivity,
   FiUsers,
@@ -67,7 +69,10 @@ const Sidebar = ({ profile }) => {
     <>
       <aside className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-brand-n">RA</div>
+          <div className="sidebar-brand-n sidebar-brand-logo" aria-label="RAVE">
+            <img className="sidebar-brand-img sidebar-brand-img-light" src={logoLight} alt="RAVE" />
+            <img className="sidebar-brand-img sidebar-brand-img-dark" src={logoDark} alt="RAVE" />
+          </div>
           {isMobile && open && (
             <button
               className="sidebar-close-btn"
