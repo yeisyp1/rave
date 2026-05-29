@@ -2,7 +2,7 @@ import '../styles/BillingVW.css'
 import { useEffect, useState } from 'react'
 import { getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
-import ModalNewInvoiceVW from '../modals/ModalNewInvoiceVW'
+import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
 
 const BillingVW = () => {
   const [invoices, setInvoices] = useState([])

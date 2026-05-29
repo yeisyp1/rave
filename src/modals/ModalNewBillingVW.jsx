@@ -8,7 +8,7 @@ import { listPatientsDAO } from '../dao/PatientsDAO';
 const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
     const [patients, setPatients] = useState([]);
     const [form, setForm] = useState({
-        patientId: '',
+        patientDocument: '',
         patientName: '',
         date: new Date().toISOString().slice(0, 10),
         amount: '',
@@ -37,11 +37,10 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'patientId') {
-            // patientId field now holds the patient document number
+        if (name === 'patientDocument') {
             const matched = patients.find((p) => String(p.numero_documento) === String(value));
             const fullname = matched ? `${matched.nombre ?? ''} ${matched.apellidos ?? ''}`.trim() : '';
-            setForm((p) => ({ ...p, patientId: value, patientName: fullname || p.patientName }));
+            setForm((p) => ({ ...p, patientDocument: value, patientName: fullname }));
             return;
         }
         setForm((p) => ({ ...p, [name]: value }));
@@ -51,10 +50,10 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            // Find patient by document number (form.patientId stores the document now)
-            const patient = patients.find((p) => String(p.numero_documento) === String(form.patientId));
+            const patient = patients.find((p) => String(p.numero_documento) === String(form.patientDocument));
             const payload = {
                 patient_id: patient ? patient.id : null,
+                patient_document: patient ? String(patient.numero_documento ?? '') : form.patientDocument || null,
                 patient_name: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : form.patientName || null,
                 date: form.date,
                 amount: Number(form.amount) || 0,
@@ -78,7 +77,6 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
             <div className="pt-modal">
                 <div className="pt-modal-header">
                     <div>
-                        <div className="pt-modal-eyebrow">Clínica RAVE</div>
                         <h2 className="pt-modal-title">Nueva factura</h2>
                     </div>
                     <button className="pt-modal-close" onClick={onClose}>
@@ -89,24 +87,24 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
                 <form onSubmit={handleSubmit} className="pt-modal-body">
                     <div className="pt-form-grid">
                         <div className="pt-field pt-field-full">
-                            <label className="pt-label">Paciente</label>
+                            <label className="pt-label">Documento del paciente</label>
                             <input
                                 list="billing-patient-list"
-                                name="patientId"
-                                value={form.patientId}
+                                name="patientDocument"
+                                value={form.patientDocument}
                                 onChange={handleChange}
-                                placeholder="Selecciona paciente (id) o deja en blanco"
+                                placeholder="Selecciona o escribe el número de documento"
                                 className="pt-input"
                             />
                             <datalist id="billing-patient-list">
                                 {patients.map((p) => (
-                                    <option key={p.id} value={p.id}>{`${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()}</option>
+                                    <option key={p.id} value={String(p.numero_documento ?? '')}>{`${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()} - ${String(p.numero_documento ?? '')}</option>
                                 ))}
                             </datalist>
                         </div>
 
                         <div className="pt-field">
-                            <label className="pt-label">Nombre paciente (fallback)</label>
+                            <label className="pt-label">Nombre paciente</label>
                             <input name="patientName" value={form.patientName} onChange={handleChange} className="pt-input" />
                         </div>
 
