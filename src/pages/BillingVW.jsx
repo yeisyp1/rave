@@ -1,9 +1,34 @@
 import '../styles/BillingVW.css'
+import { useEffect, useState } from 'react'
 import { getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
+import ModalNewInvoiceVW from '../modals/ModalNewInvoiceVW'
 
 const BillingVW = () => {
-  const { invoices, totalIncome, totalPending, totalAll } = getBillingCtrlData()
+  const [invoices, setInvoices] = useState([])
+  const [totalIncome, setTotalIncome] = useState(0)
+  const [totalPending, setTotalPending] = useState(0)
+  const [totalAll, setTotalAll] = useState(0)
+
+  const load = async () => {
+    const { invoices, totalIncome, totalPending, totalAll } = await getBillingCtrlData()
+    setInvoices(invoices)
+    setTotalIncome(totalIncome)
+    setTotalPending(totalPending)
+    setTotalAll(totalAll)
+  }
+
+  useEffect(() => {
+    let mounted = true
+    const run = async () => {
+      if (!mounted) return
+      await load()
+    }
+    run()
+    return () => { mounted = false }
+  }, [])
+
+  const [showNewInvoiceModal, setShowNewInvoiceModal] = useState(false)
 
   return (
     <div className="bl-page">
@@ -12,10 +37,19 @@ const BillingVW = () => {
           <div className="bl-eyebrow">Clinica RAVE</div>
           <h1 className="bl-title">Pagos</h1>
         </div>
-        <button className="bl-btn-primary">
+        <button className="bl-btn-primary" onClick={() => setShowNewInvoiceModal(true)}>
           <FiPlus size={15} />
           Nueva Factura
         </button>
+        {showNewInvoiceModal && (
+          <ModalNewInvoiceVW
+            onClose={() => setShowNewInvoiceModal(false)}
+            onSaved={async () => {
+              setShowNewInvoiceModal(false)
+              await load()
+            }}
+          />
+        )}
       </div>
 
       <div className="bl-stats">
