@@ -233,7 +233,7 @@ const DoctorsVW = () => {
                       <td>{profile?.id ?? '-'}</td>
                       <td>
                         <button className="admin-btn danger" onClick={() => handleRemove(row)}>
-                          <FiTrash2 /> Quitar
+                          <FiTrash2 /> Desactivar
                         </button>
                       </td>
                     </tr>

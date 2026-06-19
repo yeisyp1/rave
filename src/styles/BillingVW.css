@@ -224,18 +224,19 @@
 }
 
 .bl-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), var(--blue-deep));
+  background: var(--blue-deep);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--white);
+  color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(201,147,74,0.25);
+  box-shadow: 0 2px 8px rgba(201, 147, 74, 0.30);
 }
 
 .bl-patient-name {
@@ -277,6 +278,61 @@
   background: var(--danger-bg);
   color: var(--bl-danger);
   border: 1px solid var(--danger-border);
+}
+
+.bl-status-select {
+  min-width: 116px;
+  height: 30px;
+  padding: 0 26px 0 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 10px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+}
+
+.bl-status-select:focus {
+  border-color: rgba(201, 147, 74, 0.65);
+  box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.10);
+}
+
+.bl-status-select.paid {
+  background: var(--success-bg);
+  color: var(--bl-success);
+  border-color: var(--success-border);
+}
+
+.bl-status-select.pending {
+  background: var(--danger-bg);
+  color: var(--bl-danger);
+  border-color: var(--danger-border);
+}
+
+.bl-badge.void {
+  background: rgba(120, 130, 145, 0.12);
+  color: #6b7280;
+  border: 1px solid rgba(120, 130, 145, 0.25);
+}
+
+.bl-status-select.void {
+  background: rgba(120, 130, 145, 0.12);
+  color: #6b7280;
+  border-color: rgba(120, 130, 145, 0.25);
 }
 
 /* ─────────────────────────────
@@ -363,3 +419,31 @@
 @media (max-width: 480px) {
   .bl-stats  { grid-template-columns: 1fr 1fr; }
 }
+
+/* Invoice printable layout (used in modal and PDF preview) */
+.inv-printable { font-family: 'Nunito', sans-serif; color: var(--bl-text); }
+.inv-header { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--bl-border); }
+.inv-logo { width:48px; height:auto }
+.inv-title { margin-left:auto; font-weight:700; font-size:18px; color:var(--bl-text) }
+.inv-meta { text-align:right; color:var(--bl-soft); font-size:12px }
+.inv-from-to { display:flex; justify-content:space-between; gap:16px; padding:18px 0 }
+.inv-eyebrow { font-size:11px; font-weight:700; color:var(--gold) }
+.inv-clinic { font-weight:700; color:var(--sidebar-active-text); font-size:14px }
+.inv-sub { color:var(--bl-muted); font-size:13px }
+.inv-label { font-weight:700; color:var(--bl-soft); margin-bottom:6px }
+.inv-patient { font-weight:700; color:var(--bl-text); font-size:15px }
+.inv-meta-small { color:var(--bl-muted); font-size:12px }
+.inv-table { width:100%; border-collapse:collapse; margin-top:8px }
+.inv-table th, .inv-table td { border:1px solid var(--bl-border); padding:10px; text-align:left; font-size:13px }
+.inv-totals { display:flex; justify-content:flex-end; gap:12px; margin-top:14px; align-items:flex-start }
+.inv-totals-labels { text-align:right; color:var(--bl-muted); margin-right:8px }
+.inv-totals-values { text-align:right; font-weight:700 }
+.inv-total-bold { font-weight:800; color:var(--sidebar-active-text) }
+.inv-notes { margin-top:18px }
+.inv-notes-title { font-weight:700; color:var(--sidebar-active-text); margin-bottom:6px }
+.inv-notes-body { color:var(--bl-text); background:var(--bl-card); padding:10px; border-radius:8px }
+.inv-input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--bl-border); background:var(--bl-card); color:var(--bl-text); }
+.inv-footer { margin-top:14px; color:var(--bl-muted); font-size:12px }
+
+/* Modal wide utility */
+.pt-modal-wide { max-width: 960px; width: calc(100% - 40px); }

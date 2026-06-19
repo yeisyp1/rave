@@ -30,6 +30,12 @@
   transition: background 0.3s ease;
 }
 
+/* Wide modal variant (override smaller default) */
+.pt-modal.pt-modal-wide { max-width: 820px; }
+
+/* Ensure modal body scrolls when content is tall */
+.pt-modal .pt-modal-body { max-height: 72vh; overflow: auto; }
+
 [data-theme="dark"] .pt-modal {
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.50);
 }

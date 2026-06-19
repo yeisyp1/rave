@@ -5,6 +5,7 @@ import {
   connectGoogleCalendarCtrl,
   createGoogleEventCtrl,
   getGoogleTokenCtrl,
+  listAppointmentPatientsCtrl,
 } from '../controllers/CalendarCtrl'
 import '../styles/AdminViewsVW.css'
 
@@ -14,9 +15,11 @@ const AgendarCitaVW = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const patient = location.state?.patient
+  const [patients, setPatients] = useState([])
   const [googleToken, setGoogleToken] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [showSuccessNotice, setShowSuccessNotice] = useState(false)
   const [form, setForm] = useState({
     patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
     document: patient?.numero_documento ?? '',
@@ -31,6 +34,73 @@ const AgendarCitaVW = () => {
   useEffect(() => {
     getGoogleTokenCtrl().then(setGoogleToken)
   }, [])
+
+  useEffect(() => {
+    let mounted = true
+    const loadPatients = async () => {
+      try {
+        const data = await listAppointmentPatientsCtrl()
+        if (mounted) setPatients(data ?? [])
+      } catch (error) {
+        console.error('No se pudieron cargar los pacientes para agendar cita:', error)
+        if (mounted) setPatients([])
+      }
+    }
+
+    loadPatients()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!patient) return
+    setForm((current) => ({
+      ...current,
+      patientName: `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim(),
+      document: patient?.numero_documento ?? '',
+    }))
+  }, [patient])
+
+  useEffect(() => {
+    if (!showSuccessNotice) return undefined
+
+    const timer = window.setTimeout(() => {
+      setShowSuccessNotice(false)
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [showSuccessNotice])
+
+  const normalizeText = (value) => String(value ?? '').trim().toLowerCase()
+
+  const findPatientMatch = (field, value) => {
+    const normalizedValue = normalizeText(value)
+    if (!normalizedValue) return null
+
+    return patients.find((item) => {
+      const fullName = `${item.nombre ?? ''} ${item.apellidos ?? ''}`.trim()
+      if (field === 'document') return normalizeText(item.numero_documento) === normalizedValue
+      return normalizeText(fullName) === normalizedValue
+    })
+  }
+
+  const handlePatientChange = (field, value) => {
+    const matchedPatient = findPatientMatch(field, value)
+    if (matchedPatient) {
+      setForm((current) => ({
+        ...current,
+        patientName: `${matchedPatient.nombre ?? ''} ${matchedPatient.apellidos ?? ''}`.trim(),
+        document: matchedPatient.numero_documento ?? '',
+      }))
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -59,7 +129,8 @@ const AgendarCitaVW = () => {
         start,
         end,
       })
-      setMessage('Cita creada en Google Calendar.')
+      setMessage('')
+      setShowSuccessNotice(true)
     } catch (error) {
       console.error(error)
       setMessage('No se pudo crear la cita. Verifica la conexion con Google Calendar.')
@@ -86,31 +157,27 @@ const AgendarCitaVW = () => {
         </div>
       </div>
 
-      <div className="admin-grid">
-        <div className="admin-card admin-stat">
-          <div><div className="admin-stat-value">{googleToken ? 'Si' : 'No'}</div><div className="admin-stat-label">Google conectado</div></div>
-          <span className="admin-icon"><FiCheckCircle /></span>
-        </div>
-        <div className="admin-card admin-stat">
-          <div><div className="admin-stat-value">{form.startTime}</div><div className="admin-stat-label">hora inicial</div></div>
-          <span className="admin-icon"><FiClock /></span>
-        </div>
-        <div className="admin-card admin-stat">
-          <div><div className="admin-stat-value">{form.date}</div><div className="admin-stat-label">fecha</div></div>
-          <span className="admin-icon"><FiCalendar /></span>
-        </div>
-      </div>
-
       <div className="admin-card">
         <h2 className="admin-card-title">Datos de la cita</h2>
         <form className="admin-form" onSubmit={handleSubmit}>
           <div className="admin-field">
             <label>Paciente</label>
-            <input className="admin-input" value={form.patientName} onChange={(event) => setForm({ ...form, patientName: event.target.value })} required />
+            <input
+              className="admin-input"
+              list="appointment-patient-names"
+              value={form.patientName}
+              onChange={(event) => handlePatientChange('patientName', event.target.value)}
+              required
+            />
           </div>
           <div className="admin-field">
             <label>Documento</label>
-            <input className="admin-input" value={form.document} onChange={(event) => setForm({ ...form, document: event.target.value })} />
+            <input
+              className="admin-input"
+              list="appointment-patient-documents"
+              value={form.document}
+              onChange={(event) => handlePatientChange('document', event.target.value)}
+            />
           </div>
           <div className="admin-field span-2">
             <label>Servicio</label>
@@ -144,6 +211,29 @@ const AgendarCitaVW = () => {
         </form>
         {message && <p className="admin-message">{message}</p>}
       </div>
+
+      <datalist id="appointment-patient-names">
+        {patients.map((item) => {
+          const fullName = `${item.nombre ?? ''} ${item.apellidos ?? ''}`.trim()
+          return <option key={item.id} value={fullName}>{item.numero_documento}</option>
+        })}
+      </datalist>
+
+      <datalist id="appointment-patient-documents">
+        {patients.map((item) => {
+          const fullName = `${item.nombre ?? ''} ${item.apellidos ?? ''}`.trim()
+          return <option key={item.id} value={item.numero_documento}>{fullName}</option>
+        })}
+      </datalist>
+
+      {showSuccessNotice && (
+        <div className="admin-toast" role="status" aria-live="polite">
+          <div className="admin-toast-bar" />
+          <div>
+            <div className="admin-toast-text">La cita de {form.patientName} se agendó correctamete.</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

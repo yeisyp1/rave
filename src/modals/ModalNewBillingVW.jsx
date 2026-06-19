@@ -7,10 +7,23 @@ import { listPatientsDAO } from '../dao/PatientsDAO';
 
 const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
     const [patients, setPatients] = useState([]);
+<<<<<<< Updated upstream
+
+    const getLocalDate = () => {
+        const tzOffset = new Date().getTimezoneOffset() * 60000;
+        return new Date(Date.now() - tzOffset).toISOString().slice(0, 10);
+    };
+
     const [form, setForm] = useState({
         patientDocument: '',
         patientName: '',
+        date: getLocalDate(),
+=======
+    const [form, setForm] = useState({
+        patientId: '',
+        patientName: '',
         date: new Date().toISOString().slice(0, 10),
+>>>>>>> Stashed changes
         amount: '',
         status: 'Pendiente',
         notes: '',
@@ -22,7 +35,10 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
         const load = async () => {
             try {
                 const result = await listPatientsDAO();
+<<<<<<< Updated upstream
+=======
                 // listPatientsDAO historically returns { data, error }
+>>>>>>> Stashed changes
                 const data = Array.isArray(result) ? result : result?.data;
                 if (result?.error) throw result.error;
                 if (mounted) setPatients(data ?? []);
@@ -37,10 +53,22 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+<<<<<<< Updated upstream
+<<<<<<<< Updated upstream:src/modals/ModalNewBillingVW.jsx
         if (name === 'patientDocument') {
+========
+        if (name === 'patientId') {
+>>>>>>>> Stashed changes:src/modals/ModalNewInvoiceVW.jsx
             const matched = patients.find((p) => String(p.numero_documento) === String(value));
             const fullname = matched ? `${matched.nombre ?? ''} ${matched.apellidos ?? ''}`.trim() : '';
             setForm((p) => ({ ...p, patientDocument: value, patientName: fullname }));
+=======
+        if (name === 'patientId') {
+            // patientId field now holds the patient document number
+            const matched = patients.find((p) => String(p.numero_documento) === String(value));
+            const fullname = matched ? `${matched.nombre ?? ''} ${matched.apellidos ?? ''}`.trim() : '';
+            setForm((p) => ({ ...p, patientId: value, patientName: fullname || p.patientName }));
+>>>>>>> Stashed changes
             return;
         }
         setForm((p) => ({ ...p, [name]: value }));
@@ -50,22 +78,42 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
         e.preventDefault();
         setSaving(true);
         try {
+<<<<<<< Updated upstream
+<<<<<<<< Updated upstream:src/modals/ModalNewBillingVW.jsx
             const patient = patients.find((p) => String(p.numero_documento) === String(form.patientDocument));
+========
+            const patient = patients.find((p) => String(p.numero_documento) === String(form.patientId));
+            const dateValue = form.date || getLocalDate();
+>>>>>>>> Stashed changes:src/modals/ModalNewInvoiceVW.jsx
             const payload = {
                 patient_id: patient ? patient.id : null,
                 patient_document: patient ? String(patient.numero_documento ?? '') : form.patientDocument || null,
+=======
+            const patient = patients.find((p) => String(p.numero_documento) === String(form.patientId));
+            const dateValue = form.date || new Date().toISOString().slice(0, 10);
+            const payload = {
+                patient_id: patient ? patient.id : null,
+>>>>>>> Stashed changes
                 patient_name: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : form.patientName || null,
-                date: form.date,
+                date: dateValue,
                 amount: Number(form.amount) || 0,
                 status: form.status,
                 metadata: { notes: form.notes },
             };
 
+<<<<<<< Updated upstream
+            console.debug('Creating invoice payload:', payload);
+=======
+>>>>>>> Stashed changes
+
             const created = await createBillingInvoiceDAO(payload);
             onSaved(created);
             onClose();
         } catch (err) {
+<<<<<<< Updated upstream
             console.error('Error creando factura:', err);
+=======
+>>>>>>> Stashed changes
             alert('Error guardando factura: ' + (err.message ?? String(err)));
         } finally {
             setSaving(false);
@@ -77,6 +125,10 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
             <div className="pt-modal">
                 <div className="pt-modal-header">
                     <div>
+<<<<<<< Updated upstream
+=======
+                        <div className="pt-modal-eyebrow">Clínica RAVE</div>
+>>>>>>> Stashed changes
                         <h2 className="pt-modal-title">Nueva factura</h2>
                     </div>
                     <button className="pt-modal-close" onClick={onClose}>
@@ -90,21 +142,44 @@ const ModalNewInvoiceVW = ({ onClose = () => { }, onSaved = () => { } }) => {
                             <label className="pt-label">Documento del paciente</label>
                             <input
                                 list="billing-patient-list"
+<<<<<<< Updated upstream
                                 name="patientDocument"
                                 value={form.patientDocument}
                                 onChange={handleChange}
+<<<<<<<< Updated upstream:src/modals/ModalNewBillingVW.jsx
                                 placeholder="Selecciona o escribe el número de documento"
+========
+                                placeholder="Selecciona el número de documento"
+>>>>>>>> Stashed changes:src/modals/ModalNewInvoiceVW.jsx
+=======
+                                name="patientId"
+                                value={form.patientId}
+                                onChange={handleChange}
+                                placeholder="Selecciona el número de documento"
+>>>>>>> Stashed changes
                                 className="pt-input"
                             />
                             <datalist id="billing-patient-list">
                                 {patients.map((p) => (
+<<<<<<< Updated upstream
+<<<<<<<< Updated upstream:src/modals/ModalNewBillingVW.jsx
                                     <option key={p.id} value={String(p.numero_documento ?? '')}>{`${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()} - ${String(p.numero_documento ?? '')}</option>
+========
+                                    <option key={p.id} value={p.numero_documento}>{`${p.numero_documento} — ${`${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()}`}</option>
+>>>>>>>> Stashed changes:src/modals/ModalNewInvoiceVW.jsx
+=======
+                                    <option key={p.id} value={p.numero_documento}>{`${p.numero_documento} — ${`${p.nombre ?? ''} ${p.apellidos ?? ''}`.trim()}`}</option>
+>>>>>>> Stashed changes
                                 ))}
                             </datalist>
                         </div>
 
                         <div className="pt-field">
+<<<<<<< Updated upstream
                             <label className="pt-label">Nombre paciente</label>
+=======
+                            <label className="pt-label">Nombre paciente (fallback)</label>
+>>>>>>> Stashed changes
                             <input name="patientName" value={form.patientName} onChange={handleChange} className="pt-input" />
                         </div>
 

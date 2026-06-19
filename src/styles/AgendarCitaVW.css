@@ -581,9 +581,7 @@
   animation: cl-spin 0.7s linear infinite;
 }
 
-/* ─────────────────────────────
-   RESPONSIVE
-───────────────────────────── */
+/* RESPONSIVE*/
 @media (max-width: 768px) {
   .cl-page        { padding: 20px 16px; }
   .cl-title       { font-size: 26px; }

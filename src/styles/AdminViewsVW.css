@@ -143,6 +143,13 @@
   flex-wrap: wrap;
 }
 
+/* Place form actions on the right column when using the full grid form */
+.admin-form.full .admin-actions {
+  grid-column: 4 / 5;
+  justify-self: end;
+  align-self: center;
+}
+
 .admin-btn {
   min-height: 38px;
   display: inline-flex;
@@ -237,6 +244,61 @@
   margin-top: 12px;
 }
 
+.admin-toast {
+  position: fixed;
+  right: 24px;
+  top: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 16px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(220, 252, 231, 0.98));
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  z-index: 60;
+}
+
+.admin-toast-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 4px;
+  width: 100%;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(90deg, #22c55e, #86efac);
+  transform-origin: left center;
+  animation: adminToastBar 3s linear forwards;
+}
+
+.admin-toast-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.admin-toast-text {
+  font-size: 13px;
+  color: #166534;
+  line-height: 1.45;
+}
+
+.admin-toast-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .admin-list {
   display: flex;
   flex-direction: column;
@@ -284,4 +346,14 @@
   .admin-field.span-2 {
     grid-column: auto;
   }
+
+  .admin-toast {
+    right: 16px;
+    top: 16px;
+  }
+}
+
+@keyframes adminToastBar {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }

@@ -420,10 +420,9 @@ BEGIN
 END;
 $$;
 
--- Nota: si prefieres que `radiographies.patient_id` sea NOT NULL, añade:
+-- Nota: si se quiere que `radiographies.patient_id` sea NOT NULL, añade:
 -- ALTER TABLE public.radiographies ALTER COLUMN patient_id SET NOT NULL;
 
--- Fin de correcciones automáticas
 
 
 

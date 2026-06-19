@@ -1,28 +1,44 @@
 import '../styles/DashboardVW.css';
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiUsers, FiCalendar, FiDollarSign, FiClock } from 'react-icons/fi'
+import { fetchDashboardCtrlData } from '../controllers/DashboardCtrl'
 
 const Dashboard = () => {
+  const navigate = useNavigate()
+  const [dashboardData, setDashboardData] = useState({
+    stats: [],
+    upcomingAppointments: [],
+    recentPayments: [],
+    monthlyActivity: [],
+  })
+  const [loading, setLoading] = useState(true)
 
-  const stats = [
-    { label: 'Pacientes', value: '245', icon: <FiUsers size={28} />, trend: '+12%', trendUp: true },
-    { label: 'Citas Hoy', value: '12', icon: <FiCalendar size={28} />, trend: '+3', trendUp: true },
-    { label: 'Ingresos', value: '$3,200', icon: <FiDollarSign size={28} />, trend: '+8%', trendUp: true },
-    { label: 'Pendientes', value: '5', icon: <FiClock size={28} />, trend: '-2', trendUp: false },
-  ];
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const data = await fetchDashboardCtrlData()
+        if (mounted) setDashboardData(data)
+      } catch (error) {
+        console.error('No se pudo cargar el dashboard:', error)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
 
-  const upcomingAppointments = [
-    { name: "Juan Pérez",    time: "9:00 AM",  type: "Revisión" },
-    { name: "María Gómez",   time: "10:30 AM", type: "Limpieza" },
-    { name: "Carlos Ruiz",   time: "2:00 PM",  type: "Ortodoncia" },
-    { name: "Laura Díaz",    time: "3:30 PM",  type: "Extracción" },
-  ];
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
-  const recentPayments = [
-    { name: "Ana Martínez", amount: "$120", status: "Pagado" },
-    { name: "Pedro Soto",   amount: "$80",  status: "Pagado" },
-    { name: "Laura Díaz",   amount: "$200", status: "Pendiente" },
-    { name: "Luis Torres",  amount: "$95",  status: "Pagado" },
-  ];
+  const stats = dashboardData.stats.length
+    ? dashboardData.stats.map((item, index) => ({
+        ...item,
+        icon: [<FiUsers size={28} />, <FiCalendar size={28} />, <FiDollarSign size={28} />, <FiClock size={28} />][index],
+      }))
+    : []
 
   return (
     <div className="db-page">
@@ -60,12 +76,11 @@ const Dashboard = () => {
           <span className="db-card-sub">Últimos 6 meses</span>
         </div>
         <div className="db-chart-area">
-          {/* Simulated bar chart */}
-          {[65, 80, 55, 90, 70, 85].map((h, i) => (
+          {(dashboardData.monthlyActivity.length ? dashboardData.monthlyActivity : [{ label: 'Sin', height: 20 }]).map((item, i) => (
             <div className="db-bar-wrap" key={i}>
-              <div className="db-bar" style={{ height: `${h}%` }} />
+              <div className="db-bar" style={{ height: `${item.height}%` }} />
               <span className="db-bar-label">
-                {["Ago","Sep","Oct","Nov","Dic","Ene"][i]}
+                {item.label}
               </span>
             </div>
           ))}
@@ -79,10 +94,12 @@ const Dashboard = () => {
         <div className="db-card">
           <div className="db-card-header">
             <span className="db-card-title">Próximas Citas</span>
-            <button className="db-card-action">Ver todas →</button>
+            <button className="db-card-action" type="button" onClick={() => navigate('/calendar')}>
+              Ver todas →
+            </button>
           </div>
           <ul className="db-list">
-            {upcomingAppointments.map((a, i) => (
+            {(dashboardData.upcomingAppointments.length ? dashboardData.upcomingAppointments : [{ name: loading ? 'Cargando...' : 'Sin citas', time: '—', type: 'Sin datos' }]).map((a, i) => (
               <li className="db-list-item" key={i}>
                 <div className="db-list-avatar">
                   {a.name[0].toUpperCase()}
@@ -101,10 +118,12 @@ const Dashboard = () => {
         <div className="db-card">
           <div className="db-card-header">
             <span className="db-card-title">Pagos Recientes</span>
-            <button className="db-card-action">Ver todos →</button>
+            <button className="db-card-action" type="button" onClick={() => navigate('/billing')}>
+              Ver todos →
+            </button>
           </div>
           <ul className="db-list">
-            {recentPayments.map((pay, i) => (
+            {dashboardData.recentPayments.map((pay, i) => (
               <li className="db-list-item" key={i}>
                 <div className="db-list-avatar">
                   {pay.name[0].toUpperCase()}
