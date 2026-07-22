@@ -407,6 +407,48 @@
 }
 
 /* ── ODONTOGRAM ── */
+/* history actions */
+.pd-history-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.pd-history-action {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.pd-history-action:hover {
+  transform: translateY(-1px);
+}
+
+.pd-history-action-edit {
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #2563eb;
+}
+
+.pd-history-action-edit:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.pd-history-action-delete {
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #dc2626;
+}
+
+.pd-history-action-delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
 .pd-odontogram-container {
   display: flex;
   flex: 1;

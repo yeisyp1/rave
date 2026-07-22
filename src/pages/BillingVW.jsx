@@ -3,13 +3,10 @@ import { useEffect, useState } from 'react'
 import { getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
 import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
-<<<<<<< Updated upstream
-=======
 import ModalViewInvoiceVW from '../modals/ModalViewInvoiceVW'
 import { jsPDF } from 'jspdf'
 import logoLight from '../assets/logo1.png'
 import { updateBillingInvoiceDAO } from '../dao/BillingDAO'
->>>>>>> Stashed changes
 
 const BillingVW = () => {
   const [invoices, setInvoices] = useState([])

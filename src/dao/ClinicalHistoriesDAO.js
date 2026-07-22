@@ -12,6 +12,28 @@ export const createClinicalHistoryDAO = async (payload) => {
   return supabase.from("clinical_histories").insert([payload]);
 };
 
+export const updateClinicalHistoryDAO = async (historyId, payload) => {
+  return supabase
+    .from("clinical_histories")
+    .update(payload)
+    .eq("id", historyId);
+};
+
+export const deleteClinicalHistoryDAO = async (historyId) => {
+  return supabase
+    .from("clinical_histories")
+    .delete()
+    .eq("id", historyId);
+};
+
+export const getClinicalHistoryByIdDAO = async (historyId) => {
+  return supabase
+    .from("clinical_histories")
+    .select("*")
+    .eq("id", historyId)
+    .single();
+};
+
 const HISTORY_LOCATION_FIELDS = [
   "ciudad_departamento",
   "city_departamento",

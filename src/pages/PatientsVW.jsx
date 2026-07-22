@@ -19,10 +19,8 @@ const PatientsVW = () => {
   const [search, setSearch] = useState("");
   const [viewPatient, setViewPatient] = useState(null);
 
-  // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => getPatients());
 
-  /* ── Cargar pacientes ── */
   const getPatients = async () => {
     setLoading(true);
     try {

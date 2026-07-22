@@ -83,18 +83,42 @@ const DoctorsVW = () => {
     setSaving(false)
   }
 
-  const handleRemove = async (row) => {
-    if (!confirm(`Quitar autorizacion de ${row.email}?`)) return
+  const handleDeactivate = async (row) => {
+    if (!confirm(`¿Desactivar a ${row.email}?`)) return
 
-    const query = supabase.from('authorized_emails').delete()
-    const { error } = row.id ? await query.eq('id', row.id) : await query.eq('email', row.email)
+    const { error } = await supabase
+      .from('authorized_emails')
+      .update({ active: false })
+      .eq('id', row.id)
 
     if (error) {
-      setMessage(`No se pudo eliminar: ${error.message}`)
+      setMessage(error.message)
       return
     }
 
     await loadUsers()
+  }
+
+  const handleActivate = async (row) => {
+    const { error } = await supabase
+      .from('authorized_emails')
+      .update({ active: true })
+      .eq('id', row.id)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    await loadUsers()
+  }
+
+  const handleEdit = (row) => {
+    setForm({
+      full_name: row.full_name ?? '',
+      email: row.email ?? '',
+      role: row.role ?? 'user', 
+    })
   }
 
   const totalAdmins = authorizedUsers.filter((user) => user.role === 'admin').length
@@ -231,11 +255,30 @@ const DoctorsVW = () => {
                       <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Equipo clínico'}</span></td>
                       <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
                       <td>{profile?.id ?? '-'}</td>
+
                       <td>
-                        <button className="admin-btn danger" onClick={() => handleRemove(row)}>
-                          <FiTrash2 /> Desactivar
-                        </button>
+                        <div className="admin-actions">
+                          <button className="admin-btn edit" onClick={() => handleEdit(row)}>
+                            <FiTrash2 /> Editar
+                          </button>
+                          {row.active ? (
+                            <button
+                              className="admin-btn danger"
+                              onClick={() => handleDeactivate(row)}
+                            >
+                              <FiTrash2 /> Desactivar
+                            </button>
+                          ) : (
+                            <button
+                              className="admin-btn success"
+                              onClick={() => handleActivate(row)}
+                            >
+                              <FiRefreshCw /> Activar
+                            </button>
+                          )}
+                        </div>
                       </td>
+
                     </tr>
                   )
                 })

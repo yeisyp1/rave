@@ -424,5 +424,92 @@ $$;
 -- ALTER TABLE public.radiographies ALTER COLUMN patient_id SET NOT NULL;
 
 
+-- 17/07/2026
+ALTER TABLE public.authorized_emails
+ADD COLUMN active boolean NOT NULL DEFAULT true;
 
+-- -----------------------
+-- 21/07/2026
+-- Storage para radiografías
+-- Crear un bucket para guardar archivos de radiografías
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('radiographies', 'radiographies', true)
+ON CONFLICT (id) DO UPDATE
+SET public = EXCLUDED.public;
+
+-- Permitir lectura a usuarios autenticados
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Allow authenticated read radiographies'
+  ) THEN
+    CREATE POLICY "Allow authenticated read radiographies"
+    ON storage.objects
+    FOR SELECT
+    TO authenticated
+    USING (bucket_id = 'radiographies');
+  END IF;
+END;
+$$;
+
+-- Permitir subida a usuarios autenticados
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Allow authenticated upload radiographies'
+  ) THEN
+    CREATE POLICY "Allow authenticated upload radiographies"
+    ON storage.objects
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'radiographies');
+  END IF;
+END;
+$$;
+
+-- Permitir actualización y borrado si lo necesitas después
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Allow authenticated update radiographies'
+  ) THEN
+    CREATE POLICY "Allow authenticated update radiographies"
+    ON storage.objects
+    FOR UPDATE
+    TO authenticated
+    USING (bucket_id = 'radiographies')
+    WITH CHECK (bucket_id = 'radiographies');
+  END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Allow authenticated delete radiographies'
+  ) THEN
+    CREATE POLICY "Allow authenticated delete radiographies"
+    ON storage.objects
+    FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'radiographies');
+  END IF;
+END;
+$$;
 

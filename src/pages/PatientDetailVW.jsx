@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dao/SupabaseDAO';
+import { deletePatientHistoryCtrl, loadPatientHistoriesCtrl } from '../controllers/HistoriaClinicaCtrl';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -27,6 +28,7 @@ const PatientDetailVW = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const [procedures, setProcedures] = useState([]);
+  const [clinicalHistories, setClinicalHistories] = useState([]);
   const [radiographies, setRadiographies] = useState([]);
   const [numberingSystem, setNumberingSystem] = useState('FDI');
   const [odontogramOpen, setOdontogramOpen] = useState(true);
@@ -34,6 +36,7 @@ const PatientDetailVW = () => {
   const [selectedRadiographies, setSelectedRadiographies] = useState([]);
   const [clinicalNote, setClinicalNote] = useState('');
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyToEdit, setHistoryToEdit] = useState(null);
 
   // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => fetchPatientData());
@@ -66,6 +69,9 @@ const PatientDetailVW = () => {
 
       if (procedureData) setProcedures(procedureData);
 
+      const clinicalHistoriesData = await loadPatientHistoriesCtrl(patientId);
+      setClinicalHistories(clinicalHistoriesData);
+
       // Fetch radiographies if exists
       const { data: radiographyData } = await supabase
         .from('radiographies')
@@ -80,6 +86,30 @@ const PatientDetailVW = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openNewHistoryModal = () => {
+    setHistoryToEdit(null);
+    setHistoryModalOpen(true);
+  };
+
+  const openEditHistoryModal = (history) => {
+    setHistoryToEdit(history);
+    setHistoryModalOpen(true);
+  };
+
+  const handleDeleteHistory = async (history) => {
+    const confirmed = window.confirm('¿Seguro que quieres eliminar esta historia clínica?');
+    if (!confirmed) return;
+
+    const result = await deletePatientHistoryCtrl(history.id);
+    if (!result.ok) {
+      alert(result.message);
+      return;
+    }
+
+    alert(result.message);
+    await fetchPatientData();
   };
 
   const patientName = patient
@@ -261,12 +291,54 @@ const PatientDetailVW = () => {
           <div className="pd-tab-content">
             <div className="pd-section">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <h3 className="pd-section-title" style={{ margin: 0 }}>Procedimientos Recientes</h3>
-                <button className="pd-btn-action-primary" type="button" onClick={() => setHistoryModalOpen(true)}>
+                <h3 className="pd-section-title" style={{ margin: 0 }}>Historias clínicas registradas</h3>
+                <button className="pd-btn-action-primary" type="button" onClick={openNewHistoryModal}>
                   <FiPlus size={14} />
                   Nueva historia clínica
                 </button>
               </div>
+              {clinicalHistories.length > 0 ? (
+                <div className="mhc-histories-list" style={{ marginTop: 0 }}>
+                  {clinicalHistories.map((history) => {
+                    const historyData = history.history_data ?? {};
+                    return (
+                      <div key={history.id} className="mhc-history-card">
+                        <div className="mhc-history-date">
+                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-ES", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                        <div className="mhc-history-summary">
+                          <span><b>Doctor:</b> {history.doctor || historyData.doctor || '—'}</span>
+                          <span><b>Medio de remisión:</b> {history.medio_remision || historyData.medio_remision || '—'}</span>
+                          <span><b>Motivo:</b> {history.motivo_consulta || historyData.motivo_consulta || '—'}</span>
+                        </div>
+                        <div className="pd-history-actions">
+                          <button
+                            type="button"
+                            className="pd-history-action pd-history-action-edit"
+                            onClick={() => openEditHistoryModal(history)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="pd-history-action pd-history-action-delete"
+                            onClick={() => handleDeleteHistory(history)}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+
               {procedures.length > 0 ? (
                 <div className="pd-procedures-table">
                   <table>
@@ -316,85 +388,6 @@ const PatientDetailVW = () => {
                 </div>
               </div>
             </details>
-
-            <details className="pd-accordion pd-accordion-media" open={mediaOpen} onToggle={(event) => setMediaOpen(event.currentTarget.open)}>
-              <summary className="pd-accordion-summary">
-                <span>Radiografías y notas clínicas</span>
-                <span className="pd-accordion-chevron"><FiChevronDown size={14} /></span>
-              </summary>
-              <div className="pd-accordion-body">
-                <div className="pd-media-grid">
-                  <div className="pd-media-panel">
-                    <h3 className="pd-section-title">Subir radiografías</h3>
-                    <label className="pd-upload-box">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="pd-upload-input"
-                        onChange={(event) => setSelectedRadiographies(Array.from(event.target.files ?? []))}
-                      />
-                      <span>Haz clic o arrastra aquí tus archivos</span>
-                      <small>JPG, PNG o WEBP</small>
-                    </label>
-
-                    {selectedRadiographies.length > 0 && (
-                      <div className="pd-upload-list">
-                        {selectedRadiographies.map((file) => (
-                          <div key={`${file.name}-${file.lastModified}`} className="pd-upload-item">
-                            <FiImage size={14} />
-                            <span>{file.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pd-media-panel">
-                    <h3 className="pd-section-title">Notas clínicas</h3>
-                    <textarea
-                      className="pd-notes-textarea"
-                      placeholder="Escribe aquí las notas clínicas del paciente..."
-                      value={clinicalNote}
-                      onChange={(event) => setClinicalNote(event.target.value)}
-                    />
-                    <div className="pd-media-actions">
-                      <button className="pd-btn-primary" type="button">
-                        <FiSave size={14} />
-                        Guardar nota
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {radiographies.length > 0 && (
-                  <div className="pd-section pd-section-radiographies">
-                    <h3 className="pd-section-title">Radiografías registradas</h3>
-                    <div className="pd-radiographies">
-                      {radiographies.map((radio) => (
-                        <div key={radio.id} className="pd-radiography-item">
-                          {radio.image_url ? (
-                            <img
-                              src={radio.image_url}
-                              alt={radio.type || 'Radiografía'}
-                              className="pd-radiography-image"
-                            />
-                          ) : (
-                            <div className="pd-radiography-placeholder">
-                              <FiImage size={24} />
-                            </div>
-                          )}
-                          <p className="pd-radiography-type">{radio.type || 'Radiografía'}</p>
-                          <p className="pd-radiography-date">
-                            {radio.created_at?.split('T')[0] || '—'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </details>
           </div>
         )}
       </div>
@@ -415,8 +408,12 @@ const PatientDetailVW = () => {
       {historyModalOpen && (
         <ModalHistoriaClinicaVW
           patient={patient}
-          onClose={() => setHistoryModalOpen(false)}
+          onClose={() => {
+            setHistoryModalOpen(false);
+            setHistoryToEdit(null);
+          }}
           startInForm={true}
+          initialHistory={historyToEdit}
         />
       )}
     </div>

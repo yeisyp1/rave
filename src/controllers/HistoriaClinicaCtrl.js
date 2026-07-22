@@ -1,5 +1,7 @@
 import {
   createClinicalHistoryDAO,
+  deleteClinicalHistoryDAO,
+  updateClinicalHistoryDAO,
   getCurrentDoctorLabelDAO,
   listHistoryCityDepartmentsDAO,
   listClinicalHistoriesByPatientDAO,
@@ -124,26 +126,27 @@ export const loadHistoryCityDepartmentsCtrl = async () => {
   return data ?? [];
 };
 
-export const createPatientHistoryCtrl = async (
+const buildHistoryData = (form, doctor) => ({
+  ...form,
+  doctor: doctor || "",
+});
+
+const savePatientHistoryCtrl = async (
   patientId,
   form,
   originalPatientData = null,
+  historyId = null,
 ) => {
   if (!form.motivo_consulta?.trim()) {
     return { ok: false, message: "El motivo de consulta es obligatorio" };
   }
 
   const doctor = await getCurrentDoctorLabelDAO();
-  const historyData = {
-    ...form,
-    doctor: doctor || "",
-  };
-
+  const historyData = buildHistoryData(form, doctor);
   const fecha = form.fecha
     ? new Date(form.fecha).toISOString()
     : new Date().toISOString();
 
-  // Detect patient field changes if originalPatientData is provided
   const patientChanges = {};
   if (originalPatientData) {
     const mappings = {
@@ -169,29 +172,31 @@ export const createPatientHistoryCtrl = async (
     }
   }
 
-  // Create clinical history
-  const { error: historyError } = await createClinicalHistoryDAO({
+  const payload = {
     patient_id: patientId,
     doctor: doctor || null,
     medio_remision: form.medio_remision,
     fecha,
     motivo_consulta: form.motivo_consulta,
     history_data: historyData,
-  });
+  };
 
-  if (historyError)
+  const { error: historyError } = historyId
+    ? await updateClinicalHistoryDAO(historyId, payload)
+    : await createClinicalHistoryDAO(payload);
+
+  if (historyError) {
     return {
       ok: false,
-      message: "Error al guardar la historia clínica",
+      message: historyId
+        ? "Error al actualizar la historia clínica"
+        : "Error al guardar la historia clínica",
       error: historyError,
     };
+  }
 
-  // Update patient fields if there are changes
   if (Object.keys(patientChanges).length > 0) {
-    const { error: updateError } = await updatePatientDAO(
-      patientId,
-      patientChanges,
-    );
+    const { error: updateError } = await updatePatientDAO(patientId, patientChanges);
     if (updateError) {
       console.error("Error actualizando datos del paciente:", updateError);
       return {
@@ -203,5 +208,38 @@ export const createPatientHistoryCtrl = async (
     }
   }
 
-  return { ok: true, message: "Historia clínica guardada exitosamente" };
+  return {
+    ok: true,
+    message: historyId
+      ? "Historia clínica actualizada exitosamente"
+      : "Historia clínica guardada exitosamente",
+  };
+};
+
+export const createPatientHistoryCtrl = async (
+  patientId,
+  form,
+  originalPatientData = null,
+) => savePatientHistoryCtrl(patientId, form, originalPatientData, null);
+
+export const updatePatientHistoryCtrl = async (
+  patientId,
+  historyId,
+  form,
+) => savePatientHistoryCtrl(patientId, form, null, historyId);
+
+export const deletePatientHistoryCtrl = async (historyId) => {
+  const { error } = await deleteClinicalHistoryDAO(historyId);
+  if (error) {
+    return {
+      ok: false,
+      message: "Error al eliminar la historia clínica",
+      error,
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Historia clínica eliminada exitosamente",
+  };
 };
