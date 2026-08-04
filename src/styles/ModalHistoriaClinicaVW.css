@@ -593,3 +593,116 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── DARK MODE ── */
+[data-theme="dark"] .mhc-overlay {
+  background: rgba(8, 18, 32, 0.80);
+}
+
+[data-theme="dark"] .mhc-modal {
+  background: #162d47;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.50);
+}
+
+[data-theme="dark"] .mhc-modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mhc-modal-title,
+[data-theme="dark"] .mhc-form-title,
+[data-theme="dark"] .mhc-form-title-inline,
+[data-theme="dark"] .mhc-mini-title,
+[data-theme="dark"] .mhc-history-label,
+[data-theme="dark"] .mhc-histories-header h3,
+[data-theme="dark"] .mhc-status-label,
+[data-theme="dark"] .mhc-label {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .mhc-patient-name,
+[data-theme="dark"] .mhc-history-section p,
+[data-theme="dark"] .mhc-history-summary {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .mhc-modal-close {
+  color: rgba(255, 255, 255, 0.55);
+}
+[data-theme="dark"] .mhc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .mhc-accordion {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #0f2236;
+}
+
+[data-theme="dark"] .mhc-accordion-summary {
+  background: linear-gradient(180deg, #162d47, #0f2236);
+  color: #e2e8f0;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .mhc-mini-panel {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #0f2236;
+}
+
+[data-theme="dark"] .mhc-select-icon {
+  color: rgba(201, 147, 74, 0.6);
+}
+
+[data-theme="dark"] .mhc-input,
+[data-theme="dark"] .mhc-textarea {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+[data-theme="dark"] .mhc-input::placeholder,
+[data-theme="dark"] .mhc-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme="dark"] .mhc-form-actions {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mhc-histories-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mhc-history-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #0f2236;
+}
+[data-theme="dark"] .mhc-history-card:hover {
+  border-color: var(--gold);
+  background: rgba(201, 147, 74, 0.10);
+}
+
+[data-theme="dark"] .mhc-history-date {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mhc-empty,
+[data-theme="dark"] .mhc-loading {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme="dark"] .mhc-spinner {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .mhc-btn-ghost {
+  color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .mhc-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .mhc-history-summary span b {
+  color: #e2e8f0;
+}

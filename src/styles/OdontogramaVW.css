@@ -7,3 +7,25 @@
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
+
+/* Odontograma dark mode overrides */
+.odontogram-root {
+  --odon-bg: var(--bg-primary, #f3f6fb);
+  --odon-panel: var(--bg-secondary, #ffffff);
+  --odon-card: var(--bg-secondary, #ffffff);
+  --odon-muted: var(--text-secondary, #5b6b7d);
+  --odon-text: var(--text-primary, #1e2a3a);
+  --odon-line: var(--border-color, #d7e0ec);
+  --odon-accent: var(--button-primary, #3b7bff);
+  --odon-accent2: #12b981;
+}
+
+[data-theme="dark"] .odontogram-root {
+  --odon-bg: var(--bg-primary, #0f172a);
+  --odon-panel: var(--bg-secondary, #1e293b);
+  --odon-card: var(--bg-secondary, #1e293b);
+  --odon-muted: var(--text-secondary, #94a3b8);
+  --odon-text: var(--text-primary, #f1f5f9);
+  --odon-line: var(--border-color, #334155);
+  --odon-accent: var(--button-primary, #A2CDFF);
+}

@@ -72,6 +72,25 @@
   animation: cl-spin 0.6s linear infinite;
 }
 
+[data-theme="dark"] .cl-view-field label {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .cl-view-value {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.cl-spinner { border-top-color: white; }
+
+@media (prefers-color-scheme: dark) {
+  .cl-spinner {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: rgba(255, 255, 255, 0.9);
+  }
+}
+
 @keyframes cl-spin {
   to {
     transform: rotate(360deg);

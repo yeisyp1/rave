@@ -4,7 +4,7 @@ import moment from 'moment'
 import 'moment/locale/es'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import '../styles/CalendarVW.css'
-import { FiRefreshCw, FiPlus, FiAlertCircle } from 'react-icons/fi'
+import { FiRefreshCw, FiPlus, FiAlertCircle, FiX } from 'react-icons/fi'
 import {
   connectGoogleCalendarCtrl,
   createGoogleEventCtrl,
@@ -15,6 +15,7 @@ import {
   syncGoogleEventsCtrl,
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
+import { getPatientByDocument } from '../dao/SupabaseDAO'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
 import ModalViewEventVW from '../modals/ModalViewEventVW'
 
@@ -38,6 +39,7 @@ const CalendarVW = () => {
   const [deleting,      setDeleting]      = useState(false)
   const [patientOptions, setPatientOptions] = useState([])
   const [serviceOptions, setServiceOptions] = useState([])
+  const [patientValidationError, setPatientValidationError] = useState(null)
 
   /* ── Al montar: obtener token y cargar eventos ── */
   useEffect(() => {
@@ -56,10 +58,10 @@ const CalendarVW = () => {
         if (token) await syncEvents(token)
       } catch (err) {
         console.error(err)
-      }
     }
-    init()
-  }, [])
+      }
+      init()
+    }, [])
 
   /* ── Sincronizar con Google Calendar ── */
   const syncEvents = useCallback(async (token = googleToken) => {
@@ -84,17 +86,60 @@ const CalendarVW = () => {
   }
 
   /* ── Guardar nueva cita en Google Calendar ── */
-  const handleSaveEvent = async ({ title, description, location, start, end }) => {
+  const handleSaveEvent = async ({
+    title,
+    description,
+    location,
+    start,
+    end
+  }) => {
+
     setSaving(true)
+
     try {
-      const newEv = await createGoogleEventCtrl(googleToken, { title, start, end, description, location })
-      setEvents((prev) => [...prev, newEv])
+
+      const titleText = title || ''
+      const documentMatch = titleText.match(/-\s*(\S+)$/)
+      const document = documentMatch ? documentMatch[1] : ''
+
+      if (document) {
+
+        const patientExists = await getPatientByDocument(document)
+
+        if (!patientExists) {
+
+          setPatientValidationError(
+            `El paciente con documento ${document} no está registrado en la base de datos. No se puede guardar la cita.`
+          )
+
+          setSaving(false)
+          return
+        }
+      }
+
+      const newEv = await createGoogleEventCtrl(
+        googleToken,
+        {
+          title,
+          start,
+          end,
+          description,
+          location
+        }
+      )
+
+      setEvents(prev => [...prev, newEv])
       setNewSlot(null)
+
     } catch (err) {
+
       console.error(err)
       alert('Error al crear la cita en Google Calendar')
+
     } finally {
+
       setSaving(false)
+
     }
   }
 
@@ -276,15 +321,45 @@ const CalendarVW = () => {
       )}
 
       {/* ── MODAL VER/EDITAR CITA ── */}
-      {selectedEvent && (
-        <ModalViewEventVW
-          event={selectedEvent}
-          onEdit={handleEditEvent}
-          onDelete={handleDeleteEvent}
-          onClose={() => setSelectedEvent(null)}
-          deleting={deleting}
-        />
-      )}
+{selectedEvent && (
+         <ModalViewEventVW
+           event={selectedEvent}
+           onEdit={handleEditEvent}
+           onDelete={handleDeleteEvent}
+           onClose={() => setSelectedEvent(null)}
+           deleting={deleting}
+         />
+       )}
+
+       {/* MODAL VALIDACIÓN DE PACIENTE NO ENCONTRADO */}
+       {patientValidationError && (
+         <div className="cl-overlay" onClick={() => setPatientValidationError(null)}>
+           <div className="cl-modal">
+             <div className="cl-modal-header">
+               <div>
+                 <h2 className="cl-modal-title">Error de validación</h2>
+               </div>
+               <button className="cl-modal-close" onClick={() => setPatientValidationError(null)}>
+                 <FiX size={16} />
+               </button>
+             </div>
+
+             <div className="cl-modal-accent" />
+
+             <div className="cl-modal-body">
+               <div className="cl-field">
+                 <p className="cl-view-value">{patientValidationError}</p>
+               </div>
+             </div>
+
+             <div className="cl-modal-nav">
+               <button className="cl-btn-primary" onClick={() => setPatientValidationError(null)}>
+                 Entendido
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
     </div>
   )
 }

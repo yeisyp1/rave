@@ -182,11 +182,22 @@
     gap: 0;
   }
 
-  .header-avatar {
-    width: 34px;
-    height: 34px;
-    font-size: 12px;
-  }
+.header-avatar {
+   width: 34px;
+   height: 34px;
+   font-size: 12px;
+ }
+ 
+/* Dark Mode Overrides */
+[data-theme="dark"] .header-search {
+   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .header-search:focus-within {
+   box-shadow:
+     0 0 0 4px rgba(162, 205, 255, 0.16),
+     inset 0 1px 0 rgba(0, 0, 0, 0.2);
+}
 
 
 }

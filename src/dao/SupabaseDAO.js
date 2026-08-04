@@ -18,3 +18,20 @@ export const getPatients = async () => {
 
   return data;
 };
+
+export const getPatientByDocument = async (document) => {
+  if (!document || document.trim() === '') return null;
+
+  const { data, error } = await supabase
+    .from("patients")
+    .select("*")
+    .ilike("numero_documento", document.trim())
+    .single();
+
+  if (error) {
+    console.error("Error fetching patient by document:", error);
+    return null;
+  }
+
+  return data;
+};

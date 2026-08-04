@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiCalendar, FiCheckCircle, FiClock } from 'react-icons/fi'
+import { FiCalendar, FiCheckCircle, FiClock, FiX } from 'react-icons/fi'
 import {
   connectGoogleCalendarCtrl,
   createGoogleEventCtrl,
   getGoogleTokenCtrl,
   listAppointmentPatientsCtrl,
 } from '../controllers/CalendarCtrl'
+import { getPatientByDocument } from '../dao/SupabaseDAO'
 import '../styles/AdminViewsVW.css'
 
 const formatInputDate = (date) => date.toISOString().slice(0, 10)
@@ -20,6 +21,7 @@ const AgendarCitaVW = () => {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [showSuccessNotice, setShowSuccessNotice] = useState(false)
+  const [patientValidationError, setPatientValidationError] = useState(null)
   const [form, setForm] = useState({
     patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
     document: patient?.numero_documento ?? '',
@@ -122,6 +124,24 @@ const AgendarCitaVW = () => {
     setMessage('')
 
     try {
+      const document = form.document.trim()
+
+      if (!document) {
+        setMessage('El documento del paciente es obligatorio.')
+        setSaving(false)
+        return
+      }
+
+      const patientExists = await getPatientByDocument(document)
+
+      if (!patientExists) {
+        setPatientValidationError(
+          `El paciente con documento ${document} no está registrado en la base de datos. No se puede guardar la cita.`
+        )
+        setSaving(false)
+        return
+      }
+
       await createGoogleEventCtrl(googleToken, {
         title: `${form.patientName} - ${form.service}`,
         description: `${form.notes}${form.document ? `\nDocumento: ${form.document}` : ''}`,
@@ -177,6 +197,7 @@ const AgendarCitaVW = () => {
               list="appointment-patient-documents"
               value={form.document}
               onChange={(event) => handlePatientChange('document', event.target.value)}
+              required
             />
           </div>
           <div className="admin-field span-2">
@@ -231,6 +252,51 @@ const AgendarCitaVW = () => {
           <div className="admin-toast-bar" />
           <div>
             <div className="admin-toast-text">La cita de {form.patientName} se agendó correctamete.</div>
+          </div>
+        </div>
+      )}
+      {patientValidationError && (
+        <div
+          className="cl-overlay"
+          onClick={() => setPatientValidationError(null)}
+        >
+          <div
+            className="cl-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cl-modal-header">
+              <div>
+                <h2 className="cl-modal-title">
+                  Error de validación
+                </h2>
+              </div>
+
+              <button
+                className="cl-modal-close"
+                onClick={() => setPatientValidationError(null)}
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+
+            <div className="cl-modal-accent" />
+
+            <div className="cl-modal-body">
+              <div className="cl-view-field">
+                <p className="cl-view-value">
+                  {patientValidationError}
+                </p>
+              </div>
+            </div>
+
+            <div className="cl-modal-nav">
+              <button
+                className="cl-btn-primary"
+                onClick={() => setPatientValidationError(null)}
+              >
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}
