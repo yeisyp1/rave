@@ -59,15 +59,31 @@ const PatientDetailVW = () => {
       if (patientError) throw patientError;
       setPatient(patientData);
 
-      // Fetch procedures if exists
-      const { data: procedureData } = await supabase
-        .from('procedures')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const [{ data: legacyProcedures }, { data: patientProcedures }] = await Promise.all([
+        supabase
+          .from('procedures')
+          .select('*')
+          .eq('patient_id', patientId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('patient_procedures')
+          .select('*, procedure_catalog(name)')
+          .eq('patient_id', patientId)
+          .order('procedure_date', { ascending: false })
+          .limit(10),
+      ]);
 
-      if (procedureData) setProcedures(procedureData);
+      const normalizedProcedures = [
+        ...(legacyProcedures ?? []),
+        ...(patientProcedures ?? []).map((procedure) => ({
+          ...procedure,
+          fecha: procedure.procedure_date,
+          procedure_name: procedure.procedure_catalog?.name,
+          cost: procedure.total_price ?? procedure.unit_price ?? 0,
+        })),
+      ];
+      setProcedures(normalizedProcedures);
 
       const clinicalHistoriesData = await loadPatientHistoriesCtrl(patientId);
       setClinicalHistories(clinicalHistoriesData);
@@ -140,6 +156,8 @@ const PatientDetailVW = () => {
       </div>
     );
   }
+
+  const hasProcedures = procedures.length > 0;
 
   return (
     <div className="pd-page">
@@ -339,7 +357,7 @@ const PatientDetailVW = () => {
                 </div>
               ) : null}
 
-              {procedures.length > 0 ? (
+              {hasProcedures ? (
                 <div className="pd-procedures-table">
                   <table>
                     <thead>
@@ -362,9 +380,7 @@ const PatientDetailVW = () => {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <p className="pd-empty-message">No hay procedimientos registrados</p>
-              )}
+              ) : null}
             </div>
           </div>
         )}

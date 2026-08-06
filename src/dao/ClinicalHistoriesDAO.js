@@ -9,14 +9,20 @@ export const listClinicalHistoriesByPatientDAO = async (patientId) => {
 };
 
 export const createClinicalHistoryDAO = async (payload) => {
-  return supabase.from("clinical_histories").insert([payload]);
+  return supabase
+    .from("clinical_histories")
+    .insert([payload])
+    .select("id")
+    .single();
 };
 
 export const updateClinicalHistoryDAO = async (historyId, payload) => {
   return supabase
     .from("clinical_histories")
     .update(payload)
-    .eq("id", historyId);
+    .eq("id", historyId)
+    .select("id")
+    .single();
 };
 
 export const deleteClinicalHistoryDAO = async (historyId) => {

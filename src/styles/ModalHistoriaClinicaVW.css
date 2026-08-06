@@ -18,6 +18,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -41,6 +42,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,6 +122,42 @@
   transform: translateY(0);
 }
 
+/* Logo inside header actions */
+.mhc-logo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+/* Theme-aware logo variants */
+.mhc-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 0.25rem;
+}
+
+.mhc-logo-light {
+  display: block;
+}
+
+.mhc-logo-dark {
+  display: none;
+}
+
+[data-theme="dark"] .mhc-logo-light {
+  display: none;
+}
+
+[data-theme="dark"] .mhc-logo-dark {
+  display: block;
+}
+
+.mhc-logo-wrap:focus {
+  outline: 2px solid rgba(201, 147, 74, 0.35);
+  border-radius: 6px;
+}
+
 /* ── MODAL ACCENT ── */
 .mhc-modal-accent {
   height: 3px;
@@ -172,7 +210,7 @@
   box-shadow: 0 8px 24px rgba(31, 41, 55, 0.04);
 }
 
-.mhc-accordion + .mhc-accordion {
+.mhc-accordion+.mhc-accordion {
   margin-top: 0.35rem;
 }
 
@@ -207,6 +245,45 @@
 
 .mhc-accordion-body {
   padding: 1rem 1.15rem 1.15rem;
+}
+
+.mhc-odontogram-body {
+  padding: 0.75rem;
+}
+
+.mhc-odontogram-help {
+  margin: 0 0 0.75rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.mhc-odontogram-editor {
+  min-height: 650px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.mhc-odontogram-editor .odontogram-root {
+  min-width: 760px;
+}
+
+.pd-radiography-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.55rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.pd-radiography-delete:hover {
+  background: #fef2f2;
 }
 
 .mhc-grid-2 {
@@ -628,6 +705,7 @@
 [data-theme="dark"] .mhc-modal-close {
   color: rgba(255, 255, 255, 0.55);
 }
+
 [data-theme="dark"] .mhc-modal-close:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #e2e8f0;
@@ -659,6 +737,7 @@
   background: rgba(255, 255, 255, 0.05);
   color: #e2e8f0;
 }
+
 [data-theme="dark"] .mhc-input::placeholder,
 [data-theme="dark"] .mhc-textarea::placeholder {
   color: rgba(255, 255, 255, 0.28);
@@ -676,6 +755,7 @@
   border-color: rgba(255, 255, 255, 0.08);
   background: #0f2236;
 }
+
 [data-theme="dark"] .mhc-history-card:hover {
   border-color: var(--gold);
   background: rgba(201, 147, 74, 0.10);
@@ -698,6 +778,7 @@
   color: rgba(255, 255, 255, 0.55);
   border-color: rgba(255, 255, 255, 0.08);
 }
+
 [data-theme="dark"] .mhc-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);

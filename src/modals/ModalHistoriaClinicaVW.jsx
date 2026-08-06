@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
   createPatientHistoryCtrl,
@@ -10,7 +9,17 @@ import {
 } from "../controllers/HistoriaClinicaCtrl";
 import { supabase } from "../dao/SupabaseDAO";
 import "../styles/ModalHistoriaClinicaVW.css";
-import { FiChevronDown, FiImage, FiPlus, FiSave, FiX } from "react-icons/fi";
+import logoDark from "../assets/logo.png";
+import logoLight from "../assets/logo1.png";
+import { FiChevronDown, FiImage, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
+import OdontogramApp from "react-odontogram-editor-modul/src/App";
+import "react-odontogram-editor-modul/src/index.css";
+import {
+  captureOdontogramState,
+  clearOdontogramDraft,
+  loadOdontogramDraft,
+  restoreOdontogramState,
+} from "../utils/odontogramPersistence";
 
 const RADIOGRAPHY_BUCKET = "radiographies";
 
@@ -63,7 +72,6 @@ const fieldToText = (value) => {
 };
 
 const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initialHistory = null }) => {
-  const navigate = useNavigate();
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(startInForm);
@@ -100,7 +108,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
         fecha_nacimiento: patient.fecha_nacimiento || "",
       };
       setOriginalPatientData(patientDataSnapshot);
-      
+
       // Pre-fill form with patient data
       setForm((prev) => ({
         ...prev,
@@ -133,13 +141,32 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     setClinicalNote("");
     setMediaStatus("");
     setMediaOpen(false);
+    if (initialHistory.odontograma) {
+      window.setTimeout(() => restoreOdontogramState(initialHistory.odontograma), 0);
+    }
+    fetchRadiographies(initialHistory.id);
   }, [initialHistory]);
+
+  useEffect(() => {
+    if (!patient?.id || initialHistory) return;
+    const draft = loadOdontogramDraft(patient.id);
+    if (draft) {
+      setForm((previous) => ({ ...previous, odontograma: draft }));
+    }
+  }, [patient?.id, initialHistory]);
+
+  useEffect(() => {
+    if (!showForm || !form.odontograma) return undefined;
+    const restore = window.setTimeout(() => {
+      restoreOdontogramState(form.odontograma);
+    }, 0);
+    return () => window.clearTimeout(restore);
+  }, [showForm, form.odontograma]);
 
   useEffect(() => {
     if (!patient?.id) return;
     fetchHistories();
     fetchCityDepartments();
-    fetchRadiographies();
   }, [patient?.id]);
 
   const fetchHistories = async () => {
@@ -173,15 +200,22 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
         ? new Date(history.fecha).toISOString().slice(0, 16)
         : data.fecha ?? nowForDatetimeLocal(),
       motivo_consulta: history?.motivo_consulta ?? data.motivo_consulta ?? "",
+      odontograma: history?.odontograma ?? data.odontograma ?? "",
     };
   };
 
-  const fetchRadiographies = async () => {
+  const fetchRadiographies = async (historyId = editingHistoryId) => {
     try {
+      if (!historyId) {
+        setRadiographies([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("radiographies")
         .select("*")
         .eq("patient_id", patient.id)
+        .eq("clinical_history_id", historyId)
         .order("created_at", { ascending: false })
         .limit(6);
 
@@ -209,6 +243,38 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       setRadiographies(rows);
     } catch (error) {
       console.error("Error cargando radiografías:", error);
+    }
+  };
+
+  const handleDeleteRadiography = async (radiography) => {
+    const confirmed = window.confirm(
+      `¿Quieres eliminar la radiografía "${radiography.file_name || "seleccionada"}"?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error: deleteError } = await supabase
+        .from("radiographies")
+        .delete()
+        .eq("id", radiography.id);
+
+      if (deleteError) throw deleteError;
+
+      if (radiography.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from(RADIOGRAPHY_BUCKET)
+          .remove([radiography.file_path]);
+
+        if (storageError) {
+          console.warn("La radiografía se eliminó de la base de datos, pero no del almacenamiento:", storageError);
+        }
+      }
+
+      setRadiographies((current) => current.filter((item) => item.id !== radiography.id));
+      setMediaStatus("Radiografía eliminada correctamente.");
+    } catch (error) {
+      console.error("Error eliminando radiografía:", error);
+      setMediaStatus(error?.message || "No se pudo eliminar la radiografía.");
     }
   };
 
@@ -249,6 +315,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
           uploads.push({
             patient_id: patient.id,
+            clinical_history_id: editingHistoryId,
             file_path: filePath,
             file_name: file.name,
             description: note || null,
@@ -300,10 +367,14 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     setMediaStatus("");
 
     try {
+      const currentOdontogram = await captureOdontogramState();
+      const historyForm = currentOdontogram
+        ? { ...form, odontograma: currentOdontogram }
+        : form;
       const note = clinicalNote.trim();
       const result = editingHistoryId
-        ? await updatePatientHistoryCtrl(patient.id, editingHistoryId, form)
-        : await createPatientHistoryCtrl(patient.id, form, originalPatientData);
+        ? await updatePatientHistoryCtrl(patient.id, editingHistoryId, historyForm)
+        : await createPatientHistoryCtrl(patient.id, historyForm, originalPatientData);
 
       if (!result.ok) {
         if (result.error) console.error("Error guardando historia:", result.error);
@@ -332,6 +403,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
           uploads.push({
             patient_id: patient.id,
+            clinical_history_id: result.historyId,
             file_path: filePath,
             file_name: file.name,
             description: note || null,
@@ -354,6 +426,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       }
 
       alert(result.message);
+      clearOdontogramDraft(patient.id);
       setForm(HISTORIA_EMPTY_FORM);
       setShowForm(false);
       setOriginalPatientData(null);
@@ -363,7 +436,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       setMediaOpen(false);
       setMediaStatus("Guardado correctamente.");
       await fetchHistories();
-      await fetchRadiographies();
+      await fetchRadiographies(result.historyId);
     } catch (error) {
       console.error("Error guardando historia y radiografías:", error);
       setMediaStatus(error?.message || "No se pudo guardar la información. Revisa la consola.");
@@ -386,7 +459,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   };
 
   const handleDeleteHistory = async (history) => {
-    
+
 
   };
 
@@ -443,7 +516,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   );
 
   const renderStatusGrid = (items, statusOptions, extraClass = "") => (
-      <div className={`mhc-status-grid ${extraClass}`.trim()}>
+    <div className={`mhc-status-grid ${extraClass}`.trim()}>
       {items.map((item) => (
         <div key={item.name} className="mhc-status-row">
           <span className="mhc-status-label">{item.label}</span>
@@ -537,16 +610,17 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
             </p>
           </div>
           <div className="mhc-header-actions">
-            <button
-              className="mhc-btn-odontogram"
-              onClick={() => {
-                onClose();
-                navigate(`/odontograma/${patient.id}`);
-              }}
+            <div
+              className="mhc-logo-wrap"
+              role="button"
+              tabIndex={0}
               title="Ver odontograma del paciente"
+              onClick={() => setShowForm(true)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowForm(true); } }}
             >
-              🦷 Odontograma
-            </button>
+              <img src={logoLight} alt="Rave" className="mhc-logo-light mhc-logo" />
+              <img src={logoDark} alt="Rave" className="mhc-logo-dark mhc-logo" />
+            </div>
             <button className="mhc-modal-close" onClick={onClose} type="button">
               <FiX size={18} />
             </button>
@@ -571,7 +645,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                     setEditingHistoryId(null);
                   }}
                 >
-                  <FiX size={18} /> Cerrar 
+                  <FiX size={18} /> Cerrar
                 </button>
               </div>
 
@@ -595,14 +669,16 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                   <div className="mhc-accordion-body mhc-grid-id">
                     {renderField({ label: "Nombre", name: "nombre", placeholder: "Nombre" })}
                     {renderField({ label: "Apellidos", name: "apellidos", placeholder: "Apellidos" })}
-                    {renderField({ label: "Tipo de identificación", name: "tipo_identificacion", as: "select", options: [
-                      { value: "", label: "Seleccionar..." },
-                      { value: "CC", label: "CC" },
-                      { value: "TI", label: "TI" },
-                      { value: "CE", label: "CE" },
-                      { value: "PA", label: "PA" },
-                      { value: "RC", label: "RC" },
-                    ] })}
+                    {renderField({
+                      label: "Tipo de identificación", name: "tipo_identificacion", as: "select", options: [
+                        { value: "", label: "Seleccionar..." },
+                        { value: "CC", label: "CC" },
+                        { value: "TI", label: "TI" },
+                        { value: "CE", label: "CE" },
+                        { value: "PA", label: "PA" },
+                        { value: "RC", label: "RC" },
+                      ]
+                    })}
                     {renderField({ label: "No. Identificación", name: "numero_identificacion", placeholder: "Número" })}
                     {renderField({ label: "De", name: "procedencia_identificacion", placeholder: "Procedencia de la identificación" })}
                     {renderField({ label: "Dirección", name: "direccion", placeholder: "Dirección de residencia" })}
@@ -620,12 +696,14 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                     {renderField({ label: "Eps", name: "eps", placeholder: "EPS" })}
                     {renderField({ label: "Fecha de nacimiento", name: "fecha_nacimiento", type: "date" })}
                     {renderField({ label: "Edad", name: "edad", type: "number", placeholder: "Edad" })}
-                    {renderField({ label: "Sexo", name: "sexo", as: "select", options: [
-                      { value: "", label: "Seleccionar..." },
-                      { value: "M", label: "Masculino" },
-                      { value: "F", label: "Femenino" },
-                      { value: "O", label: "Otro" },
-                    ]})}
+                    {renderField({
+                      label: "Sexo", name: "sexo", as: "select", options: [
+                        { value: "", label: "Seleccionar..." },
+                        { value: "M", label: "Masculino" },
+                        { value: "F", label: "Femenino" },
+                        { value: "O", label: "Otro" },
+                      ]
+                    })}
                     {renderField({ label: "Estado civil", name: "estado_civil", as: "select", options: CIVIL_OPTIONS })}
                     {renderField({ label: "Ocupación", name: "ocupacion", placeholder: "Ocupación" })}
                   </div>
@@ -703,6 +781,30 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                   </div>
                 </details>
 
+                <details className="mhc-accordion mhc-odontogram-accordion">
+                  <summary className="mhc-accordion-summary">
+                    <span>V. Odontograma</span>
+                    <FiChevronDown className="mhc-accordion-icon" size={16} />
+                  </summary>
+                  <div className="mhc-accordion-body mhc-odontogram-body">
+                    <p className="mhc-odontogram-help">
+                      Registra el estado dental del paciente. Se guardará junto con esta historia clínica.
+                    </p>
+                    <div
+                      className="mhc-odontogram-editor"
+                      onClick={(event) => {
+                        if (event.target.closest("button")) event.preventDefault();
+                      }}
+                    >
+                      <OdontogramApp
+                        title={`Odontograma - ${patient.nombre} ${patient.apellidos}`}
+                        patientName={String(patient.numero_documento ?? '').trim()}
+                        numberingSystem="FDI"
+                      />
+                    </div>
+                  </div>
+                </details>
+
                 <datalist id="history-city-list">
                   {cityOptions.map((item) => (
                     <option key={item} value={item} />
@@ -710,78 +812,87 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                 </datalist>
 
                 <details className="pd-accordion pd-accordion-media" open={mediaOpen} onToggle={(event) => setMediaOpen(event.currentTarget.open)}>
-              <summary className="pd-accordion-summary">
-                <span>Radiografías y notas clínicas</span>
-                <span className="pd-accordion-chevron"><FiChevronDown size={14} /></span>
-              </summary>
-              <div className="pd-accordion-body">
-                <div className="pd-media-grid">
-                  <div className="pd-media-panel">
-                    <h3 className="pd-section-title">Subir radiografías</h3>
-                    <label className="pd-upload-box">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="pd-upload-input"
-                        onChange={(event) => setSelectedRadiographies(Array.from(event.target.files ?? []))}
-                      />
-                      <span>Haz clic o arrastra aquí tus archivos</span>
-                      <small>JPG, PNG o WEBP</small>
-                    </label>
+                  <summary className="pd-accordion-summary">
+                    <span>Radiografías y notas clínicas</span>
+                    <span className="pd-accordion-chevron"><FiChevronDown size={14} /></span>
+                  </summary>
+                  <div className="pd-accordion-body">
+                    <div className="pd-media-grid">
+                      <div className="pd-media-panel">
+                        <h3 className="pd-section-title">Subir radiografías</h3>
+                        <label className="pd-upload-box">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="pd-upload-input"
+                            onChange={(event) => setSelectedRadiographies(Array.from(event.target.files ?? []))}
+                          />
+                          <span>Haz clic o arrastra aquí tus archivos</span>
+                          <small>JPG, PNG o WEBP</small>
+                        </label>
 
-                    {selectedRadiographies.length > 0 && (
-                      <div className="pd-upload-list">
-                        {selectedRadiographies.map((file) => (
-                          <div key={`${file.name}-${file.lastModified}`} className="pd-upload-item">
-                            <FiImage size={14} />
-                            <span>{file.name}</span>
+                        {selectedRadiographies.length > 0 && (
+                          <div className="pd-upload-list">
+                            {selectedRadiographies.map((file) => (
+                              <div key={`${file.name}-${file.lastModified}`} className="pd-upload-item">
+                                <FiImage size={14} />
+                                <span>{file.name}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
+                      </div>
+
+                      <div className="pd-media-panel">
+                        <h3 className="pd-section-title">Notas clínicas</h3>
+                        <textarea
+                          className="pd-notes-textarea"
+                          placeholder="Escribe aquí las notas clínicas del paciente..."
+                          value={clinicalNote}
+                          onChange={(event) => setClinicalNote(event.target.value)}
+                        />
+                        {mediaStatus ? <small className="pd-info-message">{mediaStatus}</small> : null}
+                      </div>
+                    </div>
+
+                    {radiographies.length > 0 && (
+                      <div className="pd-section pd-section-radiographies">
+                        <h3 className="pd-section-title">Radiografías registradas</h3>
+                        <div className="pd-radiographies">
+                          {radiographies.map((radio) => (
+                            <div key={radio.id} className="pd-radiography-item">
+                              {radio.image_url ? (
+                                <img
+                                  src={radio.image_url}
+                                  alt={radio.type || 'Radiografía'}
+                                  className="pd-radiography-image"
+                                />
+                              ) : (
+                                <div className="pd-radiography-placeholder">
+                                  <FiImage size={24} />
+                                </div>
+                              )}
+                              <p className="pd-radiography-type">{radio.type || 'Radiografía'}</p>
+                              <p className="pd-radiography-date">
+                                {radio.created_at?.split('T')[0] || '—'}
+                              </p>
+                              <button
+                                type="button"
+                                className="pd-radiography-delete"
+                                onClick={() => handleDeleteRadiography(radio)}
+                                title="Eliminar radiografía"
+                              >
+                                <FiTrash2 size={14} />
+                                Eliminar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-
-                  <div className="pd-media-panel">
-                    <h3 className="pd-section-title">Notas clínicas</h3>
-                    <textarea
-                      className="pd-notes-textarea"
-                      placeholder="Escribe aquí las notas clínicas del paciente..."
-                      value={clinicalNote}
-                      onChange={(event) => setClinicalNote(event.target.value)}
-                    />
-                    {mediaStatus ? <small className="pd-info-message">{mediaStatus}</small> : null}
-                  </div>
-                </div>
-
-                {radiographies.length > 0 && (
-                  <div className="pd-section pd-section-radiographies">
-                    <h3 className="pd-section-title">Radiografías registradas</h3>
-                    <div className="pd-radiographies">
-                      {radiographies.map((radio) => (
-                        <div key={radio.id} className="pd-radiography-item">
-                          {radio.image_url ? (
-                            <img
-                              src={radio.image_url}
-                              alt={radio.type || 'Radiografía'}
-                              className="pd-radiography-image"
-                            />
-                          ) : (
-                            <div className="pd-radiography-placeholder">
-                              <FiImage size={24} />
-                            </div>
-                          )}
-                          <p className="pd-radiography-type">{radio.type || 'Radiografía'}</p>
-                          <p className="pd-radiography-date">
-                            {radio.created_at?.split('T')[0] || '—'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </details>
+                </details>
 
                 <div className="mhc-form-actions">
                   <button

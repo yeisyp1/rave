@@ -475,7 +475,7 @@ BEGIN
 END;
 $$;
 
--- Permitir actualización y borrado si lo necesitas después
+-- Permitir actualización y borrado si se necesita después
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -513,3 +513,48 @@ BEGIN
 END;
 $$;
 
+-- 05/08/2026
+-- Añadir columna odontograma a clinical_histories
+ALTER TABLE clinical_histories ADD COLUMN odontograma JSONB;
+
+-- 06/08/2026
+-- Asociar cada radiografía a la historia clínica donde fue registrada
+ALTER TABLE public.radiographies
+  ADD COLUMN IF NOT EXISTS clinical_history_id bigint null;
+
+CREATE INDEX IF NOT EXISTS radiographies_clinical_history_idx
+  ON public.radiographies (clinical_history_id);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE constraint_name = 'radiographies_patient_id_fkey'
+      AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.radiographies
+      ADD CONSTRAINT radiographies_patient_id_fkey
+      FOREIGN KEY (patient_id)
+      REFERENCES public.patients(id)
+      ON DELETE CASCADE;
+  END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE constraint_name = 'radiographies_clinical_history_id_fkey'
+      AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.radiographies
+      ADD CONSTRAINT radiographies_clinical_history_id_fkey
+      FOREIGN KEY (clinical_history_id)
+      REFERENCES public.clinical_histories(id)
+      ON DELETE CASCADE;
+  END IF;
+END;
+$$;

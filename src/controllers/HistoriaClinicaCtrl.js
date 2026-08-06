@@ -179,9 +179,10 @@ const savePatientHistoryCtrl = async (
     fecha,
     motivo_consulta: form.motivo_consulta,
     history_data: historyData,
+    odontograma: form.odontograma || null,
   };
 
-  const { error: historyError } = historyId
+  const { data: savedHistory, error: historyError } = historyId
     ? await updateClinicalHistoryDAO(historyId, payload)
     : await createClinicalHistoryDAO(payload);
 
@@ -210,6 +211,7 @@ const savePatientHistoryCtrl = async (
 
   return {
     ok: true,
+    historyId: savedHistory?.id ?? historyId,
     message: historyId
       ? "Historia clínica actualizada exitosamente"
       : "Historia clínica guardada exitosamente",
