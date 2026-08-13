@@ -6,14 +6,14 @@ const PublicHomeVW = () => (
   <main className="public-page">
     <nav className="public-nav" aria-label="Navegación principal">
       <Link to="/" className="public-brand">
-        <img src={logo} alt="RAVE Odontología" />
+        <img src={logo} alt="RAVE" />
       </Link>
       <Link to="/login" className="public-login">Acceso al sistema</Link>
     </nav>
 
     <section className="public-hero">
       <div className="public-copy">
-        <p className="public-kicker">RAVE Odontología</p>
+        <p className="public-kicker">RAVE</p>
         <h1>Gestión clínica para brindar una mejor atención.</h1>
         <p className="public-lead">
           RAVE es una plataforma para que clínicas y consultorios odontológicos
@@ -38,7 +38,7 @@ const PublicHomeVW = () => (
     </section>
 
     <footer className="public-footer">
-      <span>© {new Date().getFullYear()} RAVE Odontología</span>
+      <span>© {new Date().getFullYear()} RAVE</span>
       <Link to="/politica-privacidad">Política de privacidad</Link>
     </footer>
   </main>

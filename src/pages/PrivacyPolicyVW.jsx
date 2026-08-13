@@ -4,15 +4,15 @@ import '../styles/PublicPagesVW.css'
 const PrivacyPolicyVW = () => (
   <main className="legal-page">
     <header className="legal-header">
-      <Link to="/" className="legal-back">← RAVE Odontología</Link>
+      <Link to="/" className="legal-back">← RAVE</Link>
       <Link to="/login" className="public-login">Acceso al sistema</Link>
     </header>
     <article className="legal-card">
-      <p className="public-kicker">RAVE Odontología</p>
+      <p className="public-kicker">RAVE</p>
       <h1>Política de privacidad</h1>
       <p className="legal-updated">Última actualización: 13 de agosto de 2026</p>
       <h2>1. Responsable</h2>
-      <p>RAVE Odontología es una plataforma de gestión clínica para consultorios odontológicos. Esta política explica cómo se trata la información utilizada por la aplicación.</p>
+      <p>RAVE es una plataforma de gestión clínica para consultorios odontológicos. Esta política explica cómo se trata la información utilizada por la aplicación.</p>
       <h2>2. Información que se gestiona</h2>
       <p>La plataforma puede gestionar datos de usuarios autorizados, pacientes, citas, historias clínicas, odontogramas, facturación e inventario, según las funciones habilitadas por la clínica.</p>
       <h2>3. Uso de la información</h2>
