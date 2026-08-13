@@ -131,8 +131,6 @@ const Login = () => {
           </div>
 
           <div className="accent-bar" />
-
-          <div className="form-eyebrow">Clínica Odontológica</div>
           <div className="form-title-access">Acceso al sistema</div>   
           <div className="form-subtitle">Ingresa con tus credenciales profesionales</div>
 

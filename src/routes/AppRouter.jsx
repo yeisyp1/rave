@@ -18,6 +18,8 @@ import OdontogramaVW from '../pages/OdontogramaVW'
 import ModalViewPatientsVW from '../modals/ModalViewPatientsVW'
 import NewEventModalVW from '../modals/ModalNewEventVW'
 import OAuthConsentVW from '../pages/OAuthConsentVW'
+import PublicHomeVW from '../pages/PublicHomeVW'
+import PrivacyPolicyVW from '../pages/PrivacyPolicyVW'
 
 const AdminRoute = ({ profile, children }) => {
   return profile?.role === 'admin' ? children : <Navigate to="/dashboard" replace />
@@ -27,13 +29,14 @@ const AppRouter = ({ user, profile }) => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<PublicHomeVW />} />
+        <Route path="/politica-privacidad" element={<PrivacyPolicyVW />} />
         <Route
           path="/login"
           element={user ? <Navigate to="/dashboard" /> : <LoginVW />}
         />
 
         <Route element={user ? <AppLayoutVW user={user} profile={profile} /> : <Navigate to="/login" />}>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<DashboardVW />} />
           <Route path="/pacientes" element={<PatientsVW />} />
           <Route path="/pacientes/:patientId" element={<PatientDetailVW />} />

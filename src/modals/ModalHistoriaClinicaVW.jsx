@@ -459,8 +459,25 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   };
 
   const handleDeleteHistory = async (history) => {
+    const confirmed = window.confirm("¿Estás seguro de que quieres eliminar esta historia clínica?");
+    if (!confirmed) return;
 
+    try {
+      const { error } = await supabase
+        .from("clinical_histories")
+        .delete()
+        .eq("id", history.id);
 
+      if (error) {
+        throw new Error(error.message || "No se pudo eliminar la historia clínica");
+      }
+
+      alert("Historia clínica eliminada correctamente");
+      await fetchHistories();
+    } catch (error) {
+      console.error("Error eliminando historia clínica:", error);
+      setMediaStatus(error?.message || "No se pudo eliminar la historia clínica. Revisa la consola.");
+    }
   };
 
   const renderField = ({ label, name, type = "text", as = "input", placeholder = "", options = [], rows = 3, listId = "" }) => (

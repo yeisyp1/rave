@@ -128,8 +128,7 @@ const DoctorsVW = () => {
     <div className="admin-page">
       <div className="admin-header">
         <div>
-          <h1 className="admin-title">Doctores y usuarios</h1>
-          <p className="admin-subtitle">Autoriza correos y define quien tendra permisos administrativos.</p>
+          <h1 className="admin-title">Usuarios</h1>
         </div>
         <button className="admin-btn" onClick={loadUsers} disabled={loading}>
           <FiRefreshCw /> Actualizar
