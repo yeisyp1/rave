@@ -20,6 +20,7 @@ import NewEventModalVW from '../modals/ModalNewEventVW'
 import OAuthConsentVW from '../pages/OAuthConsentVW'
 import PublicHomeVW from '../pages/PublicHomeVW'
 import PrivacyPolicyVW from '../pages/PrivacyPolicyVW'
+import AccessActionVW from '../pages/AccessActionVW'
 
 const AdminRoute = ({ profile, children }) => {
   return profile?.role === 'admin' ? children : <Navigate to="/dashboard" replace />
@@ -31,6 +32,9 @@ const AppRouter = ({ user, profile }) => {
       <Routes>
         <Route path="/" element={<PublicHomeVW />} />
         <Route path="/politica-privacidad" element={<PrivacyPolicyVW />} />
+        <Route path="/crear-contrasena" element={<AccessActionVW mode="create" />} />
+        <Route path="/recuperar-contrasena" element={<AccessActionVW mode="recover" />} />
+        <Route path="/restablecer-contrasena" element={<AccessActionVW mode="reset" />} />
         <Route
           path="/login"
           element={user ? <Navigate to="/dashboard" /> : <LoginVW />}

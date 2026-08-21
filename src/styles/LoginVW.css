@@ -464,6 +464,9 @@
 .submit-btn:hover::before  { opacity: 1; }
 .submit-btn:hover          { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(74, 93, 201, 0.171); }
 .submit-btn:active         { transform: translateY(0); }
+.login-extra-links { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; text-align: center; }
+.login-extra-links button { background: transparent; color: var(--blue); font-size: 13px; padding: 3px; }
+.login-extra-links button:hover { text-decoration: underline; }
 .submit-btn:disabled       { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .btn-inner {

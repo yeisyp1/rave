@@ -181,6 +181,8 @@
   background: rgba(59, 130, 246, 0.1);
   border-color: rgba(59, 130, 246, 0.2);
 }
+.admin-btn.password { border-color: rgba(76, 175, 130, .55); color: #4caf82; }
+.admin-btn.password:hover:not(:disabled) { background: rgba(76, 175, 130, .12); }
 
 [data-theme="dark"] .admin-btn.danger {
   color: #fca5a5;

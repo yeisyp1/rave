@@ -62,6 +62,21 @@ const Login = () => {
     if (error) alert(error.message);
   };
 
+  const handleMagicLink = async () => {
+    if (!email.trim()) {
+      setErrorMsg('Escribe tu correo para enviarte el enlace de acceso.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
+    setLoading(false);
+    setErrorMsg(error ? error.message : 'Revisa tu correo: te enviamos un enlace de acceso sin contraseña.');
+  };
+
 
   return (
     <div className="rave-root">
@@ -193,7 +208,7 @@ const Login = () => {
                 <input type="checkbox" id="remember" />
                 <span>Recordar sesión</span>
               </label>
-              <button type="button" className="forgot">
+              <button type="button" className="forgot" onClick={() => navigate('/recuperar-contrasena')}>
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
@@ -243,6 +258,15 @@ const Login = () => {
               </svg>
               Continuar con Google
             </button>
+
+            <div className="login-extra-links">
+              <button type="button" onClick={() => navigate('/crear-contrasena')}>
+                Crear contraseña
+              </button>
+              <button type="button" onClick={handleMagicLink} disabled={loading}>
+                Entrar sin contraseña por correo
+              </button>
+            </div>
 
           </form>
 

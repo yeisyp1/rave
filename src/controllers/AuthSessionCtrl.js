@@ -35,6 +35,7 @@ export function useAuthSessionCtrl() {
       .from("authorized_emails")
       .select("*")
       .eq("email", email)
+      .eq("active", true)
       .maybeSingle();
 
     if (authError || !authorized) {

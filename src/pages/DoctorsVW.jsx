@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiRefreshCw, FiTrash2, FiUserPlus, FiUsers } from 'react-icons/fi'
+import { FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
 import { supabase } from '../dao/SupabaseDAO'
 import LoaderVW from '../components/LoaderVW'
 import '../styles/AdminViewsVW.css'
+
 
 const emptyForm = {
   full_name: '',
@@ -111,6 +112,27 @@ const DoctorsVW = () => {
     }
 
     await loadUsers()
+  }
+
+  const handleSendPasswordSetup = async (row, hasProfile) => {
+    if (!row.active) {
+      setMessage('Activa primero este usuario para enviarle el correo.')
+      return
+    }
+
+    const actionLabel = hasProfile ? 'actualizar' : 'asignar'
+    const confirmed = confirm(`¿Enviar a ${row.email} un correo para ${actionLabel} su contraseña?`)
+    if (!confirmed) return
+
+    setMessage('Enviando correo...')
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizeEmail(row.email),
+      options: { emailRedirectTo: `${window.location.origin}/crear-contrasena` },
+    })
+
+    setMessage(error
+      ? `No se pudo enviar el correo: ${error.message}`
+      : `Correo enviado a ${row.email}. El usuario podrá ${actionLabel} su contraseña desde el enlace.`)
   }
 
   const handleEdit = (row) => {
@@ -257,9 +279,19 @@ const DoctorsVW = () => {
 
                       <td>
                         <div className="admin-actions">
+                          <button
+                            className="admin-btn password"
+                            onClick={() => handleSendPasswordSetup(row, Boolean(profile))}
+                            disabled={!row.active}
+                            title={profile ? 'Enviar correo para actualizar la contraseña' : 'Enviar correo para asignar la contraseña'}
+                          >
+                            <FiMail /> 
+                          </button>
+                          
                           <button className="admin-btn edit" onClick={() => handleEdit(row)}>
                             <FiTrash2 /> Editar
                           </button>
+                          
                           {row.active ? (
                             <button
                               className="admin-btn danger"
