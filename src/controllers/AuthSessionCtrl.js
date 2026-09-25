@@ -53,7 +53,7 @@ export function useAuthSessionCtrl() {
       id: u.id,
       full_name: fullName,
       email,
-      role: authorized.role || "user",
+      role: authorized.role || "assistant",
     };
 
     const { data, error } = await supabase

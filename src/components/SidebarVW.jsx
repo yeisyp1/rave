@@ -15,6 +15,7 @@ import {
   FiThermometer,
   FiInbox,
   FiFolder,
+  FiSettings,
   FiLogOut,
   FiX,
 } from 'react-icons/fi'
@@ -55,6 +56,7 @@ const Sidebar = ({ profile }) => {
         { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
         { to: '/inventory', icon: FiInbox, label: 'Inventario' },
         { to: '/documentation', icon: FiFolder, label: 'Documentacion' },
+        { to: '/settings', icon: FiSettings, label: 'Configuración' },
       ],
     },
     {

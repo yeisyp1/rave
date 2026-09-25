@@ -8,13 +8,14 @@ import '../styles/AdminViewsVW.css'
 const emptyForm = {
   full_name: '',
   email: '',
-  role: 'user',
+  role: 'assistant',
 }
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const roleLabels = {
   admin: 'Administrador',
-  user: 'Equipo clinico',
+  dentist: 'Odontóloga',
+  assistant: 'Asistente',
 }
 
 const DoctorsVW = () => {
@@ -139,11 +140,13 @@ const DoctorsVW = () => {
     setForm({
       full_name: row.full_name ?? '',
       email: row.email ?? '',
-      role: row.role ?? 'user', 
+      role: row.role ?? 'assistant',
     })
   }
 
   const totalAdmins = authorizedUsers.filter((user) => user.role === 'admin').length
+  const totalDentists = authorizedUsers.filter((user) => user.role === 'dentist').length
+  const totalAssistants = authorizedUsers.filter((user) => user.role === 'assistant').length
   const totalActive = authorizedUsers.filter((user) => profileByEmail.has(normalizeEmail(user.email ?? ''))).length
 
   return (
@@ -169,6 +172,20 @@ const DoctorsVW = () => {
           <div>
             <div className="admin-stat-value">{totalAdmins}</div>
             <div className="admin-stat-label">administradores</div>
+          </div>
+          <span className="admin-icon"><FiUserPlus /></span>
+        </div>
+        <div className="admin-card admin-stat">
+          <div>
+            <div className="admin-stat-value">{totalDentists}</div>
+            <div className="admin-stat-label">odontólogas</div>
+          </div>
+          <span className="admin-icon"><FiUserPlus /></span>
+        </div>
+        <div className="admin-card admin-stat">
+          <div>
+            <div className="admin-stat-value">{totalAssistants}</div>
+            <div className="admin-stat-label">asistentes</div>
           </div>
           <span className="admin-icon"><FiUserPlus /></span>
         </div>
@@ -213,7 +230,8 @@ const DoctorsVW = () => {
                 value={form.role}
                 onChange={(event) => setForm({ ...form, role: event.target.value })}
               >
-                <option value="user">Equipo clínico</option>
+                <option value="assistant">Asistente</option>
+                <option value="dentist">Odontóloga</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -238,10 +256,17 @@ const DoctorsVW = () => {
             </div>
             <div className="admin-list-row">
               <div>
-                <div className="admin-row-title">Equipo clínico</div>
-                <div className="admin-row-sub">Pacientes, citas, historias clinicas y odontograma.</div>
+                <div className="admin-row-title">Odontóloga</div>
+                <div className="admin-row-sub">Pacientes, citas, historias clínicas, odontograma y planes de tratamiento.</div>
               </div>
-              <span className="admin-pill good">user</span>
+              <span className="admin-pill good">dentist</span>
+            </div>
+            <div className="admin-list-row">
+              <div>
+                <div className="admin-row-title">Asistente</div>
+                <div className="admin-row-sub">Pacientes, citas, historias clínicas y odontograma.</div>
+              </div>
+              <span className="admin-pill good">assistant</span>
             </div>
           </div>
         </div>
@@ -273,7 +298,7 @@ const DoctorsVW = () => {
                     <tr key={row.id ?? row.email}>
                       <td>{row.full_name || profile?.full_name || '-'}</td>
                       <td>{row.email}</td>
-                      <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Equipo clínico'}</span></td>
+                      <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Asistente'}</span></td>
                       <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
                       <td>{profile?.id ?? '-'}</td>
 

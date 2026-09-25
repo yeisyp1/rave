@@ -1,0 +1,125 @@
+# RAVE — Contexto del proyecto para Claude Code
+
+Este archivo resume el estado real del proyecto para que cualquier sesión de
+Claude Code pueda trabajar sobre el código sin tener que re-descubrir todo
+desde cero. Actualízalo cuando cambie algo estructural (stack, roles, módulos
+nuevos).
+
+## 1. Qué es RAVE
+
+Sistema web de gestión para RAVE Odontología Integral y Estética, un
+consultorio odontológico independiente en Cali (barrio Olímpico). Es también
+el proyecto de grado (ingeniería/tesis) de Yeisy Paola Angulo. El sistema no
+tiene portal de autoservicio para pacientes: solo lo usa el personal del
+consultorio (administración, atención clínica, agenda, facturación,
+historias clínicas).
+
+Servicios que ofrece el consultorio: odontología general, estética dental,
+ortodoncia, blanqueamiento dental, endodoncia.
+
+## 2. Stack tecnológico
+
+- Frontend: React 18 + Vite, React Router v7, Redux Toolkit
+- Backend/datos: Supabase (Postgres + Auth + RLS), cliente `@supabase/supabase-js`
+- Autenticación: Google OAuth vía Supabase, con lista blanca de correos
+  autorizados (tabla `authorized_emails`)
+- Calendario/agenda: `react-big-calendar`, `moment`
+- Odontograma: módulo externo `react-odontogram-editor-modul`
+- PDFs (facturas, documentos): `jspdf`
+- Hay dependencias de `express`, `googleapis` y `jsonwebtoken` en package.json
+  — revisar si corresponden a un backend/servicio aparte (ej. integración con
+  Google Calendar) antes de asumir que todo es frontend puro.
+- Lint: ESLint (`npm run lint`)
+
+## 3. Arquitectura del código (src/)
+
+Patrón por capas, no until MVC estricto pero con esa intención:
+
+- `pages/` — vistas de página completa, todas con sufijo `VW`
+  (ej. `PatientsVW.jsx`, `BillingVW.jsx`, `CalendarVW.jsx`)
+- `modals/` — modales reutilizables, también sufijo `VW`
+  (ej. `ModalPatientsVW.jsx`, `ModalNewEventVW.jsx`)
+- `components/` — piezas de UI compartidas (Header, Sidebar, Loader, etc.)
+- `controllers/` — lógica de negocio/orquestación por dominio
+  (ej. `PatientsCtrl.js`, `BillingCtrl.js`, `HistoriaClinicaCtrl.js`)
+- `dao/` — acceso a datos, hablan directo con Supabase
+  (ej. `PatientsDAO.js`, `BillingDAO.js`, `SupabaseDAO.js` como base)
+- `models/` — forma de los datos de dominio (objetos simples, no ORM)
+- `hooks/` — hooks de React reutilizables
+- `layouts/` + `routes/AppRouter.jsx` — layout autenticado y definición de rutas
+- `styles/` — un `.css` por vista (no hay CSS-in-JS ni Tailwind)
+- `app/store.js` — configuración de Redux
+
+Convención a seguir: si agregas un módulo nuevo, sigue el mismo patrón
+página → controller → DAO → Supabase, y nombra la vista con sufijo `VW`.
+
+## 4. Base de datos (Supabase)
+
+Esquema completo en `db/supabase_schema.sql`. Tablas principales:
+
+`authorized_emails`, `profiles`, `patients`, `clinical_histories`,
+`doctors`, `procedures`, `procedure_catalog`, `patient_procedures`,
+`radiographies`, `inventory_items`, `laboratory_cases`, `billing_invoices`.
+
+Usa Row Level Security (RLS). Ya se resolvió antes un bug de recursión
+infinita por políticas SELECT auto-referenciadas en `profiles` — si tocas
+políticas de RLS en cualquier tabla, ten cuidado con ese mismo patrón
+(una política que para evaluarse necesita hacer SELECT sobre la misma tabla).
+
+## 5. Roles y control de acceso
+
+Estado real en el código hoy: `profiles.role` y `authorized_emails.role`
+solo aceptan los valores `admin` y `user` (constraint CHECK en la BD).
+`AppRouter.jsx` solo distingue admin vs. no-admin (`AdminRoute`) para proteger
+`/billing`, `/documentation`, `/laboratory`, `/inventory`, `/doctors`.
+
+Estado deseado según la tesis: 3 roles — Administrador, Odontólogo,
+Asistente — con el Asistente también habilitado para gestionar historias
+clínicas (decisión de negocio ya tomada). **Hoy esa distinción de 3 roles
+NO existe en el código**: todo lo que no es admin cae en "user" genérico.
+Separar Odontólogo/Asistente (nuevo valor de rol, o tabla/campo adicional,
+y ajustar rutas + políticas RLS) es trabajo pendiente, no algo ya resuelto.
+
+## 6. Módulos/páginas existentes
+
+Dashboard, Pacientes (lista + detalle), Historia clínica, Odontograma,
+Calendario/Agenda (agendar cita), Facturación (billing, solo admin),
+Laboratorio (solo admin), Inventario (solo admin), Doctores (solo admin),
+Documentación (solo admin), Login, flujo de OAuth/consentimiento, páginas
+públicas (home, política de privacidad), acciones de acceso (crear/recuperar/
+restablecer contraseña).
+
+## 7. Trabajo pendiente por implementar de verdad (no solo documentado en la tesis)
+
+- **Planes y tratamientos**: módulo aún no codificado.
+- **Recordatorios/confirmaciones de citas por WhatsApp** (RF-36/RF-37/RF-38
+  del documento de tesis): planeado, sin implementar.
+- **Consentimiento informado** (Ley 527 de 1999): falta el caso de uso en
+  código, más allá del flujo de OAuth consent que ya existe (que es otra cosa).
+- **Solicitudes/rectificación de datos personales** (Ley 1581 de 2012): falta
+  implementar.
+- **Separación real de roles Odontólogo/Asistente** (ver sección 5), incluyendo
+  que el Asistente pueda gestionar historias clínicas.
+
+Al pedirle a Claude Code que implemente cualquiera de estos, pega el texto
+exacto del requerimiento funcional (RF-xx) tal como está en el documento de
+tesis, no un resumen — así no se pierde el alcance ni la numeración legal.
+
+## 8. Reglas de trabajo para Claude Code en este repo
+
+- Explorar el código relacionado (páginas, controller, DAO, tabla en el
+  schema) antes de proponer cambios; no asumir estructura.
+- Seguir el patrón página(VW) → controller → DAO ya usado, no introducir un
+  patrón distinto para un módulo nuevo sin avisar.
+- Cualquier cambio de RLS en Supabase: mostrar la política completa antes de
+  aplicarla y verificar que no repita el problema de recursión ya conocido.
+- Para features nuevas de alcance medio/grande, proponer primero un plan
+  (qué archivos, qué tablas/migraciones, qué políticas RLS) y esperar
+  confirmación antes de escribir código.
+- No tocar `.env` ni subir secretos.
+- El texto de la tesis (informes, casos de uso) debe sonar humano, no
+  generado por IA — esto aplica a la documentación académica, no al código.
+
+## 9. Repositorio
+
+https://github.com/yeisyp1/rave
