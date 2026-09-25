@@ -13,6 +13,7 @@ import LaboratoryVW from '../pages/LaboratoryVW'
 import InventoryVW from '../pages/InventoryVW'
 import HistoriesVW from '../pages/HistoriesVW'
 import DoctorsVW from '../pages/DoctorsVW'
+import SettingsVW from '../pages/SettingsVW'
 import AgendarCitaVW from '../pages/AgendarCitaVW'
 import OdontogramaVW from '../pages/OdontogramaVW'
 import ModalViewPatientsVW from '../modals/ModalViewPatientsVW'
@@ -55,6 +56,7 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/inventory" element={<AdminRoute profile={profile}><InventoryVW /></AdminRoute>} />
           <Route path="/histories" element={<HistoriaClinicaVW />} />
           <Route path="/doctors" element={<AdminRoute profile={profile}><DoctorsVW /></AdminRoute>} />
+          <Route path="/settings" element={<AdminRoute profile={profile}><SettingsVW /></AdminRoute>} />
           <Route path="/agendarcita" element={<AgendarCitaVW />} />
           <Route path="/oauth/consent" element={<OAuthConsentVW />} />
         </Route>

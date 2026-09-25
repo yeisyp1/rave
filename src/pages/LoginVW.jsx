@@ -51,7 +51,7 @@ const Login = () => {
       provider: "google",
       options: {
         scopes: "https://www.googleapis.com/auth/calendar",  
-        redirectTo: "http://localhost:5173/oauth/consent",
+        redirectTo: `${window.location.origin}/oauth/consent`,
         queryParams: {
           access_type: "offline",  
           prompt: "consent",       

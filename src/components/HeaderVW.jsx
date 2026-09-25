@@ -40,7 +40,12 @@ const Header = ({ user, profile }) => {
     user?.user_metadata?.display_name ??
     'Dr. Alex Rivera'
 
-  const roleLabel = profile?.role === 'admin' ? 'Administrador' : 'Equipo Clinico'
+  const roleLabels = {
+    admin: 'Administrador',
+    dentist: 'Odontóloga',
+    assistant: 'Asistente',
+  }
+  const roleLabel = roleLabels[profile?.role] ?? 'Asistente'
 
   const initials = fullName
     .split(' ')
