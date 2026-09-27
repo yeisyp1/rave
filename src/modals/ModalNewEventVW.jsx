@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
 import moment from 'moment'
+import { showAlertModal } from '../app/store'
 
 /* MODAL NUEVA CITA */
 const NewEventModal = ({
@@ -11,6 +13,7 @@ const NewEventModal = ({
   patientOptions = [],
   serviceOptions = [],
 }) => {
+  const dispatch = useDispatch()
   const getPatientLabel = (patient) => {
     const fullName = `${patient?.nombre ?? ''} ${patient?.apellidos ?? ''}`.trim()
     const document = patient?.numero_documento ? ` - ${patient.numero_documento}` : ''
@@ -49,8 +52,8 @@ const NewEventModal = ({
   }
 
   const handleSave = () => {
-    if (!form.title.trim()) return alert('El título es obligatorio')
-    if (!form.serviceType.trim()) return alert('El tipo de servicio es obligatorio')
+    if (!form.title.trim()) return dispatch(showAlertModal({ message: 'El título es obligatorio', variant: 'error' }))
+    if (!form.serviceType.trim()) return dispatch(showAlertModal({ message: 'El tipo de servicio es obligatorio', variant: 'error' }))
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -62,7 +65,7 @@ const NewEventModal = ({
     const [eh, em] = form.endTime.split(':')
     end.setHours(Number(eh), Number(em), 0, 0)
 
-    if (end <= start) return alert('La hora de fin debe ser posterior a la de inicio')
+    if (end <= start) return dispatch(showAlertModal({ message: 'La hora de fin debe ser posterior a la de inicio', variant: 'error' }))
 
     onSave({
       ...form,

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
 import { supabase } from '../dao/SupabaseDAO'
 import LoaderVW from '../components/LoaderVW'
+import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 
@@ -19,6 +21,7 @@ const roleLabels = {
 }
 
 const DoctorsVW = () => {
+  const dispatch = useDispatch()
   const [authorizedUsers, setAuthorizedUsers] = useState([])
   const [profiles, setProfiles] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -75,9 +78,9 @@ const DoctorsVW = () => {
       .upsert(payload, { onConflict: 'email' })
 
     if (error) {
-      setMessage(`No se pudo autorizar el usuario: ${error.message}`)
+      dispatch(showAlertModal({ message: `No se pudo autorizar el usuario: ${error.message}`, variant: 'error' }))
     } else {
-      setMessage('Usuario autorizado. Cuando inicie sesion se validara contra su perfil.')
+      dispatch(showAlertModal({ message: 'Usuario autorizado. Cuando inicie sesion se validara contra su perfil.', variant: 'success' }))
       setForm(emptyForm)
       await loadUsers()
     }
@@ -94,7 +97,7 @@ const DoctorsVW = () => {
       .eq('id', row.id)
 
     if (error) {
-      setMessage(error.message)
+      dispatch(showAlertModal({ message: error.message, variant: 'error' }))
       return
     }
 
@@ -108,7 +111,7 @@ const DoctorsVW = () => {
       .eq('id', row.id)
 
     if (error) {
-      setMessage(error.message)
+      dispatch(showAlertModal({ message: error.message, variant: 'error' }))
       return
     }
 
@@ -117,7 +120,7 @@ const DoctorsVW = () => {
 
   const handleSendPasswordSetup = async (row, hasProfile) => {
     if (!row.active) {
-      setMessage('Activa primero este usuario para enviarle el correo.')
+      dispatch(showAlertModal({ message: 'Activa primero este usuario para enviarle el correo.', variant: 'error' }))
       return
     }
 
@@ -131,9 +134,13 @@ const DoctorsVW = () => {
       options: { emailRedirectTo: `${window.location.origin}/crear-contrasena` },
     })
 
-    setMessage(error
-      ? `No se pudo enviar el correo: ${error.message}`
-      : `Correo enviado a ${row.email}. El usuario podrá ${actionLabel} su contraseña desde el enlace.`)
+    setMessage('')
+    dispatch(showAlertModal({
+      message: error
+        ? `No se pudo enviar el correo: ${error.message}`
+        : `Correo enviado a ${row.email}. El usuario podrá ${actionLabel} su contraseña desde el enlace.`,
+      variant: error ? 'error' : 'success',
+    }))
   }
 
   const handleEdit = (row) => {

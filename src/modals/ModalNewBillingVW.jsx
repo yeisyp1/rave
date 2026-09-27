@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useDispatch } from 'react-redux';
 import { FiX } from 'react-icons/fi';
 import '../styles/ModalPatientsVW.css';
 import { createBillingInvoiceDAO } from '../dao/BillingDAO';
 import { listPatientsDAO } from '../dao/PatientsDAO';
+import { showAlertModal } from '../app/store';
 
 const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
+    const dispatch = useDispatch();
     const [patients, setPatients] = useState([]);
 
     const getLocalDate = () => {
@@ -108,7 +111,7 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
             onClose();
         } catch (err) {
             console.error('Error creando factura:', err);
-            alert('Error guardando factura: ' + (err.message ?? String(err)));
+            dispatch(showAlertModal({ message: 'Error guardando factura: ' + (err.message ?? String(err)), variant: 'error' }));
         } finally {
             setSaving(false);
         }

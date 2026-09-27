@@ -11,6 +11,10 @@ import DocumentationVW from '../pages/DocumentationVW'
 import LoginVW from '../pages/LoginVW'
 import LaboratoryVW from '../pages/LaboratoryVW'
 import InventoryVW from '../pages/InventoryVW'
+import ReportsVW from '../pages/ReportsVW'
+import MessageTemplatesVW from '../pages/MessageTemplatesVW'
+import DataRequestsVW from '../pages/DataRequestsVW'
+import WhatsappRequestsVW from '../pages/WhatsappRequestsVW'
 import HistoriesVW from '../pages/HistoriesVW'
 import DoctorsVW from '../pages/DoctorsVW'
 import SettingsVW from '../pages/SettingsVW'
@@ -54,6 +58,10 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/documentation" element={<AdminRoute profile={profile}><DocumentationVW /></AdminRoute>} />
           <Route path="/laboratory" element={<AdminRoute profile={profile}><LaboratoryVW /></AdminRoute>} />
           <Route path="/inventory" element={<AdminRoute profile={profile}><InventoryVW /></AdminRoute>} />
+          <Route path="/reports" element={<AdminRoute profile={profile}><ReportsVW /></AdminRoute>} />
+          <Route path="/plantillas" element={<AdminRoute profile={profile}><MessageTemplatesVW /></AdminRoute>} />
+          <Route path="/solicitudes-datos" element={<AdminRoute profile={profile}><DataRequestsVW /></AdminRoute>} />
+          <Route path="/whatsapp-solicitudes" element={<AdminRoute profile={profile}><WhatsappRequestsVW /></AdminRoute>} />
           <Route path="/histories" element={<HistoriaClinicaVW />} />
           <Route path="/doctors" element={<AdminRoute profile={profile}><DoctorsVW /></AdminRoute>} />
           <Route path="/settings" element={<AdminRoute profile={profile}><SettingsVW /></AdminRoute>} />

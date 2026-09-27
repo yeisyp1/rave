@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { FiX, FiSave, FiTrash2, FiEdit } from 'react-icons/fi'
 import moment from 'moment'
 import '../styles/ModalViewEventVW.css'
+import { showAlertModal } from '../app/store'
 
 /* MODAL VER CITA */
 const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
+  const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState({
     title:       event?.title || '',
@@ -18,7 +21,7 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSave = () => {
-    if (!form.title.trim()) return alert('El título es obligatorio')
+    if (!form.title.trim()) return dispatch(showAlertModal({ message: 'El título es obligatorio', variant: 'error' }))
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -30,7 +33,7 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
     const [eh, em] = form.endTime.split(':')
     end.setHours(Number(eh), Number(em), 0, 0)
 
-    if (end <= start) return alert('La hora de fin debe ser posterior a la de inicio')
+    if (end <= start) return dispatch(showAlertModal({ message: 'La hora de fin debe ser posterior a la de inicio', variant: 'error' }))
     
     onEdit({ ...form, start, end })
     setIsEditing(false)

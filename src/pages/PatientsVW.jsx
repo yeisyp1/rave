@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import {
   deletePatientCtrl,
   filterPatientsCtrl,
@@ -11,9 +12,11 @@ import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
 import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2 } from 'react-icons/fi'
+import { showAlertModal } from "../app/store";
 
 const PatientsVW = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -46,7 +49,7 @@ const PatientsVW = () => {
   const deletePatient = async (id) => {
     if (!confirm("¿Eliminar paciente?")) return;
     const result = await deletePatientCtrl(id);
-    if (!result.ok) alert(result.message);
+    if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
     else getPatients();
   };
 
