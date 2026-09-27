@@ -12,7 +12,7 @@ const calcAge = (dob) => {
   return age >= 0 ? age : "";
 };
 
-const STEPS = ["Documento", "Datos personales", "Contacto & Salud", "Acudiente"];
+const STEPS = ["Documento", "Datos personales", "Contacto & Salud", "Acudiente", "Autorización de datos"];
 
 export default function ModalPatients({
   showModal,
@@ -30,6 +30,15 @@ export default function ModalPatients({
     const updated = { ...form, [name]: value };
     if (name === "fecha_nacimiento") updated.edad = String(calcAge(value));
     setForm(updated);
+  };
+
+  const handleAuthorizationChange = (e) => {
+    const checked = e.target.checked;
+    setForm({
+      ...form,
+      autorizacion_datos: checked,
+      autorizacion_datos_fecha: checked ? new Date().toISOString() : null,
+    });
   };
 
   if (!showModal) return null;
@@ -229,6 +238,38 @@ export default function ModalPatients({
             </div>
           )}
 
+          {/* ── PASO 4: Autorización de datos ── */}
+          {step === 4 && (
+            <div className="pt-form-grid" style={{ animationName: "stepIn" }}>
+              <div className="pt-section-title">Autorización de tratamiento de datos personales</div>
+
+              <div className="pt-field pt-field-full">
+                <p className="pt-label" style={{ fontWeight: 400, lineHeight: 1.5 }}>
+                  De acuerdo con la Ley 1581 de 2012 y el Decreto 1377 de 2013, autorizo a la
+                  Clínica RAVE para recolectar, almacenar y tratar mis datos personales y de
+                  salud con el fin de gestionar mi atención odontológica, historia clínica,
+                  citas y facturación.
+                </p>
+              </div>
+
+              <div className="pt-field pt-field-full">
+                <label className="pt-label" style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.autorizacion_datos)}
+                    onChange={handleAuthorizationChange}
+                  />
+                  Autorizo el tratamiento de mis datos personales <span className="pt-req">*</span>
+                </label>
+                {form.autorizacion_datos_fecha && (
+                  <span className="pt-age-placeholder">
+                    Autorizado el {new Date(form.autorizacion_datos_fecha).toLocaleString('es-CO')}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Navegación */}
           <div className="pt-modal-nav">
             <button
@@ -251,7 +292,12 @@ export default function ModalPatients({
                 Siguiente →
               </button>
             ) : (
-              <button type="button" className="pt-btn-primary" onClick={handleSubmit}>
+              <button
+                type="button"
+                className="pt-btn-primary"
+                onClick={handleSubmit}
+                disabled={!form.autorizacion_datos}
+              >
                 <FiCheck size={15} />
                 {isEditing ? "Actualizar" : "Guardar"} paciente
               </button>

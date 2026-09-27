@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiCheckCircle, FiClock, FiPlus } from 'react-icons/fi'
+import { useDispatch } from 'react-redux'
+import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
   createLaboratoryCaseDAO,
+  deleteLaboratoryCaseDAO,
   listLaboratoryCasesDAO,
   listPatientsForLaboratoryDAO,
   listProcedureCatalogDAO,
+  updateLaboratoryCaseDAO,
   updateLaboratoryCaseStatusDAO,
 } from '../dao/LaboratoryDAO'
+import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const LaboratoryVW = () => {
+  const dispatch = useDispatch()
   const [cases, setCases] = useState([])
   const [form, setForm] = useState({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
   const [patients, setPatients] = useState([])
@@ -18,6 +23,8 @@ const LaboratoryVW = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ work_name: '', lab_name: '', due_date: '' })
 
   const getPatientLabel = (patient) => `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim()
 
@@ -63,12 +70,12 @@ const LaboratoryVW = () => {
       const selectedProcedure = procedures.find((procedure) => procedure.name === form.work)
 
       if (!selectedPatient) {
-        setMessage('Selecciona un paciente valido de la lista.')
+        dispatch(showAlertModal({ message: 'Selecciona un paciente valido de la lista.', variant: 'error' }))
         return
       }
 
       if (!selectedProcedure) {
-        setMessage('Selecciona un procedimiento valido de la lista.')
+        dispatch(showAlertModal({ message: 'Selecciona un procedimiento valido de la lista.', variant: 'error' }))
         return
       }
 
@@ -84,7 +91,7 @@ const LaboratoryVW = () => {
       setForm({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
       await loadData()
     } catch (error) {
-      setMessage(`No se pudo guardar laboratorio: ${error.message}`)
+      dispatch(showAlertModal({ message: `No se pudo guardar laboratorio: ${error.message}`, variant: 'error' }))
     } finally {
       setSaving(false)
     }
@@ -95,7 +102,45 @@ const LaboratoryVW = () => {
       const updated = await updateLaboratoryCaseStatusDAO(id, status)
       setCases((current) => current.map((item) => (item.id === id ? updated : item)))
     } catch (error) {
-      setMessage(`No se pudo actualizar el estado: ${error.message}`)
+      dispatch(showAlertModal({ message: `No se pudo actualizar el estado: ${error.message}`, variant: 'error' }))
+    }
+  }
+
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({
+      work_name: item.work_name ?? '',
+      lab_name: item.lab_name ?? '',
+      due_date: item.due_date ?? '',
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    try {
+      const updated = await updateLaboratoryCaseDAO(id, {
+        work_name: editForm.work_name.trim(),
+        lab_name: editForm.lab_name.trim() || null,
+        due_date: editForm.due_date || null,
+      })
+      setCases((current) => current.map((item) => (item.id === id ? updated : item)))
+      setEditingId(null)
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el trabajo: ${error.message}`, variant: 'error' }))
+    }
+  }
+
+  const removeCase = async (item) => {
+    if (!confirm(`¿Eliminar el trabajo "${item.work_name}"?`)) return
+
+    try {
+      await deleteLaboratoryCaseDAO(item.id)
+      setCases((current) => current.filter((row) => row.id !== item.id))
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el trabajo: ${error.message}`, variant: 'error' }))
     }
   }
 
@@ -174,6 +219,26 @@ const LaboratoryVW = () => {
               ) : (
                 cases.map((item) => {
                   const patientLabel = item.patient_id ? getPatientLabel(patients.find((patient) => patient.id === item.patient_id) || {}) : '-'
+                  const isEditing = editingId === item.id
+
+                  if (isEditing) {
+                    return (
+                      <tr key={item.id}>
+                        <td>{patientLabel || '-'}</td>
+                        <td><input className="admin-input" value={editForm.work_name} onChange={(event) => setEditForm({ ...editForm, work_name: event.target.value })} /></td>
+                        <td><input className="admin-input" value={editForm.lab_name} onChange={(event) => setEditForm({ ...editForm, lab_name: event.target.value })} /></td>
+                        <td><input className="admin-input" type="date" value={editForm.due_date || ''} onChange={(event) => setEditForm({ ...editForm, due_date: event.target.value })} /></td>
+                        <td>-</td>
+                        <td>
+                          <div className="admin-actions">
+                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
+                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  }
+
                   return (
                     <tr key={item.id}>
                       <td>{patientLabel || '-'}</td>
@@ -185,6 +250,8 @@ const LaboratoryVW = () => {
                         <div className="admin-actions">
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>Proceso</button>
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>Entregado</button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                          <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar"><FiTrash2 /></button>
                         </div>
                       </td>
                     </tr>

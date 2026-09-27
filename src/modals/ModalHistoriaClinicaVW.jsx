@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDispatch } from "react-redux";
+import { showAlertModal } from "../app/store";
 import {
   createPatientHistoryCtrl,
   HISTORIA_EMPTY_FORM,
@@ -72,6 +74,7 @@ const fieldToText = (value) => {
 };
 
 const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initialHistory = null }) => {
+  const dispatch = useDispatch();
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(startInForm);
@@ -378,7 +381,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
       if (!result.ok) {
         if (result.error) console.error("Error guardando historia:", result.error);
-        alert(result.message);
+        dispatch(showAlertModal({ message: result.message, variant: "error" }));
         return;
       }
 
@@ -425,7 +428,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
         }
       }
 
-      alert(result.message);
+      dispatch(showAlertModal({ message: result.message, variant: "success" }));
       clearOdontogramDraft(patient.id);
       setForm(HISTORIA_EMPTY_FORM);
       setShowForm(false);
@@ -472,7 +475,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
         throw new Error(error.message || "No se pudo eliminar la historia clínica");
       }
 
-      alert("Historia clínica eliminada correctamente");
+      dispatch(showAlertModal({ message: "Historia clínica eliminada correctamente", variant: "success" }));
       await fetchHistories();
     } catch (error) {
       console.error("Error eliminando historia clínica:", error);

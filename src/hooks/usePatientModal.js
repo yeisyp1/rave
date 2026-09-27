@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   calcPatientAgeCtrl,
   canNextPatientStepCtrl,
   PATIENT_EMPTY_FORM,
   savePatientCtrl,
 } from "../controllers/PatientsCtrl";
+import { showAlertModal } from "../app/store";
 
 /**
  * Custom hook para manejar la lógica del modal de edición de pacientes
@@ -12,6 +14,7 @@ import {
  * @returns {Object} Estado y handlers del modal
  */
 export const usePatientModal = (onSaveCallback = null) => {
+  const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(PATIENT_EMPTY_FORM);
@@ -54,11 +57,11 @@ export const usePatientModal = (onSaveCallback = null) => {
     const result = await savePatientCtrl({ form, editingId });
     if (!result.ok) {
       if (result.error) console.error(result.error);
-      alert(result.message);
+      dispatch(showAlertModal({ message: result.message, variant: "error" }));
       return;
     }
 
-    alert(result.message);
+    dispatch(showAlertModal({ message: result.message, variant: "success" }));
     closeModal();
 
     if (onSaveCallback) {

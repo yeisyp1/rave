@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
 import InvoicePrintable from '../components/InvoicePrintable'
 import '../styles/ModalPatientsVW.css'
 import { updateBillingInvoiceDAO } from '../dao/BillingDAO'
+import { showAlertModal } from '../app/store'
 
 const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () => {} }) => {
+  const dispatch = useDispatch()
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
 
@@ -42,7 +45,7 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
       onClose()
     } catch (err) {
       console.error('Error guardando factura:', err)
-      alert('No se pudo guardar la factura: ' + (err.message ?? String(err)))
+      dispatch(showAlertModal({ message: 'No se pudo guardar la factura: ' + (err.message ?? String(err)), variant: 'error' }))
     } finally {
       setSaving(false)
     }

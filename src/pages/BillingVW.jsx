@@ -1,5 +1,7 @@
 import '../styles/BillingVW.css'
 import { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { showAlertModal } from '../app/store'
 import { getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
 import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
@@ -9,6 +11,7 @@ import logoLight from '../assets/logo1.png'
 import { updateBillingInvoiceDAO } from '../dao/BillingDAO'
 
 const BillingVW = () => {
+  const dispatch = useDispatch()
   const [invoices, setInvoices] = useState([])
   const [totalIncome, setTotalIncome] = useState(0)
   const [totalPending, setTotalPending] = useState(0)
@@ -194,7 +197,7 @@ const BillingVW = () => {
       await load()
     } catch (error) {
       console.error('Error actualizando estado de factura:', error)
-      alert('No se pudo actualizar el estado de la factura.')
+      dispatch(showAlertModal({ message: 'No se pudo actualizar el estado de la factura.', variant: 'error' }))
     } finally {
       setUpdatingStatusId(null)
     }

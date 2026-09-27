@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useDispatch } from 'react-redux'
+import { showAlertModal } from '../app/store'
 import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/es'
@@ -27,6 +29,7 @@ const localizer = momentLocalizer(moment)
    CALENDAR PAGE
 ───────────────────────────── */
 const CalendarVW = () => {
+  const dispatch = useDispatch()
   const [events,       setEvents]       = useState([])
   const [currentDate,  setCurrentDate]  = useState(new Date())
   const [googleToken,  setGoogleToken]  = useState(null)
@@ -101,6 +104,7 @@ const CalendarVW = () => {
       const titleText = title || ''
       const documentMatch = titleText.match(/-\s*(\S+)$/)
       const document = documentMatch ? documentMatch[1] : ''
+      let patientId
 
       if (document) {
 
@@ -115,6 +119,8 @@ const CalendarVW = () => {
           setSaving(false)
           return
         }
+
+        patientId = patientExists.id
       }
 
       const newEv = await createGoogleEventCtrl(
@@ -124,7 +130,8 @@ const CalendarVW = () => {
           start,
           end,
           description,
-          location
+          location,
+          patientId
         }
       )
 
@@ -134,7 +141,7 @@ const CalendarVW = () => {
     } catch (err) {
 
       console.error(err)
-      alert('Error al crear la cita en Google Calendar')
+      dispatch(showAlertModal({ message: 'Error al crear la cita en Google Calendar', variant: 'error' }))
 
     } finally {
 
@@ -160,7 +167,7 @@ const CalendarVW = () => {
       setSelectedEvent(null)
     } catch (err) {
       console.error(err)
-      alert('Error al actualizar la cita')
+      dispatch(showAlertModal({ message: 'Error al actualizar la cita', variant: 'error' }))
     }
   }
 
@@ -174,7 +181,7 @@ const CalendarVW = () => {
       setSelectedEvent(null)
     } catch (err) {
       console.error(err)
-      alert('Error al eliminar la cita')
+      dispatch(showAlertModal({ message: 'Error al eliminar la cita', variant: 'error' }))
     } finally {
       setDeleting(false)
     }

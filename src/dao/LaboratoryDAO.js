@@ -33,6 +33,23 @@ export const updateLaboratoryCaseStatusDAO = async (id, status) => {
   return data;
 };
 
+export const updateLaboratoryCaseDAO = async (id, payload) => {
+  const { data, error } = await supabase
+    .from("laboratory_cases")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteLaboratoryCaseDAO = async (id) => {
+  const { error } = await supabase.from("laboratory_cases").delete().eq("id", id);
+  if (error) throw error;
+};
+
 export const listPatientsForLaboratoryDAO = async () => {
   const { data, error } = await supabase
     .from("patients")

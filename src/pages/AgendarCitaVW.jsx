@@ -148,6 +148,8 @@ const AgendarCitaVW = () => {
         location: form.location,
         start,
         end,
+        patientId: patientExists.id,
+        service: form.service,
       })
       setMessage('')
       setShowSuccessNotice(true)

@@ -25,6 +25,8 @@ export const PATIENT_EMPTY_FORM = {
   acudiente_direccion: "",
   acudiente_parentesco: "",
   acudiente_celular: "",
+  autorizacion_datos: false,
+  autorizacion_datos_fecha: null,
 };
 
 export const PATIENT_STEPS = [
@@ -32,6 +34,7 @@ export const PATIENT_STEPS = [
   "Datos personales",
   "Contacto & Salud",
   "Acudiente",
+  "Autorización de datos",
 ];
 
 export const calcPatientAgeCtrl = (dob) => {
@@ -57,6 +60,9 @@ export const savePatientCtrl = async ({ form, editingId }) => {
   }
   if (!form.nombre || !form.apellidos) {
     return { ok: false, message: "Nombre y apellidos obligatorios" };
+  }
+  if (!form.autorizacion_datos) {
+    return { ok: false, message: "Se requiere la autorización de tratamiento de datos personales (Ley 1581 de 2012)" };
   }
 
   if (editingId) {
@@ -84,6 +90,12 @@ export const canNextPatientStepCtrl = (step, form) => {
     return Boolean(form.nombre && form.apellidos && form.fecha_nacimiento);
   return true;
 };
+
+export const setDataAuthorizationCtrl = (form, checked) => ({
+  ...form,
+  autorizacion_datos: checked,
+  autorizacion_datos_fecha: checked ? new Date().toISOString() : null,
+});
 
 export const filterPatientsCtrl = (patients, search) => {
   const q = search.toLowerCase();

@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { supabase } from "../dao/SupabaseDAO";
 import logo from "../assets/logo.png";
 import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { FiAlertCircle, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
+import { showAlertModal } from "../app/store";
 
 const Login = () => {
+  const dispatch = useDispatch();
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
   const [loading, setLoading]           = useState(false);
@@ -59,7 +62,7 @@ const Login = () => {
         },
       }
     });
-    if (error) alert(error.message);
+    if (error) dispatch(showAlertModal({ message: error.message, variant: "error" }));
   };
 
   const handleMagicLink = async () => {

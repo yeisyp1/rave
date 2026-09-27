@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiArchive, FiPlus, FiTrendingDown } from 'react-icons/fi'
+import { useDispatch } from 'react-redux'
+import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
   createInventoryItemDAO,
+  deleteInventoryItemDAO,
   listInventoryItemsDAO,
+  updateInventoryItemDAO,
   updateInventoryItemStockDAO,
 } from '../dao/InventoryDAO'
+import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const InventoryVW = () => {
+  const dispatch = useDispatch()
   const [items, setItems] = useState([])
   const [form, setForm] = useState({ name: '', category: '', stock: '', min: '', unit: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', category: '', stock: '', min_stock: '', unit: '' })
 
   const loadItems = async () => {
     setLoading(true)
@@ -56,7 +63,7 @@ const InventoryVW = () => {
       setForm({ name: '', category: '', stock: '', min: '', unit: '' })
       await loadItems()
     } catch (error) {
-      setMessage(`No se pudo guardar el insumo: ${error.message}`)
+      dispatch(showAlertModal({ message: `No se pudo guardar el insumo: ${error.message}`, variant: 'error' }))
     } finally {
       setSaving(false)
     }
@@ -68,7 +75,49 @@ const InventoryVW = () => {
       const updated = await updateInventoryItemStockDAO(item.id, nextStock)
       setItems((current) => current.map((row) => (row.id === item.id ? updated : row)))
     } catch (error) {
-      setMessage(`No se pudo actualizar stock: ${error.message}`)
+      dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${error.message}`, variant: 'error' }))
+    }
+  }
+
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({
+      name: item.name ?? '',
+      category: item.category ?? '',
+      stock: item.stock ?? '',
+      min_stock: item.min_stock ?? '',
+      unit: item.unit ?? '',
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    try {
+      const updated = await updateInventoryItemDAO(id, {
+        name: editForm.name.trim(),
+        category: editForm.category.trim() || null,
+        stock: Number(editForm.stock),
+        min_stock: Number(editForm.min_stock),
+        unit: editForm.unit.trim(),
+      })
+      setItems((current) => current.map((row) => (row.id === id ? updated : row)))
+      setEditingId(null)
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el insumo: ${error.message}`, variant: 'error' }))
+    }
+  }
+
+  const removeItem = async (item) => {
+    if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return
+
+    try {
+      await deleteInventoryItemDAO(item.id)
+      setItems((current) => current.filter((row) => row.id !== item.id))
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el insumo: ${error.message}`, variant: 'error' }))
     }
   }
 
@@ -157,7 +206,27 @@ const InventoryVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay insumos registrados.</td></tr>
               ) : (
                 items.map((item) => {
-                const isLow = Number(item.stock) <= Number(item.min)
+                const isLow = Number(item.stock) <= Number(item.min_stock)
+                const isEditing = editingId === item.id
+
+                if (isEditing) {
+                  return (
+                    <tr key={item.id}>
+                      <td><input className="admin-input" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} /></td>
+                      <td><input className="admin-input" value={editForm.category} onChange={(event) => setEditForm({ ...editForm, category: event.target.value })} /></td>
+                      <td><input className="admin-input" type="number" min="0" value={editForm.stock} onChange={(event) => setEditForm({ ...editForm, stock: event.target.value })} /></td>
+                      <td><input className="admin-input" type="number" min="0" value={editForm.min_stock} onChange={(event) => setEditForm({ ...editForm, min_stock: event.target.value })} /></td>
+                      <td>-</td>
+                      <td>
+                        <div className="admin-actions">
+                          <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
+                          <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                }
+
                 return (
                   <tr key={item.id}>
                     <td>{item.name}</td>
@@ -169,6 +238,8 @@ const InventoryVW = () => {
                       <div className="admin-actions">
                         <button className="admin-btn" type="button" onClick={() => adjustStock(item, -1)}>-1</button>
                         <button className="admin-btn" type="button" onClick={() => adjustStock(item, 1)}>+1</button>
+                        <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                        <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar"><FiTrash2 /></button>
                       </div>
                     </td>
                   </tr>
