@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showAlertModal } from '../app/store';
-import { supabase } from '../dao/SupabaseDAO';
-import { deletePatientHistoryCtrl, loadPatientHistoriesCtrl } from '../controllers/HistoriaClinicaCtrl';
-import { createInformedConsentDAO, listInformedConsentsByPatientDAO } from '../dao/InformedConsentDAO';
-import { createDataRequestDAO, listDataRequestsByPatientDAO } from '../dao/DataRequestsDAO';
+import { deletePatientHistoryCtrl } from '../controllers/HistoriaClinicaCtrl';
+import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -61,61 +59,13 @@ const PatientDetailVW = () => {
     try {
       setLoading(true);
 
-      // Fetch patient data
-      const { data: patientData, error: patientError } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', patientId)
-        .single();
-
-      if (patientError) throw patientError;
-      setPatient(patientData);
-
-      const [{ data: legacyProcedures }, { data: patientProcedures }] = await Promise.all([
-        supabase
-          .from('procedures')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('patient_procedures')
-          .select('*, procedure_catalog(name)')
-          .eq('patient_id', patientId)
-          .order('procedure_date', { ascending: false })
-          .limit(10),
-      ]);
-
-      const normalizedProcedures = [
-        ...(legacyProcedures ?? []),
-        ...(patientProcedures ?? []).map((procedure) => ({
-          ...procedure,
-          fecha: procedure.procedure_date,
-          procedure_name: procedure.procedure_catalog?.name,
-          cost: procedure.total_price ?? procedure.unit_price ?? 0,
-        })),
-      ];
-      setProcedures(normalizedProcedures);
-
-      const clinicalHistoriesData = await loadPatientHistoriesCtrl(patientId);
-      setClinicalHistories(clinicalHistoriesData);
-
-      const [consentsData, dataRequestsData] = await Promise.all([
-        listInformedConsentsByPatientDAO(patientId),
-        listDataRequestsByPatientDAO(patientId),
-      ]);
-      setConsents(consentsData);
-      setDataRequests(dataRequestsData);
-
-      // Fetch radiographies if exists
-      const { data: radiographyData } = await supabase
-        .from('radiographies')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('created_at', { ascending: false })
-        .limit(6);
-
-      if (radiographyData) setRadiographies(radiographyData);
+      const detail = await loadPatientDetailCtrl(patientId);
+      setPatient(detail.patient);
+      setProcedures(detail.procedures);
+      setClinicalHistories(detail.clinicalHistories);
+      setConsents(detail.consents);
+      setDataRequests(detail.dataRequests);
+      setRadiographies(detail.radiographies);
     } catch (error) {
       console.error('Error fetching patient data:', error);
     } finally {
@@ -150,19 +100,14 @@ const PatientDetailVW = () => {
   const submitConsent = async (event) => {
     event.preventDefault();
 
-    if (!consentForm.content.trim() || !consentForm.patient_signature_name.trim()) {
-      dispatch(showAlertModal({ message: 'Completa el contenido del consentimiento y el nombre de quien firma.', variant: 'error' }));
-      return;
-    }
-
     setSavingConsent(true);
     try {
-      const created = await createInformedConsentDAO({
-        patient_id: patientId,
-        content: consentForm.content.trim(),
-        patient_signature_name: consentForm.patient_signature_name.trim(),
-      });
-      setConsents((current) => [created, ...current]);
+      const result = await submitConsentCtrl({ patientId, form: consentForm });
+      if (!result.ok) {
+        dispatch(showAlertModal({ message: result.message, variant: 'error' }));
+        return;
+      }
+      setConsents((current) => [result.consent, ...current]);
       setConsentForm({ content: '', patient_signature_name: '' });
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo registrar el consentimiento: ${error.message}`, variant: 'error' }));
@@ -174,19 +119,14 @@ const PatientDetailVW = () => {
   const submitDataRequest = async (event) => {
     event.preventDefault();
 
-    if (!requestForm.description.trim()) {
-      dispatch(showAlertModal({ message: 'Describe la solicitud del paciente.', variant: 'error' }));
-      return;
-    }
-
     setSavingRequest(true);
     try {
-      const created = await createDataRequestDAO({
-        patient_id: patientId,
-        request_type: requestForm.request_type,
-        description: requestForm.description.trim(),
-      });
-      setDataRequests((current) => [created, ...current]);
+      const result = await submitDataRequestCtrl({ patientId, form: requestForm });
+      if (!result.ok) {
+        dispatch(showAlertModal({ message: result.message, variant: 'error' }));
+        return;
+      }
+      setDataRequests((current) => [result.request, ...current]);
       setRequestForm({ request_type: 'Rectificación', description: '' });
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo registrar la solicitud: ${error.message}`, variant: 'error' }));

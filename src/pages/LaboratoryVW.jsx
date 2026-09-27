@@ -3,21 +3,22 @@ import { useDispatch } from 'react-redux'
 import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
-  createLaboratoryCaseDAO,
-  deleteLaboratoryCaseDAO,
-  listLaboratoryCasesDAO,
-  listPatientsForLaboratoryDAO,
-  listProcedureCatalogDAO,
-  updateLaboratoryCaseDAO,
-  updateLaboratoryCaseStatusDAO,
-} from '../dao/LaboratoryDAO'
+  LABORATORY_EMPTY_FORM,
+  computeLaboratoryStatsCtrl,
+  createLaboratoryCaseCtrl,
+  deleteLaboratoryCaseCtrl,
+  getLaboratoryPatientLabel,
+  loadLaboratoryDataCtrl,
+  updateLaboratoryCaseCtrl,
+  updateLaboratoryCaseStatusCtrl,
+} from '../controllers/LaboratoryCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const LaboratoryVW = () => {
   const dispatch = useDispatch()
   const [cases, setCases] = useState([])
-  const [form, setForm] = useState({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
+  const [form, setForm] = useState(LABORATORY_EMPTY_FORM)
   const [patients, setPatients] = useState([])
   const [procedures, setProcedures] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,19 +27,12 @@ const LaboratoryVW = () => {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ work_name: '', lab_name: '', due_date: '' })
 
-  const getPatientLabel = (patient) => `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim()
-
   const loadData = async () => {
     setLoading(true)
     setMessage('')
 
     try {
-      const [casesData, patientsData, proceduresData] = await Promise.all([
-        listLaboratoryCasesDAO(),
-        listPatientsForLaboratoryDAO(),
-        listProcedureCatalogDAO(),
-      ])
-
+      const { cases: casesData, patients: patientsData, procedures: proceduresData } = await loadLaboratoryDataCtrl()
       setCases(casesData)
       setPatients(patientsData)
       setProcedures(proceduresData)
@@ -53,57 +47,30 @@ const LaboratoryVW = () => {
     loadData()
   }, [])
 
-  const stats = useMemo(() => ({
-    pending: cases.filter((item) => item.status === 'Pendiente').length,
-    progress: cases.filter((item) => item.status === 'En proceso').length,
-    delivered: cases.filter((item) => item.status === 'Entregado').length,
-  }), [cases])
+  const stats = useMemo(() => computeLaboratoryStatsCtrl(cases), [cases])
 
   const addCase = async (event) => {
     event.preventDefault()
 
     setSaving(true)
-    setMessage('')
 
-    try {
-      const selectedPatient = patients.find((patient) => getPatientLabel(patient) === form.patient)
-      const selectedProcedure = procedures.find((procedure) => procedure.name === form.work)
-
-      if (!selectedPatient) {
-        dispatch(showAlertModal({ message: 'Selecciona un paciente valido de la lista.', variant: 'error' }))
-        return
-      }
-
-      if (!selectedProcedure) {
-        dispatch(showAlertModal({ message: 'Selecciona un procedimiento valido de la lista.', variant: 'error' }))
-        return
-      }
-
-      await createLaboratoryCaseDAO({
-        patient_id: selectedPatient.id,
-        procedure_catalog_id: selectedProcedure.id,
-        work_name: form.work.trim(),
-        lab_name: form.lab.trim() || null,
-        due_date: form.due,
-        status: form.status,
-      })
-
-      setForm({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
+    const result = await createLaboratoryCaseCtrl({ form, patients, procedures })
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: result.message, variant: 'error' }))
+    } else {
+      setForm(LABORATORY_EMPTY_FORM)
       await loadData()
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo guardar laboratorio: ${error.message}`, variant: 'error' }))
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   const updateStatus = async (id, status) => {
-    try {
-      const updated = await updateLaboratoryCaseStatusDAO(id, status)
-      setCases((current) => current.map((item) => (item.id === id ? updated : item)))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar el estado: ${error.message}`, variant: 'error' }))
+    const result = await updateLaboratoryCaseStatusCtrl(id, status)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el estado: ${result.message}`, variant: 'error' }))
+      return
     }
+    setCases((current) => current.map((item) => (item.id === id ? result.data : item)))
   }
 
   const startEdit = (item) => {
@@ -120,28 +87,24 @@ const LaboratoryVW = () => {
   }
 
   const saveEdit = async (id) => {
-    try {
-      const updated = await updateLaboratoryCaseDAO(id, {
-        work_name: editForm.work_name.trim(),
-        lab_name: editForm.lab_name.trim() || null,
-        due_date: editForm.due_date || null,
-      })
-      setCases((current) => current.map((item) => (item.id === id ? updated : item)))
-      setEditingId(null)
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar el trabajo: ${error.message}`, variant: 'error' }))
+    const result = await updateLaboratoryCaseCtrl(id, editForm)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el trabajo: ${result.message}`, variant: 'error' }))
+      return
     }
+    setCases((current) => current.map((item) => (item.id === id ? result.data : item)))
+    setEditingId(null)
   }
 
   const removeCase = async (item) => {
     if (!confirm(`¿Eliminar el trabajo "${item.work_name}"?`)) return
 
-    try {
-      await deleteLaboratoryCaseDAO(item.id)
-      setCases((current) => current.filter((row) => row.id !== item.id))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo eliminar el trabajo: ${error.message}`, variant: 'error' }))
+    const result = await deleteLaboratoryCaseCtrl(item.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el trabajo: ${result.message}`, variant: 'error' }))
+      return
     }
+    setCases((current) => current.filter((row) => row.id !== item.id))
   }
 
   return (
@@ -176,7 +139,7 @@ const LaboratoryVW = () => {
             <input className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value })} required />
             <datalist id="lab-patient-list">
               {patients.map((patient) => (
-                <option key={patient.id} value={getPatientLabel(patient)} />
+                <option key={patient.id} value={getLaboratoryPatientLabel(patient)} />
               ))}
             </datalist>
           </div>
@@ -218,7 +181,7 @@ const LaboratoryVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay trabajos registrados.</td></tr>
               ) : (
                 cases.map((item) => {
-                  const patientLabel = item.patient_id ? getPatientLabel(patients.find((patient) => patient.id === item.patient_id) || {}) : '-'
+                  const patientLabel = item.patient_id ? getLaboratoryPatientLabel(patients.find((patient) => patient.id === item.patient_id) || {}) : '-'
                   const isEditing = editingId === item.id
 
                   if (isEditing) {

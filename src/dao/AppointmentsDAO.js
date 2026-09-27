@@ -31,47 +31,6 @@ export const listWhatsappAppointmentRequestsDAO = async () => {
   return data ?? [];
 };
 
-export const queueAppointmentConfirmationDAO = async ({ appointmentId, patientId, start, serviceType }) => {
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("nombre, celular, telefono")
-    .eq("id", patientId)
-    .single();
-
-  const phone = patient?.celular || patient?.telefono;
-  if (!phone) return null;
-
-  const { data: template } = await supabase
-    .from("message_templates")
-    .select("*")
-    .eq("active", true)
-    .eq("channel", "WhatsApp")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  const fallbackBody = "Hola {{nombre}}, confirmamos tu cita en Clínica RAVE para el {{fecha}} a las {{hora}}.";
-  const body = (template?.body || fallbackBody)
-    .replace(/{{\s*nombre\s*}}/g, patient?.nombre || "")
-    .replace(/{{\s*fecha\s*}}/g, start.toLocaleDateString("es-CO"))
-    .replace(/{{\s*hora\s*}}/g, start.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" }))
-    .replace(/{{\s*servicio\s*}}/g, serviceType || "");
-
-  const { error } = await supabase.from("whatsapp_messages").insert([
-    {
-      direction: "outbound",
-      phone,
-      patient_id: patientId,
-      appointment_id: appointmentId,
-      template_id: template?.id ?? null,
-      body,
-      status: "pending",
-    },
-  ]);
-
-  if (error) throw error;
-};
-
 export const updateAppointmentStatusDAO = async (id, status) => {
   const { data, error } = await supabase
     .from("appointments")
@@ -82,4 +41,34 @@ export const updateAppointmentStatusDAO = async (id, status) => {
 
   if (error) throw error;
   return data;
+};
+
+export const getPatientContactDAO = async (patientId) => {
+  const { data, error } = await supabase
+    .from("patients")
+    .select("nombre, celular, telefono")
+    .eq("id", patientId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getActiveWhatsappTemplateDAO = async () => {
+  const { data, error } = await supabase
+    .from("message_templates")
+    .select("*")
+    .eq("active", true)
+    .eq("channel", "WhatsApp")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+export const createOutboundWhatsappMessageDAO = async (payload) => {
+  const { error } = await supabase.from("whatsapp_messages").insert([payload]);
+  if (error) throw error;
 };

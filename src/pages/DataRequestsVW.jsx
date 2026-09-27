@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiCheckCircle, FiClock, FiShield } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
-import { listDataRequestsDAO, updateDataRequestStatusDAO } from '../dao/DataRequestsDAO'
+import {
+  DATA_REQUEST_STATUS_OPTIONS,
+  computeDataRequestStatsCtrl,
+  getDataRequestPatientLabel,
+  loadDataRequestsCtrl,
+  updateDataRequestStatusCtrl,
+} from '../controllers/DataRequestsCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
-
-const STATUS_OPTIONS = ['Pendiente', 'En proceso', 'Resuelta', 'Rechazada']
 
 const DataRequestsVW = () => {
   const dispatch = useDispatch()
@@ -19,7 +23,7 @@ const DataRequestsVW = () => {
     setMessage('')
 
     try {
-      const data = await listDataRequestsDAO()
+      const data = await loadDataRequestsCtrl()
       setRequests(data)
     } catch (error) {
       setMessage(`No se pudieron cargar las solicitudes: ${error.message}`)
@@ -32,24 +36,15 @@ const DataRequestsVW = () => {
     loadRequests()
   }, [])
 
-  const stats = useMemo(() => ({
-    pending: requests.filter((item) => item.status === 'Pendiente' || item.status === 'En proceso').length,
-    resolved: requests.filter((item) => item.status === 'Resuelta').length,
-  }), [requests])
+  const stats = useMemo(() => computeDataRequestStatsCtrl(requests), [requests])
 
   const changeStatus = async (id, status) => {
-    try {
-      const updated = await updateDataRequestStatusDAO(id, { status })
-      setRequests((current) => current.map((item) => (item.id === id ? { ...item, ...updated } : item)))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar la solicitud: ${error.message}`, variant: 'error' }))
+    const result = await updateDataRequestStatusCtrl(id, status)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar la solicitud: ${result.message}`, variant: 'error' }))
+      return
     }
-  }
-
-  const getPatientLabel = (item) => {
-    const patient = item.patients
-    if (!patient) return item.patient_id
-    return `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() || patient.numero_documento
+    setRequests((current) => current.map((item) => (item.id === id ? { ...item, ...result.data } : item)))
   }
 
   return (
@@ -95,7 +90,7 @@ const DataRequestsVW = () => {
                 requests.map((item) => (
                   <tr key={item.id}>
                     <td>{new Date(item.created_at).toLocaleDateString('es-CO')}</td>
-                    <td>{getPatientLabel(item)}</td>
+                    <td>{getDataRequestPatientLabel(item)}</td>
                     <td>{item.request_type}</td>
                     <td>{item.description}</td>
                     <td><span className={`admin-pill ${item.status === 'Resuelta' ? 'good' : item.status === 'Rechazada' ? 'bad' : 'warn'}`}>{item.status}</span></td>
@@ -106,7 +101,7 @@ const DataRequestsVW = () => {
                           value={item.status}
                           onChange={(event) => changeStatus(item.id, event.target.value)}
                         >
-                          {STATUS_OPTIONS.map((option) => (
+                          {DATA_REQUEST_STATUS_OPTIONS.map((option) => (
                             <option key={option} value={option}>{option}</option>
                           ))}
                         </select>

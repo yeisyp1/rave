@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { supabase } from "../dao/SupabaseDAO";
+import { loginWithGoogleCtrl, loginWithPasswordCtrl, sendMagicLinkCtrl } from "../controllers/AuthCtrl";
 import logo from "../assets/logo.png";
 import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
@@ -37,47 +37,28 @@ const Login = () => {
     setLoading(true);
     setErrorMsg("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const result = await loginWithPasswordCtrl(email, password);
     setLoading(false);
 
-    if (error) {
-      setErrorMsg(error.message);
+    if (!result.ok) {
+      setErrorMsg(result.message);
       return;
     }
 
-    console.log("Usuario logueado:", data.user);
     navigate("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        scopes: "https://www.googleapis.com/auth/calendar",  
-        redirectTo: `${window.location.origin}/oauth/consent`,
-        queryParams: {
-          access_type: "offline",  
-          prompt: "consent",       
-          include_granted_scopes: "true",
-        },
-      }
-    });
-    if (error) dispatch(showAlertModal({ message: error.message, variant: "error" }));
+    const result = await loginWithGoogleCtrl();
+    if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
   };
 
   const handleMagicLink = async () => {
-    if (!email.trim()) {
-      setErrorMsg('Escribe tu correo para enviarte el enlace de acceso.');
-      return;
-    }
     setLoading(true);
     setErrorMsg('');
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    });
+    const result = await sendMagicLinkCtrl(email);
     setLoading(false);
-    setErrorMsg(error ? error.message : 'Revisa tu correo: te enviamos un enlace de acceso sin contraseña.');
+    setErrorMsg(result.message);
   };
 
 

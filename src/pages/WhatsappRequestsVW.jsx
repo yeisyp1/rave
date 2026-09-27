@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiCalendar, FiCheck, FiPhone, FiXCircle } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
-import { listWhatsappAppointmentRequestsDAO, updateAppointmentStatusDAO } from '../dao/AppointmentsDAO'
+import {
+  computeWhatsappRequestStatsCtrl,
+  getWhatsappRequestPatientLabel,
+  loadWhatsappRequestsCtrl,
+  updateWhatsappRequestStatusCtrl,
+} from '../controllers/WhatsappRequestsCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
@@ -17,7 +22,7 @@ const WhatsappRequestsVW = () => {
     setMessage('')
 
     try {
-      const data = await listWhatsappAppointmentRequestsDAO()
+      const data = await loadWhatsappRequestsCtrl()
       setRequests(data)
     } catch (error) {
       setMessage(`No se pudieron cargar las solicitudes: ${error.message}`)
@@ -30,25 +35,16 @@ const WhatsappRequestsVW = () => {
     loadRequests()
   }, [])
 
-  const stats = useMemo(() => ({
-    newAppointments: requests.filter((item) => item.status === 'Solicitada').length,
-    cancellations: requests.filter((item) => item.status === 'Cancelación solicitada').length,
-  }), [requests])
-
-  const getPatientLabel = (item) => {
-    const patient = item.patients
-    if (patient) return `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() || patient.numero_documento
-    return item.requester_phone || 'Paciente sin identificar'
-  }
+  const stats = useMemo(() => computeWhatsappRequestStatsCtrl(requests), [requests])
 
   const markHandled = async (item, status) => {
-    try {
-      const updated = await updateAppointmentStatusDAO(item.id, status)
-      setRequests((current) => current.filter((row) => row.id !== item.id || updated.status === row.status))
-      await loadRequests()
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar la solicitud: ${error.message}`, variant: 'error' }))
+    const result = await updateWhatsappRequestStatusCtrl(item.id, status)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar la solicitud: ${result.message}`, variant: 'error' }))
+      return
     }
+    setRequests((current) => current.filter((row) => row.id !== item.id || result.data.status === row.status))
+    await loadRequests()
   }
 
   return (
@@ -90,7 +86,7 @@ const WhatsappRequestsVW = () => {
                 requests.map((item) => (
                   <tr key={item.id}>
                     <td>{new Date(item.created_at).toLocaleString('es-CO')}</td>
-                    <td>{getPatientLabel(item)}</td>
+                    <td>{getWhatsappRequestPatientLabel(item)}</td>
                     <td>{item.requester_phone || item.patients?.celular || '-'}</td>
                     <td><span className={`admin-pill ${item.status === 'Solicitada' ? 'warn' : 'bad'}`}>{item.status}</span></td>
                     <td>{item.notes || (item.status === 'Cancelación solicitada' ? `Cita del ${item.start_at ? new Date(item.start_at).toLocaleString('es-CO') : '—'}` : '-')}</td>
@@ -118,11 +114,7 @@ const WhatsappRequestsVW = () => {
 
       <div className="admin-card">
         <h2 className="admin-card-title">Configuración pendiente</h2>
-        <p className="admin-subtitle">
-          <FiPhone size={14} style={{ verticalAlign: 'middle', marginRight: '.35rem' }} />
-          Esta bandeja se llena automáticamente cuando conectes una cuenta de WhatsApp Business (Twilio o Meta Cloud API)
-          al webhook <code>whatsapp-webhook</code> desplegado en Supabase Edge Functions.
-        </p>
+       
       </div>
     </div>
   )
