@@ -3,10 +3,11 @@ import {
   deleteClinicalHistoryDAO,
   updateClinicalHistoryDAO,
   getCurrentDoctorLabelDAO,
+  getLatestOdontogramDAO,
   listHistoryCityDepartmentsDAO,
   listClinicalHistoriesByPatientDAO,
 } from "../dao/ClinicalHistoriesDAO";
-import { listPatientsDAO, updatePatientDAO } from "../dao/PatientsDAO";
+import { getPatientByIdDAO, listPatientsDAO, updatePatientDAO } from "../dao/PatientsDAO";
 import { ClinicalHistoryModel } from "../models/ClinicalHistoryModel";
 import { PatientModel } from "../models/PatientModel";
 
@@ -112,6 +113,15 @@ export const filterHistoriaPatientsCtrl = (patients, search) => {
       patient.email?.toLowerCase().includes(q)
     );
   });
+};
+
+export const loadOdontogramPatientCtrl = async (patientId) => {
+  const [patient, savedOdontogram] = await Promise.all([
+    getPatientByIdDAO(patientId),
+    getLatestOdontogramDAO(patientId),
+  ]);
+
+  return { patient, savedOdontogram };
 };
 
 export const loadPatientHistoriesCtrl = async (patientId) => {

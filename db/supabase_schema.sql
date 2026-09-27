@@ -815,3 +815,93 @@ select cron.schedule(
   );
   $$
 );
+
+
+----------------------
+
+
+-- Correcciones de seguridad y rendimiento (advisors de Supabase), 2026-09-27.
+
+-- BUG activo: 'doctors' y 'patient_procedures' tenian RLS habilitado sin ninguna
+-- politica, lo que ocultaba silenciosamente TODOS sus datos (sin error) a
+-- cualquier usuario autenticado. Afectaba la pestaña "Tratamientos y
+-- odontograma" en PatientDetailVW.jsx (CU-10).
+create policy doctors_all_authenticated
+on public.doctors
+for all
+to authenticated
+using (true)
+with check (true);
+
+create policy patient_procedures_all_authenticated
+on public.patient_procedures
+for all
+to authenticated
+using (true)
+with check (true);
+
+-- Endurecimiento de funciones: search_path fijo (evita hijacking via search_path)
+-- y se revoca el EXECUTE publico sobre handle_new_user (solo debe dispararse
+-- como trigger de auth.users, no ser invocable via RPC).
+alter function public.handle_new_user() set search_path = '';
+alter function public.set_updated_at() set search_path = '';
+alter function public.trg_set_updated_at() set search_path = '';
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
+-- Rendimiento de RLS: cachear auth.uid()/auth.jwt() por sentencia en vez de
+-- reevaluarlos por fila (patron recomendado por Supabase). Tambien se eliminan
+-- las 4 politicas legacy de clinical_histories que quedaban redundantes frente
+-- a las politicas "..._authenticated" (permisivas OR, sin restriccion real).
+drop policy if exists "Authenticated staff can view clinical histories" on public.clinical_histories;
+drop policy if exists "Authenticated staff can insert clinical histories" on public.clinical_histories;
+drop policy if exists "Authenticated staff can update clinical histories" on public.clinical_histories;
+drop policy if exists "Authenticated staff can delete clinical histories" on public.clinical_histories;
+
+alter policy "Allow read for authenticated users" on public.patients
+  using ((select auth.uid()) is not null);
+alter policy "Allow update for authenticated users" on public.patients
+  using ((select auth.uid()) is not null);
+alter policy "Allow delete for authenticated users" on public.patients
+  using ((select auth.uid()) is not null);
+
+alter policy "Admin manage authorized emails" on public.authorized_emails
+  using (exists (select 1 from profiles where profiles.id = (select auth.uid()) and profiles.role = 'admin'::text));
+alter policy "Users can check their own authorization" on public.authorized_emails
+  using (email = ((select auth.jwt()) ->> 'email'::text));
+
+alter policy "select_own_profile" on public.profiles
+  using ((select auth.uid()) = id);
+alter policy "update_own_profile" on public.profiles
+  using ((select auth.uid()) = id);
+alter policy "insert_own_profile" on public.profiles
+  with check ((select auth.uid()) = id);
+
+-- Indices duplicados (mismo par de columnas que otro indice existente).
+drop index if exists public.clinical_histories_patient_idx;
+drop index if exists public.laboratory_cases_patient_idx;
+drop index if exists public.procedures_patient_idx;
+drop index if exists public.profiles_email_idx;
+
+-- Foreign keys sin indice de cobertura (impacta joins/deletes en cascada).
+create index if not exists idx_authorized_emails_created_by on public.authorized_emails (created_by);
+create index if not exists idx_informed_consents_doctor_id on public.informed_consents (doctor_id);
+create index if not exists idx_informed_consents_procedure_catalog_id on public.informed_consents (procedure_catalog_id);
+create index if not exists idx_informed_consents_registered_by on public.informed_consents (registered_by);
+create index if not exists idx_laboratory_cases_doctor_id on public.laboratory_cases (doctor_id);
+create index if not exists idx_laboratory_cases_procedure_catalog_id on public.laboratory_cases (procedure_catalog_id);
+create index if not exists idx_patient_procedures_doctor_id on public.patient_procedures (doctor_id);
+create index if not exists idx_whatsapp_messages_appointment_id on public.whatsapp_messages (appointment_id);
+create index if not exists idx_whatsapp_messages_template_id on public.whatsapp_messages (template_id);
+
+-- NO corregido (requiere accion manual fuera de SQL):
+-- 1) Extension pg_net registrada en esquema 'public': la extension no soporta
+--    ALTER EXTENSION ... SET SCHEMA. Sus funciones (net.http_post, etc.) ya
+--    viven aisladas en su propio esquema 'net', asi que el riesgo real es bajo;
+--    forzar una recreacion arriesgaba romper los cron jobs activos.
+-- 2) "Leaked password protection" deshabilitado en Auth: no es configuracion
+--    de Postgres, se activa en el Dashboard de Supabase en
+--    Authentication > Policies > Password Security.
+-- 3) 'authorized_emails' sigue con 2 politicas permisivas para SELECT
+--    (admin ve todo + cada usuario ve su propio correo): es una decision de
+--    diseño (dos audiencias distintas), no una redundancia real, asi que se
+--    dejo tal cual en vez de forzar una fusion que complicaria la logica.

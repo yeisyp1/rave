@@ -1,7 +1,7 @@
 import { getBillingCtrlData } from './BillingCtrl'
 import { loadPatientsCtrl } from './PatientsCtrl'
-import { listInventoryItemsDAO } from '../dao/InventoryDAO'
-import { listLaboratoryCasesDAO } from '../dao/LaboratoryDAO'
+import { isInventoryItemLow, loadInventoryItemsCtrl } from './InventoryCtrl'
+import { loadLaboratoryDataCtrl } from './LaboratoryCtrl'
 
 const toDate = (value) => {
   if (!value) return null
@@ -29,8 +29,8 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
   const [patients, billing, inventory, laboratory] = await Promise.all([
     loadPatientsCtrl(),
     getBillingCtrlData(),
-    listInventoryItemsDAO(),
-    listLaboratoryCasesDAO(),
+    loadInventoryItemsCtrl(),
+    loadLaboratoryDataCtrl(),
   ])
 
   const invoicesInRange = billing.invoices.filter((invoice) => inRange(toDate(invoice.date), fromDate, toDateEnd))
@@ -39,9 +39,9 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
 
   const newPatients = patients.filter((patient) => inRange(toDate(patient.created_at), fromDate, toDateEnd))
 
-  const lowStockItems = inventory.filter((item) => Number(item.stock) <= Number(item.min_stock))
+  const lowStockItems = inventory.filter(isInventoryItemLow)
 
-  const pendingLabCases = laboratory.filter((item) => item.status === 'Pendiente' || item.status === 'En proceso')
+  const pendingLabCases = laboratory.cases.filter((item) => item.status === 'Pendiente' || item.status === 'En proceso')
 
   const totalIncome = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)
   const totalPending = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)

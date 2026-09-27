@@ -17,7 +17,7 @@ import {
   syncGoogleEventsCtrl,
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
-import { getPatientByDocument } from '../dao/SupabaseDAO'
+import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
 import ModalViewEventVW from '../modals/ModalViewEventVW'
 
@@ -108,7 +108,7 @@ const CalendarVW = () => {
 
       if (document) {
 
-        const patientExists = await getPatientByDocument(document)
+        const patientExists = await getPatientByDocumentCtrl(document)
 
         if (!patientExists) {
 

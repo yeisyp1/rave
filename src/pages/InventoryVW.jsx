@@ -3,19 +3,23 @@ import { useDispatch } from 'react-redux'
 import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
-  createInventoryItemDAO,
-  deleteInventoryItemDAO,
-  listInventoryItemsDAO,
-  updateInventoryItemDAO,
-  updateInventoryItemStockDAO,
-} from '../dao/InventoryDAO'
+  INVENTORY_EMPTY_FORM,
+  adjustInventoryStockCtrl,
+  computeInventoryOptionsCtrl,
+  computeInventoryStatsCtrl,
+  createInventoryItemCtrl,
+  deleteInventoryItemCtrl,
+  isInventoryItemLow,
+  loadInventoryItemsCtrl,
+  updateInventoryItemCtrl,
+} from '../controllers/InventoryCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const InventoryVW = () => {
   const dispatch = useDispatch()
   const [items, setItems] = useState([])
-  const [form, setForm] = useState({ name: '', category: '', stock: '', min: '', unit: '' })
+  const [form, setForm] = useState(INVENTORY_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -27,7 +31,7 @@ const InventoryVW = () => {
     setMessage('')
 
     try {
-      const data = await listInventoryItemsDAO()
+      const data = await loadInventoryItemsCtrl()
       setItems(data)
     } catch (error) {
       setMessage(`No se pudo cargar inventario: ${error.message}`)
@@ -40,11 +44,8 @@ const InventoryVW = () => {
     loadItems()
   }, [])
 
-  const lowStock = useMemo(() => items.filter((item) => Number(item.stock) <= Number(item.min_stock)), [items])
-  const totalStock = useMemo(() => items.reduce((sum, item) => sum + Number(item.stock), 0), [items])
-  const nameOptions = useMemo(() => [...new Set(items.map((item) => String(item.name ?? '').trim()).filter(Boolean))], [items])
-  const categoryOptions = useMemo(() => [...new Set(items.map((item) => String(item.category ?? '').trim()).filter(Boolean))], [items])
-  const unitOptions = useMemo(() => [...new Set(items.map((item) => String(item.unit ?? '').trim()).filter(Boolean))], [items])
+  const { lowStockCount, totalStock } = useMemo(() => computeInventoryStatsCtrl(items), [items])
+  const { nameOptions, categoryOptions, unitOptions } = useMemo(() => computeInventoryOptionsCtrl(items), [items])
 
   const addItem = async (event) => {
     event.preventDefault()
@@ -52,31 +53,23 @@ const InventoryVW = () => {
     setSaving(true)
     setMessage('')
 
-    try {
-      await createInventoryItemDAO({
-        name: form.name.trim(),
-        category: form.category.trim() || null,
-        stock: Number(form.stock),
-        min_stock: Number(form.min),
-        unit: form.unit.trim(),
-      })
-      setForm({ name: '', category: '', stock: '', min: '', unit: '' })
+    const result = await createInventoryItemCtrl(form)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo guardar el insumo: ${result.message}`, variant: 'error' }))
+    } else {
+      setForm(INVENTORY_EMPTY_FORM)
       await loadItems()
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo guardar el insumo: ${error.message}`, variant: 'error' }))
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   const adjustStock = async (item, amount) => {
-    try {
-      const nextStock = Math.max(0, Number(item.stock) + amount)
-      const updated = await updateInventoryItemStockDAO(item.id, nextStock)
-      setItems((current) => current.map((row) => (row.id === item.id ? updated : row)))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${error.message}`, variant: 'error' }))
+    const result = await adjustInventoryStockCtrl(item, amount)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${result.message}`, variant: 'error' }))
+      return
     }
+    setItems((current) => current.map((row) => (row.id === item.id ? result.data : row)))
   }
 
   const startEdit = (item) => {
@@ -95,30 +88,24 @@ const InventoryVW = () => {
   }
 
   const saveEdit = async (id) => {
-    try {
-      const updated = await updateInventoryItemDAO(id, {
-        name: editForm.name.trim(),
-        category: editForm.category.trim() || null,
-        stock: Number(editForm.stock),
-        min_stock: Number(editForm.min_stock),
-        unit: editForm.unit.trim(),
-      })
-      setItems((current) => current.map((row) => (row.id === id ? updated : row)))
-      setEditingId(null)
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar el insumo: ${error.message}`, variant: 'error' }))
+    const result = await updateInventoryItemCtrl(id, editForm)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el insumo: ${result.message}`, variant: 'error' }))
+      return
     }
+    setItems((current) => current.map((row) => (row.id === id ? result.data : row)))
+    setEditingId(null)
   }
 
   const removeItem = async (item) => {
     if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return
 
-    try {
-      await deleteInventoryItemDAO(item.id)
-      setItems((current) => current.filter((row) => row.id !== item.id))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo eliminar el insumo: ${error.message}`, variant: 'error' }))
+    const result = await deleteInventoryItemCtrl(item.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el insumo: ${result.message}`, variant: 'error' }))
+      return
     }
+    setItems((current) => current.filter((row) => row.id !== item.id))
   }
 
   return (
@@ -140,7 +127,7 @@ const InventoryVW = () => {
           <span className="admin-icon"><FiArchive /></span>
         </div>
         <div className="admin-card admin-stat">
-          <div><div className="admin-stat-value">{lowStock.length}</div><div className="admin-stat-label">alertas de stock</div></div>
+          <div><div className="admin-stat-value">{lowStockCount}</div><div className="admin-stat-label">alertas de stock</div></div>
           <span className="admin-icon"><FiTrendingDown /></span>
         </div>
       </div>
@@ -206,7 +193,7 @@ const InventoryVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay insumos registrados.</td></tr>
               ) : (
                 items.map((item) => {
-                const isLow = Number(item.stock) <= Number(item.min_stock)
+                const isLow = isInventoryItemLow(item)
                 const isEditing = editingId === item.id
 
                 if (isEditing) {

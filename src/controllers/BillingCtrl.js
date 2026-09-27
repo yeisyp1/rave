@@ -1,5 +1,10 @@
-import { getBillingInvoicesDAO } from "../dao/BillingDAO";
+import {
+  createBillingInvoiceDAO,
+  getBillingInvoicesDAO,
+  updateBillingInvoiceDAO,
+} from "../dao/BillingDAO";
 import { BillingModel } from "../models/BillingModel";
+import { runCtrlAction } from "../utils/ctrlResult";
 
 export const getBillingCtrlData = async () => {
   const raw = await getBillingInvoicesDAO();
@@ -31,3 +36,33 @@ export const getBillingCtrlData = async () => {
     totalAll,
   };
 };
+
+export const createBillingInvoiceCtrl = ({ form, patients }) => {
+  const patient = patients.find((p) => String(p.numero_documento) === String(form.patientDocument));
+
+  return runCtrlAction(() =>
+    createBillingInvoiceDAO({
+      patient_id: patient ? patient.id : null,
+      patient_document: patient ? String(patient.numero_documento ?? "") : form.patientDocument,
+      patient_name: patient ? `${patient.nombre ?? ""} ${patient.apellidos ?? ""}`.trim() : form.patientName,
+      date: form.date,
+      amount: Number(form.amount) || 0,
+      status: form.status,
+      metadata: { notes: form.notes },
+    })
+  );
+};
+
+export const updateBillingInvoiceStatusCtrl = (invoiceId, status) =>
+  runCtrlAction(() => updateBillingInvoiceDAO(invoiceId, { status }));
+
+export const updateBillingInvoiceCtrl = (invoiceId, form) =>
+  runCtrlAction(() =>
+    updateBillingInvoiceDAO(invoiceId, {
+      patient_name: form.patient,
+      date: form.date,
+      amount: Number(form.amount) || 0,
+      status: form.status,
+      metadata: { notes: form.notes, concept: form.concept },
+    })
+  );

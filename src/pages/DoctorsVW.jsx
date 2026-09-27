@@ -1,57 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
-import { supabase } from '../dao/SupabaseDAO'
 import LoaderVW from '../components/LoaderVW'
 import { showAlertModal } from '../app/store'
+import {
+  DOCTOR_EMPTY_FORM,
+  DOCTOR_ROLE_LABELS,
+  authorizeUserCtrl,
+  computeDoctorsStatsCtrl,
+  getPasswordActionLabel,
+  loadAuthorizedUsersCtrl,
+  normalizeUserEmailCtrl,
+  sendPasswordSetupEmailCtrl,
+  setAuthorizedUserActiveCtrl,
+} from '../controllers/DoctorsCtrl'
 import '../styles/AdminViewsVW.css'
-
-
-const emptyForm = {
-  full_name: '',
-  email: '',
-  role: 'assistant',
-}
-
-const normalizeEmail = (email) => email.trim().toLowerCase()
-const roleLabels = {
-  admin: 'Administrador',
-  dentist: 'Odontóloga',
-  assistant: 'Asistente',
-}
 
 const DoctorsVW = () => {
   const dispatch = useDispatch()
   const [authorizedUsers, setAuthorizedUsers] = useState([])
   const [profiles, setProfiles] = useState([])
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(DOCTOR_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
   const profileByEmail = useMemo(() => {
-    return new Map(profiles.map((profile) => [normalizeEmail(profile.email ?? ''), profile]))
+    return new Map(profiles.map((profile) => [normalizeUserEmailCtrl(profile.email ?? ''), profile]))
   }, [profiles])
 
   const loadUsers = async () => {
     setLoading(true)
     setMessage('')
 
-    const [authorizedResult, profilesResult] = await Promise.all([
-      supabase.from('authorized_emails').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('full_name', { ascending: true }),
-    ])
+    const { authorizedUsers: users, authorizedError, profiles: staffProfiles, profilesError } = await loadAuthorizedUsersCtrl()
 
-    if (authorizedResult.error) {
-      setMessage(`No se pudo cargar authorized_emails: ${authorizedResult.error.message}`)
+    if (authorizedError) {
+      setMessage(`No se pudo cargar authorized_emails: ${authorizedError.message}`)
     } else {
-      setAuthorizedUsers(authorizedResult.data ?? [])
+      setAuthorizedUsers(users)
     }
 
-    if (profilesResult.error) {
-      setMessage((current) => current || `No se pudo cargar profiles: ${profilesResult.error.message}`)
+    if (profilesError) {
+      setMessage((current) => current || `No se pudo cargar profiles: ${profilesError.message}`)
     } else {
-      setProfiles(profilesResult.data ?? [])
+      setProfiles(staffProfiles)
     }
 
     setLoading(false)
@@ -64,24 +57,12 @@ const DoctorsVW = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
-    setMessage('')
 
-    const email = normalizeEmail(form.email)
-    const payload = {
-      email,
-      full_name: form.full_name.trim(),
-      role: form.role,
-    }
+    const result = await authorizeUserCtrl(form)
+    dispatch(showAlertModal({ message: result.message, variant: result.ok ? 'success' : 'error' }))
 
-    const { error } = await supabase
-      .from('authorized_emails')
-      .upsert(payload, { onConflict: 'email' })
-
-    if (error) {
-      dispatch(showAlertModal({ message: `No se pudo autorizar el usuario: ${error.message}`, variant: 'error' }))
-    } else {
-      dispatch(showAlertModal({ message: 'Usuario autorizado. Cuando inicie sesion se validara contra su perfil.', variant: 'success' }))
-      setForm(emptyForm)
+    if (result.ok) {
+      setForm(DOCTOR_EMPTY_FORM)
       await loadUsers()
     }
 
@@ -91,13 +72,9 @@ const DoctorsVW = () => {
   const handleDeactivate = async (row) => {
     if (!confirm(`¿Desactivar a ${row.email}?`)) return
 
-    const { error } = await supabase
-      .from('authorized_emails')
-      .update({ active: false })
-      .eq('id', row.id)
-
-    if (error) {
-      dispatch(showAlertModal({ message: error.message, variant: 'error' }))
+    const result = await setAuthorizedUserActiveCtrl(row.id, false)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: result.message, variant: 'error' }))
       return
     }
 
@@ -105,13 +82,9 @@ const DoctorsVW = () => {
   }
 
   const handleActivate = async (row) => {
-    const { error } = await supabase
-      .from('authorized_emails')
-      .update({ active: true })
-      .eq('id', row.id)
-
-    if (error) {
-      dispatch(showAlertModal({ message: error.message, variant: 'error' }))
+    const result = await setAuthorizedUserActiveCtrl(row.id, true)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: result.message, variant: 'error' }))
       return
     }
 
@@ -124,23 +97,12 @@ const DoctorsVW = () => {
       return
     }
 
-    const actionLabel = hasProfile ? 'actualizar' : 'asignar'
+    const actionLabel = getPasswordActionLabel(hasProfile)
     const confirmed = confirm(`¿Enviar a ${row.email} un correo para ${actionLabel} su contraseña?`)
     if (!confirmed) return
 
-    setMessage('Enviando correo...')
-    const { error } = await supabase.auth.signInWithOtp({
-      email: normalizeEmail(row.email),
-      options: { emailRedirectTo: `${window.location.origin}/crear-contrasena` },
-    })
-
-    setMessage('')
-    dispatch(showAlertModal({
-      message: error
-        ? `No se pudo enviar el correo: ${error.message}`
-        : `Correo enviado a ${row.email}. El usuario podrá ${actionLabel} su contraseña desde el enlace.`,
-      variant: error ? 'error' : 'success',
-    }))
+    const result = await sendPasswordSetupEmailCtrl(row, hasProfile)
+    dispatch(showAlertModal({ message: result.message, variant: result.ok ? 'success' : 'error' }))
   }
 
   const handleEdit = (row) => {
@@ -151,10 +113,7 @@ const DoctorsVW = () => {
     })
   }
 
-  const totalAdmins = authorizedUsers.filter((user) => user.role === 'admin').length
-  const totalDentists = authorizedUsers.filter((user) => user.role === 'dentist').length
-  const totalAssistants = authorizedUsers.filter((user) => user.role === 'assistant').length
-  const totalActive = authorizedUsers.filter((user) => profileByEmail.has(normalizeEmail(user.email ?? ''))).length
+  const { totalAdmins, totalDentists, totalAssistants, totalActive } = computeDoctorsStatsCtrl(authorizedUsers, profileByEmail)
 
   return (
     <div className="admin-page">
@@ -300,12 +259,12 @@ const DoctorsVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay usuarios autorizados.</td></tr>
               ) : (
                 authorizedUsers.map((row) => {
-                  const profile = profileByEmail.get(normalizeEmail(row.email ?? ''))
+                  const profile = profileByEmail.get(normalizeUserEmailCtrl(row.email ?? ''))
                   return (
                     <tr key={row.id ?? row.email}>
                       <td>{row.full_name || profile?.full_name || '-'}</td>
                       <td>{row.email}</td>
-                      <td><span className="admin-pill">{roleLabels[row.role] ?? row.role ?? 'Asistente'}</span></td>
+                      <td><span className="admin-pill">{DOCTOR_ROLE_LABELS[row.role] ?? row.role ?? 'Asistente'}</span></td>
                       <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
                       <td>{profile?.id ?? '-'}</td>
 

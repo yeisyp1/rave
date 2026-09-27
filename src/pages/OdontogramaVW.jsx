@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
-import { supabase } from '../dao/SupabaseDAO';
+import { loadOdontogramPatientCtrl } from '../controllers/HistoriaClinicaCtrl';
 import LoaderVW from '../components/LoaderVW';
 import {
   captureOdontogramState,
@@ -23,10 +23,23 @@ const Odontograma = () => {
     ? String(patient.numero_documento ?? '').trim()
     : '';
 
+  const fetchPatient = async () => {
+    setLoading(true);
+    try {
+      const { patient: data, savedOdontogram: odontogram } = await loadOdontogramPatientCtrl(patientId);
+      setPatient(data);
+      setSavedOdontogram(odontogram);
+    } catch (error) {
+      console.error('Error cargando paciente:', error);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (patientId) {
       fetchPatient();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
   useEffect(() => {
@@ -44,32 +57,6 @@ const Odontograma = () => {
         .catch((error) => console.error('Error guardando borrador del odontograma:', error));
     };
   }, [patientId, loading, savedOdontogram]);
-
-  const fetchPatient = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('patients')
-      .select('*')
-      .eq('id', patientId)
-      .single();
-
-    if (error) {
-      console.error('Error cargando paciente:', error);
-    } else {
-      setPatient(data);
-      const { data: historyData, error: historyError } = await supabase
-        .from('clinical_histories')
-        .select('odontograma')
-        .eq('patient_id', patientId)
-        .not('odontograma', 'is', null)
-        .order('fecha', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!historyError) setSavedOdontogram(historyData?.odontograma ?? null);
-    }
-    setLoading(false);
-  };
 
   const odontogramTitle = patient
     ? `Módulo de Odontograma - ${patient.nombre} ${patient.apellidos}`

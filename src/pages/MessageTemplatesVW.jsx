@@ -3,32 +3,32 @@ import { useDispatch } from 'react-redux'
 import { FiCheck, FiEdit, FiMail, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
-  createMessageTemplateDAO,
-  deleteMessageTemplateDAO,
-  listMessageTemplatesDAO,
-  updateMessageTemplateDAO,
-} from '../dao/MessageTemplatesDAO'
+  MESSAGE_TEMPLATE_EMPTY_FORM,
+  createMessageTemplateCtrl,
+  deleteMessageTemplateCtrl,
+  loadMessageTemplatesCtrl,
+  toggleMessageTemplateActiveCtrl,
+  updateMessageTemplateCtrl,
+} from '../controllers/MessageTemplatesCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
-
-const EMPTY_FORM = { name: '', channel: 'Email', subject: '', body: '', active: true }
 
 const MessageTemplatesVW = () => {
   const dispatch = useDispatch()
   const [templates, setTemplates] = useState([])
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(MESSAGE_TEMPLATE_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState(EMPTY_FORM)
+  const [editForm, setEditForm] = useState(MESSAGE_TEMPLATE_EMPTY_FORM)
 
   const loadTemplates = async () => {
     setLoading(true)
     setMessage('')
 
     try {
-      const data = await listMessageTemplatesDAO()
+      const data = await loadMessageTemplatesCtrl()
       setTemplates(data)
     } catch (error) {
       setMessage(`No se pudieron cargar las plantillas: ${error.message}`)
@@ -44,22 +44,15 @@ const MessageTemplatesVW = () => {
   const addTemplate = async (event) => {
     event.preventDefault()
     setSaving(true)
-    setMessage('')
 
-    try {
-      await createMessageTemplateDAO({
-        name: form.name.trim(),
-        channel: form.channel,
-        subject: form.subject.trim() || null,
-        body: form.body.trim(),
-      })
-      setForm(EMPTY_FORM)
+    const result = await createMessageTemplateCtrl(form)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo guardar la plantilla: ${result.message}`, variant: 'error' }))
+    } else {
+      setForm(MESSAGE_TEMPLATE_EMPTY_FORM)
       await loadTemplates()
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo guardar la plantilla: ${error.message}`, variant: 'error' }))
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   const startEdit = (template) => {
@@ -76,38 +69,33 @@ const MessageTemplatesVW = () => {
   const cancelEdit = () => setEditingId(null)
 
   const saveEdit = async (id) => {
-    try {
-      const updated = await updateMessageTemplateDAO(id, {
-        name: editForm.name.trim(),
-        channel: editForm.channel,
-        subject: editForm.subject.trim() || null,
-        body: editForm.body.trim(),
-      })
-      setTemplates((current) => current.map((row) => (row.id === id ? updated : row)))
-      setEditingId(null)
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar la plantilla: ${error.message}`, variant: 'error' }))
+    const result = await updateMessageTemplateCtrl(id, editForm)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar la plantilla: ${result.message}`, variant: 'error' }))
+      return
     }
+    setTemplates((current) => current.map((row) => (row.id === id ? result.data : row)))
+    setEditingId(null)
   }
 
   const toggleActive = async (template) => {
-    try {
-      const updated = await updateMessageTemplateDAO(template.id, { active: !template.active })
-      setTemplates((current) => current.map((row) => (row.id === template.id ? updated : row)))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar la plantilla: ${error.message}`, variant: 'error' }))
+    const result = await toggleMessageTemplateActiveCtrl(template)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar la plantilla: ${result.message}`, variant: 'error' }))
+      return
     }
+    setTemplates((current) => current.map((row) => (row.id === template.id ? result.data : row)))
   }
 
   const removeTemplate = async (template) => {
     if (!confirm(`¿Eliminar la plantilla "${template.name}"?`)) return
 
-    try {
-      await deleteMessageTemplateDAO(template.id)
-      setTemplates((current) => current.filter((row) => row.id !== template.id))
-    } catch (error) {
-      dispatch(showAlertModal({ message: `No se pudo eliminar la plantilla: ${error.message}`, variant: 'error' }))
+    const result = await deleteMessageTemplateCtrl(template.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar la plantilla: ${result.message}`, variant: 'error' }))
+      return
     }
+    setTemplates((current) => current.filter((row) => row.id !== template.id))
   }
 
   return (

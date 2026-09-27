@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FiSave } from 'react-icons/fi'
-import { getSystemSettingsDAO, updateSystemSettingsDAO } from '../dao/SettingsDAO'
+import { loadSystemSettingsCtrl, saveSystemSettingsCtrl } from '../controllers/SettingsCtrl'
 import LoaderVW from '../components/LoaderVW'
 import '../styles/AdminViewsVW.css'
 
@@ -15,13 +15,9 @@ const SettingsVW = () => {
     setLoading(true)
     setMessage('')
     try {
-      const data = await getSystemSettingsDAO()
+      const { settings: data, form: initialForm } = await loadSystemSettingsCtrl()
       setSettings(data)
-      setForm({
-        appointment_duration_minutes: data.appointment_duration_minutes,
-        business_hours_start: data.business_hours_start?.slice(0, 5) ?? '',
-        business_hours_end: data.business_hours_end?.slice(0, 5) ?? '',
-      })
+      setForm(initialForm)
     } catch (error) {
       setMessage(`No se pudo cargar la configuración: ${error.message}`)
     }
@@ -37,16 +33,12 @@ const SettingsVW = () => {
     setSaving(true)
     setMessage('')
 
-    try {
-      const updated = await updateSystemSettingsDAO(settings.id, {
-        appointment_duration_minutes: Number(form.appointment_duration_minutes),
-        business_hours_start: form.business_hours_start,
-        business_hours_end: form.business_hours_end,
-      })
-      setSettings(updated)
+    const result = await saveSystemSettingsCtrl(settings.id, form)
+    if (!result.ok) {
+      setMessage(`No se pudo guardar la configuración: ${result.message}`)
+    } else {
+      setSettings(result.data)
       setMessage('Configuración guardada.')
-    } catch (error) {
-      setMessage(`No se pudo guardar la configuración: ${error.message}`)
     }
 
     setSaving(false)

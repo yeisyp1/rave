@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { supabase } from "../dao/SupabaseDAO";
+import { getOAuthSessionCtrl } from "../controllers/AuthCtrl";
 import { useNavigate } from "react-router-dom";
 
 export default function OAuthConsent() {
@@ -9,27 +9,18 @@ export default function OAuthConsent() {
   useEffect(() => {
 
     const handleOAuth = async () => {
-
-      // Obtener sesión después del login Google
-      const { data, error } = await supabase.auth.getSession();
-
-      if (error) {
+      let session;
+      try {
+        session = await getOAuthSessionCtrl();
+      } catch (error) {
         console.error("Error sesión:", error);
         return;
       }
 
-      if (!data.session) {
-        console.log("No hay sesión");
+      if (!session) {
         navigate("/login");
         return;
       }
-
-      const accessToken = data.session.provider_token;
-      const refreshToken =
-        data.session.provider_refresh_token ||
-        data.session.refresh_token;
-        console.log("Access:", accessToken);
-        console.log("Refresh:", refreshToken);
 
       navigate("/dashboard");
     };

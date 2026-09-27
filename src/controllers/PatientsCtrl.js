@@ -1,6 +1,7 @@
 import {
   createPatientDAO,
   deletePatientDAO,
+  getPatientByDocumentDAO,
   listPatientsDAO,
   updatePatientDAO,
 } from "../dao/PatientsDAO";
@@ -53,6 +54,8 @@ export const loadPatientsCtrl = async () => {
   if (error) throw error;
   return (data ?? []).map((item) => new PatientModel(item));
 };
+
+export const getPatientByDocumentCtrl = (document) => getPatientByDocumentDAO(document);
 
 export const savePatientCtrl = async ({ form, editingId }) => {
   if (!form.tipo_documento || !form.numero_documento) {

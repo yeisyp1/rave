@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../dao/SupabaseDAO'
+import {
+  checkSessionExistsCtrl,
+  createAccountCtrl,
+  sendPasswordRecoveryCtrl,
+  updatePasswordCtrl,
+  validatePasswordCtrl,
+} from '../controllers/AuthCtrl'
 import logo from '../assets/logo1.png'
 import '../styles/PublicPagesVW.css'
 
@@ -16,69 +22,48 @@ const AccessActionVW = ({ mode }) => {
   const isCreate = mode === 'create'
 
   useEffect(() => {
-    if (isReset || isCreate) supabase.auth.getSession().then(({ data }) => {
-      const sessionExists = Boolean(data.session)
+    if (isReset || isCreate) checkSessionExistsCtrl().then((sessionExists) => {
       setHasSession(sessionExists)
       if (isReset && !sessionExists) setError('El enlace no es válido o ya expiró. Solicita otro enlace.')
     })
   }, [isReset, isCreate])
 
-  const validPasswords = () => {
-    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.'
-    if (password !== confirmation) return 'Las contraseñas no coinciden.'
-    return ''
-  }
-
   const handleCreate = async (event) => {
     event.preventDefault(); setLoading(true); setError(''); setMessage('')
     if (hasSession) {
-      const passwordError = validPasswords()
+      const passwordError = validatePasswordCtrl(password, confirmation)
       if (passwordError) { setError(passwordError); setLoading(false); return }
-      const { error: updateError } = await supabase.auth.updateUser({ password })
+      const result = await updatePasswordCtrl(password)
       setLoading(false)
-      if (updateError) setError(updateError.message)
+      if (!result.ok) setError(result.message)
       else setMessage('Contraseña creada correctamente. Ya puedes iniciar sesión.')
       return
     }
-    const normalizedEmail = email.trim().toLowerCase()
-    const { data: authorized, error: authError } = await supabase
-      .from('authorized_emails').select('email').eq('email', normalizedEmail).eq('active', true).maybeSingle()
-    if (authError || !authorized) {
-      setError('Este correo no está autorizado. Solicita al administrador que lo registre en RAVE.')
-      setLoading(false); return
-    }
-    const passwordError = validPasswords()
+
+    const passwordError = validatePasswordCtrl(password, confirmation)
     if (passwordError) { setError(passwordError); setLoading(false); return }
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: normalizedEmail, password,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    })
+
+    const result = await createAccountCtrl({ email, password })
     setLoading(false)
-    if (signUpError) {
-      setError(signUpError.message.includes('already registered')
-        ? 'Este correo ya tiene una cuenta. Usa “Recuperar contraseña”.' : signUpError.message)
-      return
-    }
-    setMessage(data.session ? 'Contraseña creada. Ya puedes entrar a RAVE.' : 'Te enviamos un correo para confirmar tu cuenta. Después podrás entrar a RAVE.')
+    if (!result.ok) { setError(result.message); return }
+    setMessage(result.message)
   }
 
   const handleRecover = async (event) => {
     event.preventDefault(); setLoading(true); setError(''); setMessage('')
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/restablecer-contrasena`,
-    })
+    const result = await sendPasswordRecoveryCtrl(email)
     setLoading(false)
-    if (resetError) setError(resetError.message)
-    else setMessage('Si el correo está registrado, recibirás un enlace para crear una nueva contraseña.')
+    if (!result.ok) setError(result.message)
+    else setMessage(result.message)
   }
 
   const handleReset = async (event) => {
     event.preventDefault(); setLoading(true); setError(''); setMessage('')
-    const passwordError = validPasswords()
+    const passwordError = validatePasswordCtrl(password, confirmation)
     if (passwordError) { setError(passwordError); setLoading(false); return }
-    const { error: updateError } = await supabase.auth.updateUser({ password })
+    const result = await updatePasswordCtrl(password)
     setLoading(false)
-    if (updateError) setError(updateError.message)
+    if (!result.ok) setError(result.message)
     else setMessage('Contraseña actualizada correctamente. Ya puedes iniciar sesión.')
   }
 
