@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../dao/SupabaseDAO';
-import { deletePatientHistoryCtrl, loadPatientHistoriesCtrl } from '../controllers/HistoriaClinicaCtrl';
+import { useDispatch } from 'react-redux';
+import { showAlertModal } from '../app/store';
+import { deletePatientHistoryCtrl } from '../controllers/HistoriaClinicaCtrl';
+import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -12,6 +14,7 @@ import {
   FiChevronDown,
   FiImage,
   FiSave,
+  FiShield,
 } from 'react-icons/fi'
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
@@ -24,6 +27,7 @@ import '../styles/PatientDetailVW.css';
 const PatientDetailVW = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
@@ -37,6 +41,12 @@ const PatientDetailVW = () => {
   const [clinicalNote, setClinicalNote] = useState('');
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyToEdit, setHistoryToEdit] = useState(null);
+  const [consents, setConsents] = useState([]);
+  const [dataRequests, setDataRequests] = useState([]);
+  const [consentForm, setConsentForm] = useState({ content: '', patient_signature_name: '' });
+  const [savingConsent, setSavingConsent] = useState(false);
+  const [requestForm, setRequestForm] = useState({ request_type: 'Rectificación', description: '' });
+  const [savingRequest, setSavingRequest] = useState(false);
 
   // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => fetchPatientData());
@@ -49,54 +59,13 @@ const PatientDetailVW = () => {
     try {
       setLoading(true);
 
-      // Fetch patient data
-      const { data: patientData, error: patientError } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', patientId)
-        .single();
-
-      if (patientError) throw patientError;
-      setPatient(patientData);
-
-      const [{ data: legacyProcedures }, { data: patientProcedures }] = await Promise.all([
-        supabase
-          .from('procedures')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('patient_procedures')
-          .select('*, procedure_catalog(name)')
-          .eq('patient_id', patientId)
-          .order('procedure_date', { ascending: false })
-          .limit(10),
-      ]);
-
-      const normalizedProcedures = [
-        ...(legacyProcedures ?? []),
-        ...(patientProcedures ?? []).map((procedure) => ({
-          ...procedure,
-          fecha: procedure.procedure_date,
-          procedure_name: procedure.procedure_catalog?.name,
-          cost: procedure.total_price ?? procedure.unit_price ?? 0,
-        })),
-      ];
-      setProcedures(normalizedProcedures);
-
-      const clinicalHistoriesData = await loadPatientHistoriesCtrl(patientId);
-      setClinicalHistories(clinicalHistoriesData);
-
-      // Fetch radiographies if exists
-      const { data: radiographyData } = await supabase
-        .from('radiographies')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('created_at', { ascending: false })
-        .limit(6);
-
-      if (radiographyData) setRadiographies(radiographyData);
+      const detail = await loadPatientDetailCtrl(patientId);
+      setPatient(detail.patient);
+      setProcedures(detail.procedures);
+      setClinicalHistories(detail.clinicalHistories);
+      setConsents(detail.consents);
+      setDataRequests(detail.dataRequests);
+      setRadiographies(detail.radiographies);
     } catch (error) {
       console.error('Error fetching patient data:', error);
     } finally {
@@ -120,12 +89,50 @@ const PatientDetailVW = () => {
 
     const result = await deletePatientHistoryCtrl(history.id);
     if (!result.ok) {
-      alert(result.message);
+      dispatch(showAlertModal({ message: result.message, variant: 'error' }));
       return;
     }
 
-    alert(result.message);
+    dispatch(showAlertModal({ message: result.message, variant: 'success' }));
     await fetchPatientData();
+  };
+
+  const submitConsent = async (event) => {
+    event.preventDefault();
+
+    setSavingConsent(true);
+    try {
+      const result = await submitConsentCtrl({ patientId, form: consentForm });
+      if (!result.ok) {
+        dispatch(showAlertModal({ message: result.message, variant: 'error' }));
+        return;
+      }
+      setConsents((current) => [result.consent, ...current]);
+      setConsentForm({ content: '', patient_signature_name: '' });
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo registrar el consentimiento: ${error.message}`, variant: 'error' }));
+    } finally {
+      setSavingConsent(false);
+    }
+  };
+
+  const submitDataRequest = async (event) => {
+    event.preventDefault();
+
+    setSavingRequest(true);
+    try {
+      const result = await submitDataRequestCtrl({ patientId, form: requestForm });
+      if (!result.ok) {
+        dispatch(showAlertModal({ message: result.message, variant: 'error' }));
+        return;
+      }
+      setDataRequests((current) => [result.request, ...current]);
+      setRequestForm({ request_type: 'Rectificación', description: '' });
+    } catch (error) {
+      dispatch(showAlertModal({ message: `No se pudo registrar la solicitud: ${error.message}`, variant: 'error' }));
+    } finally {
+      setSavingRequest(false);
+    }
   };
 
   const patientName = patient
@@ -234,6 +241,12 @@ const PatientDetailVW = () => {
           onClick={() => setActiveTab('treatments')}
         >
           Tratamientos y odontograma
+        </button>
+        <button
+          className={`pd-tab ${activeTab === 'compliance' ? 'active' : ''}`}
+          onClick={() => setActiveTab('compliance')}
+        >
+          Consentimiento y datos
         </button>
       </div>
 
@@ -404,6 +417,134 @@ const PatientDetailVW = () => {
                 </div>
               </div>
             </details>
+          </div>
+        )}
+
+        {/* ── TAB: COMPLIANCE (consentimiento informado y proteccion de datos) ── */}
+        {activeTab === 'compliance' && (
+          <div className="pd-tab-content">
+            <div className="pd-section">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.5rem' }}>
+                <FiShield size={16} />
+                <h3 className="pd-section-title" style={{ margin: 0 }}>Autorización de datos personales</h3>
+              </div>
+              <div className="pd-info-row">
+                <span className="pd-info-label">Estado:</span>
+                <span className="pd-info-value">
+                  {patient.autorizacion_datos ? 'Autorizado' : 'No autorizado'}
+                  {patient.autorizacion_datos_fecha
+                    ? ` — ${new Date(patient.autorizacion_datos_fecha).toLocaleString('es-CO')}`
+                    : ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="pd-section">
+              <h3 className="pd-section-title">Consentimiento informado (Ley 527 de 1999)</h3>
+              <form className="pd-info-grid" onSubmit={submitConsent} style={{ marginBottom: '1rem' }}>
+                <div className="pd-info-card" style={{ gridColumn: '1 / -1' }}>
+                  <label className="pd-info-label" htmlFor="consent-content">Contenido del consentimiento</label>
+                  <textarea
+                    id="consent-content"
+                    rows={3}
+                    style={{ width: '100%', marginTop: '.35rem' }}
+                    value={consentForm.content}
+                    onChange={(event) => setConsentForm({ ...consentForm, content: event.target.value })}
+                    placeholder="Ej. Autorizo el procedimiento de endodoncia en pieza 26, se explicaron riesgos y alternativas."
+                  />
+                  <label className="pd-info-label" htmlFor="consent-signature" style={{ marginTop: '.75rem', display: 'block' }}>Firma (nombre de quien autoriza)</label>
+                  <input
+                    id="consent-signature"
+                    style={{ width: '100%', marginTop: '.35rem' }}
+                    value={consentForm.patient_signature_name}
+                    onChange={(event) => setConsentForm({ ...consentForm, patient_signature_name: event.target.value })}
+                    placeholder="Nombre del paciente o acudiente"
+                  />
+                  <button className="pd-btn-action-primary" type="submit" disabled={savingConsent} style={{ marginTop: '.75rem' }}>
+                    <FiPlus size={14} />
+                    {savingConsent ? 'Guardando...' : 'Registrar consentimiento'}
+                  </button>
+                </div>
+              </form>
+
+              {consents.length > 0 ? (
+                <div className="mhc-histories-list">
+                  {consents.map((consent) => (
+                    <div key={consent.id} className="mhc-history-card">
+                      <div className="mhc-history-date">
+                        {new Date(consent.signed_at).toLocaleString('es-CO')}
+                      </div>
+                      <div className="mhc-history-summary">
+                        <span><b>Firmado por:</b> {consent.patient_signature_name}</span>
+                        <span>{consent.content}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="pd-info-value">No hay consentimientos registrados.</p>
+              )}
+            </div>
+
+            <div className="pd-section">
+              <h3 className="pd-section-title">Solicitudes sobre datos personales (Ley 1581 de 2012)</h3>
+              <form className="pd-info-grid" onSubmit={submitDataRequest} style={{ marginBottom: '1rem' }}>
+                <div className="pd-info-card" style={{ gridColumn: '1 / -1' }}>
+                  <label className="pd-info-label" htmlFor="request-type">Tipo de solicitud</label>
+                  <select
+                    id="request-type"
+                    style={{ width: '100%', marginTop: '.35rem' }}
+                    value={requestForm.request_type}
+                    onChange={(event) => setRequestForm({ ...requestForm, request_type: event.target.value })}
+                  >
+                    <option value="Rectificación">Rectificación</option>
+                    <option value="Actualización">Actualización</option>
+                    <option value="Supresión">Supresión</option>
+                    <option value="Revocatoria de autorización">Revocatoria de autorización</option>
+                  </select>
+                  <label className="pd-info-label" htmlFor="request-description" style={{ marginTop: '.75rem', display: 'block' }}>Descripción</label>
+                  <textarea
+                    id="request-description"
+                    rows={2}
+                    style={{ width: '100%', marginTop: '.35rem' }}
+                    value={requestForm.description}
+                    onChange={(event) => setRequestForm({ ...requestForm, description: event.target.value })}
+                    placeholder="Describe el dato a corregir, actualizar o suprimir."
+                  />
+                  <button className="pd-btn-action-primary" type="submit" disabled={savingRequest} style={{ marginTop: '.75rem' }}>
+                    <FiPlus size={14} />
+                    {savingRequest ? 'Guardando...' : 'Registrar solicitud'}
+                  </button>
+                </div>
+              </form>
+
+              {dataRequests.length > 0 ? (
+                <div className="pd-procedures-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dataRequests.map((request) => (
+                        <tr key={request.id}>
+                          <td>{new Date(request.created_at).toLocaleDateString('es-CO')}</td>
+                          <td>{request.request_type}</td>
+                          <td>{request.description}</td>
+                          <td>{request.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="pd-info-value">No hay solicitudes registradas.</p>
+              )}
+            </div>
           </div>
         )}
       </div>

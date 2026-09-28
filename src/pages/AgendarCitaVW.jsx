@@ -7,7 +7,7 @@ import {
   getGoogleTokenCtrl,
   listAppointmentPatientsCtrl,
 } from '../controllers/CalendarCtrl'
-import { getPatientByDocument } from '../dao/SupabaseDAO'
+import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
 import '../styles/AdminViewsVW.css'
 
 const formatInputDate = (date) => date.toISOString().slice(0, 10)
@@ -132,7 +132,7 @@ const AgendarCitaVW = () => {
         return
       }
 
-      const patientExists = await getPatientByDocument(document)
+      const patientExists = await getPatientByDocumentCtrl(document)
 
       if (!patientExists) {
         setPatientValidationError(
@@ -148,6 +148,8 @@ const AgendarCitaVW = () => {
         location: form.location,
         start,
         end,
+        patientId: patientExists.id,
+        service: form.service,
       })
       setMessage('')
       setShowSuccessNotice(true)

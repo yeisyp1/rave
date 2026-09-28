@@ -1,37 +1,38 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiCheckCircle, FiClock, FiPlus } from 'react-icons/fi'
+import { useDispatch } from 'react-redux'
+import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
-  createLaboratoryCaseDAO,
-  listLaboratoryCasesDAO,
-  listPatientsForLaboratoryDAO,
-  listProcedureCatalogDAO,
-  updateLaboratoryCaseStatusDAO,
-} from '../dao/LaboratoryDAO'
+  LABORATORY_EMPTY_FORM,
+  computeLaboratoryStatsCtrl,
+  createLaboratoryCaseCtrl,
+  deleteLaboratoryCaseCtrl,
+  getLaboratoryPatientLabel,
+  loadLaboratoryDataCtrl,
+  updateLaboratoryCaseCtrl,
+  updateLaboratoryCaseStatusCtrl,
+} from '../controllers/LaboratoryCtrl'
+import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const LaboratoryVW = () => {
+  const dispatch = useDispatch()
   const [cases, setCases] = useState([])
-  const [form, setForm] = useState({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
+  const [form, setForm] = useState(LABORATORY_EMPTY_FORM)
   const [patients, setPatients] = useState([])
   const [procedures, setProcedures] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-
-  const getPatientLabel = (patient) => `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim()
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ work_name: '', lab_name: '', due_date: '' })
 
   const loadData = async () => {
     setLoading(true)
     setMessage('')
 
     try {
-      const [casesData, patientsData, proceduresData] = await Promise.all([
-        listLaboratoryCasesDAO(),
-        listPatientsForLaboratoryDAO(),
-        listProcedureCatalogDAO(),
-      ])
-
+      const { cases: casesData, patients: patientsData, procedures: proceduresData } = await loadLaboratoryDataCtrl()
       setCases(casesData)
       setPatients(patientsData)
       setProcedures(proceduresData)
@@ -46,57 +47,64 @@ const LaboratoryVW = () => {
     loadData()
   }, [])
 
-  const stats = useMemo(() => ({
-    pending: cases.filter((item) => item.status === 'Pendiente').length,
-    progress: cases.filter((item) => item.status === 'En proceso').length,
-    delivered: cases.filter((item) => item.status === 'Entregado').length,
-  }), [cases])
+  const stats = useMemo(() => computeLaboratoryStatsCtrl(cases), [cases])
 
   const addCase = async (event) => {
     event.preventDefault()
 
     setSaving(true)
-    setMessage('')
 
-    try {
-      const selectedPatient = patients.find((patient) => getPatientLabel(patient) === form.patient)
-      const selectedProcedure = procedures.find((procedure) => procedure.name === form.work)
-
-      if (!selectedPatient) {
-        setMessage('Selecciona un paciente valido de la lista.')
-        return
-      }
-
-      if (!selectedProcedure) {
-        setMessage('Selecciona un procedimiento valido de la lista.')
-        return
-      }
-
-      await createLaboratoryCaseDAO({
-        patient_id: selectedPatient.id,
-        procedure_catalog_id: selectedProcedure.id,
-        work_name: form.work.trim(),
-        lab_name: form.lab.trim() || null,
-        due_date: form.due,
-        status: form.status,
-      })
-
-      setForm({ patient: '', work: '', lab: '', due: '', status: 'Pendiente' })
+    const result = await createLaboratoryCaseCtrl({ form, patients, procedures })
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: result.message, variant: 'error' }))
+    } else {
+      setForm(LABORATORY_EMPTY_FORM)
       await loadData()
-    } catch (error) {
-      setMessage(`No se pudo guardar laboratorio: ${error.message}`)
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   const updateStatus = async (id, status) => {
-    try {
-      const updated = await updateLaboratoryCaseStatusDAO(id, status)
-      setCases((current) => current.map((item) => (item.id === id ? updated : item)))
-    } catch (error) {
-      setMessage(`No se pudo actualizar el estado: ${error.message}`)
+    const result = await updateLaboratoryCaseStatusCtrl(id, status)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el estado: ${result.message}`, variant: 'error' }))
+      return
     }
+    setCases((current) => current.map((item) => (item.id === id ? result.data : item)))
+  }
+
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({
+      work_name: item.work_name ?? '',
+      lab_name: item.lab_name ?? '',
+      due_date: item.due_date ?? '',
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    const result = await updateLaboratoryCaseCtrl(id, editForm)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el trabajo: ${result.message}`, variant: 'error' }))
+      return
+    }
+    setCases((current) => current.map((item) => (item.id === id ? result.data : item)))
+    setEditingId(null)
+  }
+
+  const removeCase = async (item) => {
+    if (!confirm(`¿Eliminar el trabajo "${item.work_name}"?`)) return
+
+    const result = await deleteLaboratoryCaseCtrl(item.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el trabajo: ${result.message}`, variant: 'error' }))
+      return
+    }
+    setCases((current) => current.filter((row) => row.id !== item.id))
   }
 
   return (
@@ -131,7 +139,7 @@ const LaboratoryVW = () => {
             <input className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value })} required />
             <datalist id="lab-patient-list">
               {patients.map((patient) => (
-                <option key={patient.id} value={getPatientLabel(patient)} />
+                <option key={patient.id} value={getLaboratoryPatientLabel(patient)} />
               ))}
             </datalist>
           </div>
@@ -173,7 +181,27 @@ const LaboratoryVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay trabajos registrados.</td></tr>
               ) : (
                 cases.map((item) => {
-                  const patientLabel = item.patient_id ? getPatientLabel(patients.find((patient) => patient.id === item.patient_id) || {}) : '-'
+                  const patientLabel = item.patient_id ? getLaboratoryPatientLabel(patients.find((patient) => patient.id === item.patient_id) || {}) : '-'
+                  const isEditing = editingId === item.id
+
+                  if (isEditing) {
+                    return (
+                      <tr key={item.id}>
+                        <td>{patientLabel || '-'}</td>
+                        <td><input className="admin-input" value={editForm.work_name} onChange={(event) => setEditForm({ ...editForm, work_name: event.target.value })} /></td>
+                        <td><input className="admin-input" value={editForm.lab_name} onChange={(event) => setEditForm({ ...editForm, lab_name: event.target.value })} /></td>
+                        <td><input className="admin-input" type="date" value={editForm.due_date || ''} onChange={(event) => setEditForm({ ...editForm, due_date: event.target.value })} /></td>
+                        <td>-</td>
+                        <td>
+                          <div className="admin-actions">
+                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
+                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  }
+
                   return (
                     <tr key={item.id}>
                       <td>{patientLabel || '-'}</td>
@@ -185,6 +213,8 @@ const LaboratoryVW = () => {
                         <div className="admin-actions">
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>Proceso</button>
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>Entregado</button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                          <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar"><FiTrash2 /></button>
                         </div>
                       </td>
                     </tr>

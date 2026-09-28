@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
 import InvoicePrintable from '../components/InvoicePrintable'
 import '../styles/ModalPatientsVW.css'
-import { updateBillingInvoiceDAO } from '../dao/BillingDAO'
+import { updateBillingInvoiceCtrl } from '../controllers/BillingCtrl'
+import { showAlertModal } from '../app/store'
 
 const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () => {} }) => {
+  const dispatch = useDispatch()
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
 
@@ -29,23 +32,14 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
   const handleSave = async () => {
     if (!invoice) return
     setSaving(true)
-    try {
-      const payload = {
-        patient_name: form.patient,
-        date: form.date,
-        amount: Number(form.amount) || 0,
-        status: form.status,
-        metadata: { notes: form.notes, concept: form.concept },
-      }
-      await updateBillingInvoiceDAO(invoice.id, payload)
+    const result = await updateBillingInvoiceCtrl(invoice.id, form)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: 'No se pudo guardar la factura: ' + result.message, variant: 'error' }))
+    } else {
       onSaved()
       onClose()
-    } catch (err) {
-      console.error('Error guardando factura:', err)
-      alert('No se pudo guardar la factura: ' + (err.message ?? String(err)))
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   if (!invoice) return null

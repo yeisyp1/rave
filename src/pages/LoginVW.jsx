@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { supabase } from "../dao/SupabaseDAO";
+import { useDispatch } from "react-redux";
+import { loginWithGoogleCtrl, loginWithPasswordCtrl, sendMagicLinkCtrl } from "../controllers/AuthCtrl";
 import logo from "../assets/logo.png";
 import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { FiAlertCircle, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
+import { showAlertModal } from "../app/store";
 
 const Login = () => {
+  const dispatch = useDispatch();
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
   const [loading, setLoading]           = useState(false);
@@ -34,47 +37,28 @@ const Login = () => {
     setLoading(true);
     setErrorMsg("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const result = await loginWithPasswordCtrl(email, password);
     setLoading(false);
 
-    if (error) {
-      setErrorMsg(error.message);
+    if (!result.ok) {
+      setErrorMsg(result.message);
       return;
     }
 
-    console.log("Usuario logueado:", data.user);
     navigate("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        scopes: "https://www.googleapis.com/auth/calendar",  
-        redirectTo: `${window.location.origin}/oauth/consent`,
-        queryParams: {
-          access_type: "offline",  
-          prompt: "consent",       
-          include_granted_scopes: "true",
-        },
-      }
-    });
-    if (error) alert(error.message);
+    const result = await loginWithGoogleCtrl();
+    if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
   };
 
   const handleMagicLink = async () => {
-    if (!email.trim()) {
-      setErrorMsg('Escribe tu correo para enviarte el enlace de acceso.');
-      return;
-    }
     setLoading(true);
     setErrorMsg('');
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    });
+    const result = await sendMagicLinkCtrl(email);
     setLoading(false);
-    setErrorMsg(error ? error.message : 'Revisa tu correo: te enviamos un enlace de acceso sin contraseña.');
+    setErrorMsg(result.message);
   };
 
 

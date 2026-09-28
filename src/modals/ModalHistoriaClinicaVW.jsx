@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDispatch } from "react-redux";
+import { showAlertModal } from "../app/store";
 import {
   createPatientHistoryCtrl,
+  deletePatientHistoryCtrl,
   HISTORIA_EMPTY_FORM,
   loadHistoryCityDepartmentsCtrl,
   loadPatientHistoriesCtrl,
   updatePatientHistoryCtrl,
 } from "../controllers/HistoriaClinicaCtrl";
-import { supabase } from "../dao/SupabaseDAO";
+import {
+  deleteRadiographyCtrl,
+  loadHistoryRadiographiesCtrl,
+  uploadRadiographiesCtrl,
+} from "../controllers/RadiographiesCtrl";
 import "../styles/ModalHistoriaClinicaVW.css";
 import logoDark from "../assets/logo.png";
 import logoLight from "../assets/logo1.png";
@@ -20,8 +27,6 @@ import {
   loadOdontogramDraft,
   restoreOdontogramState,
 } from "../utils/odontogramPersistence";
-
-const RADIOGRAPHY_BUCKET = "radiographies";
 
 const YES_NO_OPTIONS = [
   { value: "", label: "Seleccionar..." },
@@ -72,6 +77,7 @@ const fieldToText = (value) => {
 };
 
 const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initialHistory = null }) => {
+  const dispatch = useDispatch();
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(startInForm);
@@ -83,7 +89,6 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   const [selectedRadiographies, setSelectedRadiographies] = useState([]);
   const [clinicalNote, setClinicalNote] = useState("");
   const [radiographies, setRadiographies] = useState([]);
-  const [savingMedia, setSavingMedia] = useState(false);
   const [mediaStatus, setMediaStatus] = useState("");
   const [editingHistoryId, setEditingHistoryId] = useState(null);
 
@@ -206,40 +211,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
   const fetchRadiographies = async (historyId = editingHistoryId) => {
     try {
-      if (!historyId) {
-        setRadiographies([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("radiographies")
-        .select("*")
-        .eq("patient_id", patient.id)
-        .eq("clinical_history_id", historyId)
-        .order("created_at", { ascending: false })
-        .limit(6);
-
-      if (error) throw error;
-
-      const rows = await Promise.all((data ?? []).map(async (row) => {
-        if (row.image_url) return row;
-        if (!row.file_path) return row;
-
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from(RADIOGRAPHY_BUCKET)
-          .createSignedUrl(row.file_path, 60 * 60 * 24 * 7);
-
-        if (!signedError && signedData?.signedUrl) {
-          return { ...row, image_url: signedData.signedUrl };
-        }
-
-        const { data: publicData } = supabase.storage
-          .from(RADIOGRAPHY_BUCKET)
-          .getPublicUrl(row.file_path);
-
-        return { ...row, image_url: publicData?.publicUrl || "" };
-      }));
-
+      const rows = await loadHistoryRadiographiesCtrl(patient.id, historyId);
       setRadiographies(rows);
     } catch (error) {
       console.error("Error cargando radiografías:", error);
@@ -253,101 +225,13 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     if (!confirmed) return;
 
     try {
-      const { error: deleteError } = await supabase
-        .from("radiographies")
-        .delete()
-        .eq("id", radiography.id);
-
-      if (deleteError) throw deleteError;
-
-      if (radiography.file_path) {
-        const { error: storageError } = await supabase.storage
-          .from(RADIOGRAPHY_BUCKET)
-          .remove([radiography.file_path]);
-
-        if (storageError) {
-          console.warn("La radiografía se eliminó de la base de datos, pero no del almacenamiento:", storageError);
-        }
-      }
+      await deleteRadiographyCtrl(radiography);
 
       setRadiographies((current) => current.filter((item) => item.id !== radiography.id));
       setMediaStatus("Radiografía eliminada correctamente.");
     } catch (error) {
       console.error("Error eliminando radiografía:", error);
       setMediaStatus(error?.message || "No se pudo eliminar la radiografía.");
-    }
-  };
-
-  const buildStoragePath = (file) => {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
-    return `${patient.id}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-  };
-
-  const handleSaveMedia = async () => {
-    const note = clinicalNote.trim();
-    if (!selectedRadiographies.length && !note) {
-      setMediaStatus("Agrega al menos una radiografía o una nota clínica.");
-      return;
-    }
-
-    setSavingMedia(true);
-    setMediaStatus("");
-
-    try {
-      if (selectedRadiographies.length > 0) {
-        const uploads = [];
-
-        for (const file of selectedRadiographies) {
-          const filePath = buildStoragePath(file);
-          const { error: uploadError } = await supabase.storage
-            .from(RADIOGRAPHY_BUCKET)
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              contentType: file.type || "application/octet-stream",
-              upsert: false,
-            });
-
-          if (uploadError) {
-            throw new Error(
-              uploadError.message || "No se pudo subir la radiografía a Storage",
-            );
-          }
-
-          uploads.push({
-            patient_id: patient.id,
-            clinical_history_id: editingHistoryId,
-            file_path: filePath,
-            file_name: file.name,
-            description: note || null,
-            metadata: {
-              size: file.size,
-              type: file.type,
-            },
-          });
-        }
-
-        const { error: insertError } = await supabase
-          .from("radiographies")
-          .insert(uploads);
-
-        if (insertError) {
-          throw new Error(
-            insertError.message || "No se pudo guardar el registro de radiografía",
-          );
-        }
-      }
-
-      setSelectedRadiographies([]);
-      setClinicalNote("");
-      setMediaOpen(false);
-      setMediaStatus("Guardado correctamente.");
-      await fetchRadiographies();
-      await fetchHistories();
-    } catch (error) {
-      console.error("Error guardando radiografías y nota:", error);
-      setMediaStatus(error?.message || "No se pudo guardar la información. Revisa la consola.");
-    } finally {
-      setSavingMedia(false);
     }
   };
 
@@ -378,54 +262,20 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
       if (!result.ok) {
         if (result.error) console.error("Error guardando historia:", result.error);
-        alert(result.message);
+        dispatch(showAlertModal({ message: result.message, variant: "error" }));
         return;
       }
 
       if (selectedRadiographies.length > 0) {
-        const uploads = [];
-
-        for (const file of selectedRadiographies) {
-          const filePath = buildStoragePath(file);
-          const { error: uploadError } = await supabase.storage
-            .from(RADIOGRAPHY_BUCKET)
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              contentType: file.type || "application/octet-stream",
-              upsert: false,
-            });
-
-          if (uploadError) {
-            throw new Error(
-              uploadError.message || "No se pudo subir la radiografía a Storage",
-            );
-          }
-
-          uploads.push({
-            patient_id: patient.id,
-            clinical_history_id: result.historyId,
-            file_path: filePath,
-            file_name: file.name,
-            description: note || null,
-            metadata: {
-              size: file.size,
-              type: file.type,
-            },
-          });
-        }
-
-        const { error: insertError } = await supabase
-          .from("radiographies")
-          .insert(uploads);
-
-        if (insertError) {
-          throw new Error(
-            insertError.message || "No se pudo guardar el registro de radiografía",
-          );
-        }
+        await uploadRadiographiesCtrl({
+          patientId: patient.id,
+          historyId: result.historyId,
+          files: selectedRadiographies,
+          note,
+        });
       }
 
-      alert(result.message);
+      dispatch(showAlertModal({ message: result.message, variant: "success" }));
       clearOdontogramDraft(patient.id);
       setForm(HISTORIA_EMPTY_FORM);
       setShowForm(false);
@@ -462,22 +312,15 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     const confirmed = window.confirm("¿Estás seguro de que quieres eliminar esta historia clínica?");
     if (!confirmed) return;
 
-    try {
-      const { error } = await supabase
-        .from("clinical_histories")
-        .delete()
-        .eq("id", history.id);
-
-      if (error) {
-        throw new Error(error.message || "No se pudo eliminar la historia clínica");
-      }
-
-      alert("Historia clínica eliminada correctamente");
-      await fetchHistories();
-    } catch (error) {
-      console.error("Error eliminando historia clínica:", error);
-      setMediaStatus(error?.message || "No se pudo eliminar la historia clínica. Revisa la consola.");
+    const result = await deletePatientHistoryCtrl(history.id);
+    if (!result.ok) {
+      if (result.error) console.error("Error eliminando historia clínica:", result.error);
+      dispatch(showAlertModal({ message: result.message, variant: "error" }));
+      return;
     }
+
+    dispatch(showAlertModal({ message: result.message, variant: "success" }));
+    await fetchHistories();
   };
 
   const renderField = ({ label, name, type = "text", as = "input", placeholder = "", options = [], rows = 3, listId = "" }) => (

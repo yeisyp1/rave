@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useDispatch } from 'react-redux';
 import { FiX } from 'react-icons/fi';
 import '../styles/ModalPatientsVW.css';
-import { createBillingInvoiceDAO } from '../dao/BillingDAO';
-import { listPatientsDAO } from '../dao/PatientsDAO';
+import { createBillingInvoiceCtrl } from '../controllers/BillingCtrl';
+import { loadPatientsCtrl } from '../controllers/PatientsCtrl';
+import { showAlertModal } from '../app/store';
 
 const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
+    const dispatch = useDispatch();
     const [patients, setPatients] = useState([]);
 
     const getLocalDate = () => {
@@ -29,11 +32,7 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
 
         const load = async () => {
             try {
-                const result = await listPatientsDAO();
-                const data = Array.isArray(result) ? result : result?.data;
-
-                if (result?.error) throw result.error;
-
+                const data = await loadPatientsCtrl();
                 if (mounted) setPatients(data ?? []);
             } catch (err) {
                 console.error('Error cargando pacientes:', err);
@@ -79,39 +78,16 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
         e.preventDefault();
         setSaving(true);
 
-        try {
-            const patient = patients.find(
-                (p) => String(p.numero_documento) === String(form.patientDocument)
-            );
+        const result = await createBillingInvoiceCtrl({ form, patients });
 
-            const payload = {
-                patient_id: patient ? patient.id : null,
-                patient_document: patient
-                    ? String(patient.numero_documento ?? '')
-                    : form.patientDocument,
-                patient_name: patient
-                    ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim()
-                    : form.patientName,
-                date: form.date,
-                amount: Number(form.amount) || 0,
-                status: form.status,
-                metadata: {
-                    notes: form.notes,
-                },
-            };
-
-            console.debug('Creating invoice payload:', payload);
-
-            const created = await createBillingInvoiceDAO(payload);
-
-            onSaved(created);
+        if (!result.ok) {
+            dispatch(showAlertModal({ message: 'Error guardando factura: ' + result.message, variant: 'error' }));
+        } else {
+            onSaved(result.data);
             onClose();
-        } catch (err) {
-            console.error('Error creando factura:', err);
-            alert('Error guardando factura: ' + (err.message ?? String(err)));
-        } finally {
-            setSaving(false);
         }
+
+        setSaving(false);
     };
 
     const modal = (

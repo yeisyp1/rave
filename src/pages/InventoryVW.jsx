@@ -1,26 +1,37 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiArchive, FiPlus, FiTrendingDown } from 'react-icons/fi'
+import { useDispatch } from 'react-redux'
+import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
-  createInventoryItemDAO,
-  listInventoryItemsDAO,
-  updateInventoryItemStockDAO,
-} from '../dao/InventoryDAO'
+  INVENTORY_EMPTY_FORM,
+  adjustInventoryStockCtrl,
+  computeInventoryOptionsCtrl,
+  computeInventoryStatsCtrl,
+  createInventoryItemCtrl,
+  deleteInventoryItemCtrl,
+  isInventoryItemLow,
+  loadInventoryItemsCtrl,
+  updateInventoryItemCtrl,
+} from '../controllers/InventoryCtrl'
+import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
 
 const InventoryVW = () => {
+  const dispatch = useDispatch()
   const [items, setItems] = useState([])
-  const [form, setForm] = useState({ name: '', category: '', stock: '', min: '', unit: '' })
+  const [form, setForm] = useState(INVENTORY_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', category: '', stock: '', min_stock: '', unit: '' })
 
   const loadItems = async () => {
     setLoading(true)
     setMessage('')
 
     try {
-      const data = await listInventoryItemsDAO()
+      const data = await loadInventoryItemsCtrl()
       setItems(data)
     } catch (error) {
       setMessage(`No se pudo cargar inventario: ${error.message}`)
@@ -33,11 +44,8 @@ const InventoryVW = () => {
     loadItems()
   }, [])
 
-  const lowStock = useMemo(() => items.filter((item) => Number(item.stock) <= Number(item.min_stock)), [items])
-  const totalStock = useMemo(() => items.reduce((sum, item) => sum + Number(item.stock), 0), [items])
-  const nameOptions = useMemo(() => [...new Set(items.map((item) => String(item.name ?? '').trim()).filter(Boolean))], [items])
-  const categoryOptions = useMemo(() => [...new Set(items.map((item) => String(item.category ?? '').trim()).filter(Boolean))], [items])
-  const unitOptions = useMemo(() => [...new Set(items.map((item) => String(item.unit ?? '').trim()).filter(Boolean))], [items])
+  const { lowStockCount, totalStock } = useMemo(() => computeInventoryStatsCtrl(items), [items])
+  const { nameOptions, categoryOptions, unitOptions } = useMemo(() => computeInventoryOptionsCtrl(items), [items])
 
   const addItem = async (event) => {
     event.preventDefault()
@@ -45,31 +53,59 @@ const InventoryVW = () => {
     setSaving(true)
     setMessage('')
 
-    try {
-      await createInventoryItemDAO({
-        name: form.name.trim(),
-        category: form.category.trim() || null,
-        stock: Number(form.stock),
-        min_stock: Number(form.min),
-        unit: form.unit.trim(),
-      })
-      setForm({ name: '', category: '', stock: '', min: '', unit: '' })
+    const result = await createInventoryItemCtrl(form)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo guardar el insumo: ${result.message}`, variant: 'error' }))
+    } else {
+      setForm(INVENTORY_EMPTY_FORM)
       await loadItems()
-    } catch (error) {
-      setMessage(`No se pudo guardar el insumo: ${error.message}`)
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   const adjustStock = async (item, amount) => {
-    try {
-      const nextStock = Math.max(0, Number(item.stock) + amount)
-      const updated = await updateInventoryItemStockDAO(item.id, nextStock)
-      setItems((current) => current.map((row) => (row.id === item.id ? updated : row)))
-    } catch (error) {
-      setMessage(`No se pudo actualizar stock: ${error.message}`)
+    const result = await adjustInventoryStockCtrl(item, amount)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${result.message}`, variant: 'error' }))
+      return
     }
+    setItems((current) => current.map((row) => (row.id === item.id ? result.data : row)))
+  }
+
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({
+      name: item.name ?? '',
+      category: item.category ?? '',
+      stock: item.stock ?? '',
+      min_stock: item.min_stock ?? '',
+      unit: item.unit ?? '',
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    const result = await updateInventoryItemCtrl(id, editForm)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo actualizar el insumo: ${result.message}`, variant: 'error' }))
+      return
+    }
+    setItems((current) => current.map((row) => (row.id === id ? result.data : row)))
+    setEditingId(null)
+  }
+
+  const removeItem = async (item) => {
+    if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return
+
+    const result = await deleteInventoryItemCtrl(item.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo eliminar el insumo: ${result.message}`, variant: 'error' }))
+      return
+    }
+    setItems((current) => current.filter((row) => row.id !== item.id))
   }
 
   return (
@@ -91,7 +127,7 @@ const InventoryVW = () => {
           <span className="admin-icon"><FiArchive /></span>
         </div>
         <div className="admin-card admin-stat">
-          <div><div className="admin-stat-value">{lowStock.length}</div><div className="admin-stat-label">alertas de stock</div></div>
+          <div><div className="admin-stat-value">{lowStockCount}</div><div className="admin-stat-label">alertas de stock</div></div>
           <span className="admin-icon"><FiTrendingDown /></span>
         </div>
       </div>
@@ -157,7 +193,27 @@ const InventoryVW = () => {
                 <tr><td colSpan="6" className="admin-empty">No hay insumos registrados.</td></tr>
               ) : (
                 items.map((item) => {
-                const isLow = Number(item.stock) <= Number(item.min)
+                const isLow = isInventoryItemLow(item)
+                const isEditing = editingId === item.id
+
+                if (isEditing) {
+                  return (
+                    <tr key={item.id}>
+                      <td><input className="admin-input" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} /></td>
+                      <td><input className="admin-input" value={editForm.category} onChange={(event) => setEditForm({ ...editForm, category: event.target.value })} /></td>
+                      <td><input className="admin-input" type="number" min="0" value={editForm.stock} onChange={(event) => setEditForm({ ...editForm, stock: event.target.value })} /></td>
+                      <td><input className="admin-input" type="number" min="0" value={editForm.min_stock} onChange={(event) => setEditForm({ ...editForm, min_stock: event.target.value })} /></td>
+                      <td>-</td>
+                      <td>
+                        <div className="admin-actions">
+                          <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
+                          <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                }
+
                 return (
                   <tr key={item.id}>
                     <td>{item.name}</td>
@@ -169,6 +225,8 @@ const InventoryVW = () => {
                       <div className="admin-actions">
                         <button className="admin-btn" type="button" onClick={() => adjustStock(item, -1)}>-1</button>
                         <button className="admin-btn" type="button" onClick={() => adjustStock(item, 1)}>+1</button>
+                        <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                        <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar"><FiTrash2 /></button>
                       </div>
                     </td>
                   </tr>
