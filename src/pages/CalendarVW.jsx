@@ -14,6 +14,8 @@ import {
   getGoogleTokenCtrl,
   listAppointmentPatientsCtrl,
   listAppointmentServiceTypesCtrl,
+  markAppointmentNoShowCtrl,
+  ScheduleConflictError,
   syncGoogleEventsCtrl,
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
@@ -141,7 +143,12 @@ const CalendarVW = () => {
     } catch (err) {
 
       console.error(err)
-      dispatch(showAlertModal({ message: 'Error al crear la cita en Google Calendar', variant: 'error' }))
+      dispatch(showAlertModal({
+        message: err instanceof ScheduleConflictError
+          ? 'El horario seleccionado ya está ocupado por otra cita. Elige otro horario.'
+          : 'Error al crear la cita en Google Calendar',
+        variant: 'error'
+      }))
 
     } finally {
 
@@ -167,7 +174,12 @@ const CalendarVW = () => {
       setSelectedEvent(null)
     } catch (err) {
       console.error(err)
-      dispatch(showAlertModal({ message: 'Error al actualizar la cita', variant: 'error' }))
+      dispatch(showAlertModal({
+        message: err instanceof ScheduleConflictError
+          ? 'El nuevo horario ya está ocupado por otra cita. Elige otro horario.'
+          : 'Error al actualizar la cita',
+        variant: 'error'
+      }))
     }
   }
 
@@ -184,6 +196,19 @@ const CalendarVW = () => {
       dispatch(showAlertModal({ message: 'Error al eliminar la cita', variant: 'error' }))
     } finally {
       setDeleting(false)
+    }
+  }
+
+  /* ── Marcar cita como no asistida ── */
+  const handleNoShowEvent = async () => {
+    if (!selectedEvent) return
+    try {
+      await markAppointmentNoShowCtrl(selectedEvent.resource.googleId)
+      setSelectedEvent(null)
+      dispatch(showAlertModal({ message: 'La cita quedó registrada como no asistida', variant: 'success' }))
+    } catch (err) {
+      console.error(err)
+      dispatch(showAlertModal({ message: 'No se pudo marcar la cita como no asistida', variant: 'error' }))
     }
   }
 
@@ -333,6 +358,7 @@ const CalendarVW = () => {
            event={selectedEvent}
            onEdit={handleEditEvent}
            onDelete={handleDeleteEvent}
+           onNoShow={handleNoShowEvent}
            onClose={() => setSelectedEvent(null)}
            deleting={deleting}
          />

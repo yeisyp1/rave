@@ -6,6 +6,7 @@ import {
   createGoogleEventCtrl,
   getGoogleTokenCtrl,
   listAppointmentPatientsCtrl,
+  ScheduleConflictError,
 } from '../controllers/CalendarCtrl'
 import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
 import '../styles/AdminViewsVW.css'
@@ -155,6 +156,10 @@ const AgendarCitaVW = () => {
       setShowSuccessNotice(true)
     } catch (error) {
       console.error(error)
+      if (error instanceof ScheduleConflictError) {
+        setMessage('El horario seleccionado ya está ocupado por otra cita. Elige otro horario.')
+        return
+      }
       setMessage('No se pudo crear la cita. Verifica la conexion con Google Calendar.')
     } finally {
       setSaving(false)

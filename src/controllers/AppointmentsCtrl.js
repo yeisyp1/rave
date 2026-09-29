@@ -3,6 +3,7 @@ import {
   createOutboundWhatsappMessageDAO,
   getActiveWhatsappTemplateDAO,
   getPatientContactDAO,
+  markAppointmentNoShowByGoogleIdDAO,
   upsertAppointmentByGoogleIdDAO,
 } from "../dao/AppointmentsDAO";
 
@@ -32,6 +33,8 @@ export const mirrorAppointmentCtrl = async ({ googleEventId, patientId, start, e
 };
 
 export const cancelAppointmentMirrorCtrl = (googleEventId) => cancelAppointmentByGoogleIdDAO(googleEventId);
+
+export const markAppointmentNoShowCtrl = (googleEventId) => markAppointmentNoShowByGoogleIdDAO(googleEventId);
 
 export const queueAppointmentConfirmationCtrl = async ({ appointmentId, patientId, start, serviceType }) => {
   const patient = await getPatientContactDAO(patientId);

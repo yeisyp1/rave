@@ -20,6 +20,17 @@ export const cancelAppointmentByGoogleIdDAO = async (googleEventId) => {
   if (error) throw error;
 };
 
+export const markAppointmentNoShowByGoogleIdDAO = async (googleEventId) => {
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ status: "No asistida" })
+    .eq("google_event_id", googleEventId)
+    .select("id");
+
+  if (error) throw error;
+  if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
+};
+
 export const listWhatsappAppointmentRequestsDAO = async () => {
   const { data, error } = await supabase
     .from("appointments")
