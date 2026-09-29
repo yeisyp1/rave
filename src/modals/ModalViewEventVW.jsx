@@ -6,7 +6,7 @@ import '../styles/ModalViewEventVW.css'
 import { showAlertModal } from '../app/store'
 
 /* MODAL VER CITA */
-const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
+const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting }) => {
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState({
@@ -43,6 +43,12 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
     const confirm = window.confirm(`¿Estás seguro de que deseas eliminar la cita "${event.title}"?`)
     if (confirm) onDelete()
   }
+
+  const handleNoShow = () => {
+    if (window.confirm(`¿Marcar la cita "${event.title}" como no asistida?`)) onNoShow()
+  }
+
+  const canMarkNoShow = onNoShow && !event?.allDay && new Date(event?.start) <= new Date()
 
   return (
     <div className="cl-overlay" onClick={(e) => e.target === e.currentTarget && !isEditing && onClose()}>
@@ -155,6 +161,9 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onClose, deleting }) => {
                   </>
                 )}
               </button>
+              {canMarkNoShow && (
+                <button className="cl-btn-ghost" onClick={handleNoShow}>No asistió</button>
+              )}
               <button className="cl-btn-ghost" onClick={onClose}>Cerrar</button>
               <button className="cl-btn-primary" onClick={() => setIsEditing(true)}>
                 <FiEdit size={14} style={{ verticalAlign: 'middle' }} />

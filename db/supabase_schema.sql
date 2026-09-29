@@ -893,6 +893,11 @@ create index if not exists idx_patient_procedures_doctor_id on public.patient_pr
 create index if not exists idx_whatsapp_messages_appointment_id on public.whatsapp_messages (appointment_id);
 create index if not exists idx_whatsapp_messages_template_id on public.whatsapp_messages (template_id);
 
+-- CU-08 (flujo alternativo ROC-13): estado 'No asistida' para citas a las que el paciente no llego.
+alter table public.appointments drop constraint appointments_status_check;
+alter table public.appointments add constraint appointments_status_check
+  check (status = any (array['Solicitada'::text,'Confirmada'::text,'Cancelación solicitada'::text,'Cancelada'::text,'No asistida'::text]));
+
 -- NO corregido (requiere accion manual fuera de SQL):
 -- 1) Extension pg_net registrada en esquema 'public': la extension no soporta
 --    ALTER EXTENSION ... SET SCHEMA. Sus funciones (net.http_post, etc.) ya
