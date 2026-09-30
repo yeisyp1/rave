@@ -3,6 +3,8 @@ import logoLight from '../assets/logo1.png'
 
 const InvoicePrintable = ({ invoice = {}, editable = false, form = {}, onChange = () => {} }) => {
   const display = (key, fallback = '') => invoice[key] ?? fallback
+  const money = (value) => `$${Number(value || 0).toLocaleString('es-CO')}`
+  const items = invoice.items ?? []
 
   return (
     <div className="inv-printable">
@@ -33,14 +35,9 @@ const InvoicePrintable = ({ invoice = {}, editable = false, form = {}, onChange 
           ) : (
             <div className="inv-meta-small">Fecha de emisión: {display('date')}</div>
           )}
-          {editable ? (
-            <select className="inv-input" name="status" value={form.status} onChange={onChange}>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Pagado">Pagado</option>
-              <option value="Anulado">Anulado</option>
-            </select>
-          ) : (
-            <div className="inv-meta-small">Estado: {display('status')}</div>
+          <div className="inv-meta-small">Estado: {display('status')}</div>
+          {invoice.status === 'Anulado' && invoice.raw?.motivo_anulacion && (
+            <div className="inv-meta-small">Motivo de anulación: {invoice.raw.motivo_anulacion}</div>
           )}
         </div>
       </div>
@@ -57,26 +54,37 @@ const InvoicePrintable = ({ invoice = {}, editable = false, form = {}, onChange 
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1</td>
-            <td>
-              {editable ? (
-                <input className="inv-input" name="concept" value={form.concept} onChange={onChange} />
-              ) : (
-                invoice.raw?.metadata?.concept || 'Servicio facturado'
-              )}
-            </td>
-            <td>1.0</td>
-            <td>Unidad</td>
-            <td>
-              {editable ? (
-                <input className="inv-input" name="amount" value={form.amount} onChange={onChange} />
-              ) : (
-                `$${Number(display('amount', 0)).toLocaleString('es-CO')}`
-              )}
-            </td>
-            <td>{`$${Number(display('amount', 0)).toLocaleString('es-CO')}`}</td>
-          </tr>
+          {items.length > 0 ? items.map((item, index) => (
+            <tr key={item.id}>
+              <td>{index + 1}</td>
+              <td>{item.description}</td>
+              <td>{Number(item.quantity).toFixed(1)}</td>
+              <td>Unidad</td>
+              <td>{money(item.unit_price)}</td>
+              <td>{money(item.total)}</td>
+            </tr>
+          )) : (
+            <tr>
+              <td>1</td>
+              <td>
+                {editable ? (
+                  <input className="inv-input" name="concept" value={form.concept} onChange={onChange} />
+                ) : (
+                  invoice.raw?.metadata?.concept || 'Servicio facturado'
+                )}
+              </td>
+              <td>1.0</td>
+              <td>Unidad</td>
+              <td>
+                {editable ? (
+                  <input className="inv-input" name="amount" value={form.amount} onChange={onChange} />
+                ) : (
+                  `$${Number(display('amount', 0)).toLocaleString('es-CO')}`
+                )}
+              </td>
+              <td>{`$${Number(display('amount', 0)).toLocaleString('es-CO')}`}</td>
+            </tr>
+          )}
         </tbody>
       </table>
 
@@ -85,13 +93,17 @@ const InvoicePrintable = ({ invoice = {}, editable = false, form = {}, onChange 
           <div>Valor:</div>
           <div>Descuento:</div>
           <div>Impuestos:</div>
-          <div className="inv-total-bold">Total a pagar:</div>
+          <div className="inv-total-bold">Total:</div>
+          {invoice.paid > 0 && <div>Pagado:</div>}
+          {invoice.paid > 0 && <div className="inv-total-bold">Saldo:</div>}
         </div>
         <div className="inv-totals-values">
           <div>{`$${Number(display('amount', 0)).toLocaleString('es-CO')}`}</div>
           <div>$0</div>
           <div>$0</div>
           <div className="inv-total-bold">{`$${Number(display('amount', 0)).toLocaleString('es-CO')}`}</div>
+          {invoice.paid > 0 && <div>{money(invoice.paid)}</div>}
+          {invoice.paid > 0 && <div className="inv-total-bold">{money(invoice.balance)}</div>}
         </div>
       </div>
 

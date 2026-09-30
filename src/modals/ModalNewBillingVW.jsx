@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import { FiX } from 'react-icons/fi';
 import '../styles/ModalPatientsVW.css';
-import { createBillingInvoiceCtrl } from '../controllers/BillingCtrl';
+import { createBillingInvoiceCtrl, loadBillableProceduresCtrl } from '../controllers/BillingCtrl';
 import { loadPatientsCtrl } from '../controllers/PatientsCtrl';
 import { showAlertModal } from '../app/store';
 
@@ -20,12 +20,49 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
         patientDocument: '',
         patientName: '',
         date: getLocalDate(),
-        amount: '',
-        status: 'Pendiente',
         notes: '',
     });
 
     const [saving, setSaving] = useState(false);
+    const [billableProcedures, setBillableProcedures] = useState([]);
+    const [selectedProcedureIds, setSelectedProcedureIds] = useState([]);
+    const [extraItems, setExtraItems] = useState([{ description: '', amount: '' }]);
+
+    const matchedPatient = patients.find(
+        (p) => String(p.numero_documento) === String(form.patientDocument)
+    );
+
+    useEffect(() => {
+        let mounted = true;
+
+        loadBillableProceduresCtrl(matchedPatient?.id)
+            .then((procedures) => {
+                if (mounted) setBillableProcedures(procedures);
+            })
+            .catch((err) => {
+                console.error('Error cargando tratamientos por facturar:', err);
+                if (mounted) setBillableProcedures([]);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, [matchedPatient?.id]);
+
+    const selectedProcedures = billableProcedures.filter((procedure) => selectedProcedureIds.includes(procedure.id));
+    const invoiceTotal =
+        selectedProcedures.reduce((sum, procedure) => sum + procedure.total, 0) +
+        extraItems.reduce((sum, item) => sum + (Number(item.amount) > 0 ? Number(item.amount) : 0), 0);
+
+    const toggleProcedure = (procedureId) => {
+        setSelectedProcedureIds((current) =>
+            current.includes(procedureId) ? current.filter((id) => id !== procedureId) : [...current, procedureId]
+        );
+    };
+
+    const updateExtraItem = (index, field, value) => {
+        setExtraItems((current) => current.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -64,6 +101,7 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                 patientDocument: value,
                 patientName: fullname,
             }));
+            setSelectedProcedureIds([]);
 
             return;
         }
@@ -78,7 +116,7 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
         e.preventDefault();
         setSaving(true);
 
-        const result = await createBillingInvoiceCtrl({ form, patients });
+        const result = await createBillingInvoiceCtrl({ form, patients, procedures: selectedProcedures, extraItems });
 
         if (!result.ok) {
             dispatch(showAlertModal({ message: 'Error guardando factura: ' + result.message, variant: 'error' }));
@@ -162,37 +200,62 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                             />
                         </div>
 
-                        <div className="pt-field">
-                            <label className="pt-label">Monto</label>
+                        <div className="pt-field pt-field-full">
+                            <label className="pt-label">Tratamientos realizados por facturar</label>
+                            {!matchedPatient ? (
+                                <span>Selecciona un paciente registrado para ver sus tratamientos realizados.</span>
+                            ) : billableProcedures.length === 0 ? (
+                                <span>El paciente no tiene tratamientos realizados pendientes de facturar.</span>
+                            ) : (
+                                billableProcedures.map((procedure) => (
+                                    <label key={procedure.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedProcedureIds.includes(procedure.id)}
+                                            onChange={() => toggleProcedure(procedure.id)}
+                                        />
+                                        <span style={{ flex: 1 }}>{procedure.date} · {procedure.description}</span>
+                                        <strong>${procedure.total.toLocaleString('es-CO')}</strong>
+                                    </label>
+                                ))
+                            )}
+                        </div>
 
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="amount"
-                                value={form.amount}
-                                onChange={handleChange}
-                                required
-                                className="pt-input"
-                            />
+                        <div className="pt-field pt-field-full">
+                            <label className="pt-label">Otros conceptos</label>
+                            {extraItems.map((item, index) => (
+                                <div key={index} style={{ display: 'flex', gap: 8 }}>
+                                    <input
+                                        value={item.description}
+                                        onChange={(e) => updateExtraItem(index, 'description', e.target.value)}
+                                        placeholder="Concepto (ej. consulta de valoración)"
+                                        className="pt-input"
+                                        style={{ flex: 2 }}
+                                    />
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={item.amount}
+                                        onChange={(e) => updateExtraItem(index, 'amount', e.target.value)}
+                                        placeholder="Valor"
+                                        className="pt-input"
+                                        style={{ flex: 1 }}
+                                    />
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                className="pt-btn-ghost"
+                                onClick={() => setExtraItems((current) => [...current, { description: '', amount: '' }])}
+                            >
+                                + Agregar concepto
+                            </button>
                         </div>
 
                         <div className="pt-field">
-                            <label className="pt-label">Estado</label>
-
-                            <div className="pt-select-wrap">
-                                <select
-                                    name="status"
-                                    value={form.status}
-                                    onChange={handleChange}
-                                    className="pt-select"
-                                >
-                                    <option value="Pendiente">Pendiente</option>
-                                    <option value="Pagado">Pagado</option>
-                                    <option value="Anulado">Anulado</option>
-                                </select>
-
-                                <div className="pt-select-arrow" />
-                            </div>
+                            <label className="pt-label">Total</label>
+                            <strong>${invoiceTotal.toLocaleString('es-CO')}</strong>
                         </div>
 
                         <div className="pt-field pt-field-full">

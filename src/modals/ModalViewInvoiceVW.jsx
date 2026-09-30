@@ -19,7 +19,6 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
       date: (invoice.date || '').slice(0, 10),
       amount: invoice.amount ?? '',
       concept: invoice.raw?.metadata?.concept || 'Servicio facturado',
-      status: invoice.status || 'Pendiente',
       notes: invoice.raw?.metadata?.notes || '',
     })
   }, [invoice])
@@ -32,7 +31,7 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
   const handleSave = async () => {
     if (!invoice) return
     setSaving(true)
-    const result = await updateBillingInvoiceCtrl(invoice.id, form)
+    const result = await updateBillingInvoiceCtrl(invoice, form)
     if (!result.ok) {
       dispatch(showAlertModal({ message: 'No se pudo guardar la factura: ' + result.message, variant: 'error' }))
     } else {

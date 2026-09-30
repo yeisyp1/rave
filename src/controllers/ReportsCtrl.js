@@ -34,7 +34,6 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
   ])
 
   const invoicesInRange = billing.invoices.filter((invoice) => inRange(toDate(invoice.date), fromDate, toDateEnd))
-  const paidInvoices = invoicesInRange.filter((invoice) => invoice.isPaid)
   const pendingInvoices = invoicesInRange.filter((invoice) => invoice.isPending)
 
   const newPatients = patients.filter((patient) => inRange(toDate(patient.created_at), fromDate, toDateEnd))
@@ -43,8 +42,8 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
 
   const pendingLabCases = laboratory.cases.filter((item) => item.status === 'Pendiente' || item.status === 'En proceso')
 
-  const totalIncome = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)
-  const totalPending = pendingInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)
+  const totalIncome = invoicesInRange.reduce((sum, invoice) => sum + (invoice.isVoid ? 0 : invoice.paid), 0)
+  const totalPending = pendingInvoices.reduce((sum, invoice) => sum + invoice.balance, 0)
 
   return {
     range: { from: fromDate, to: toDateValue },

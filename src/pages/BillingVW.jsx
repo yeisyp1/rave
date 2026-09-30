@@ -2,10 +2,11 @@ import '../styles/BillingVW.css'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { showAlertModal } from '../app/store'
-import { getBillingCtrlData, updateBillingInvoiceStatusCtrl } from '../controllers/BillingCtrl'
+import { annulBillingInvoiceCtrl, getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
 import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
 import ModalViewInvoiceVW from '../modals/ModalViewInvoiceVW'
+import ModalPaymentsVW from '../modals/ModalPaymentsVW'
 import { generateInvoicePdf, parseLocalInvoiceDate } from '../utils/invoicePdf'
 
 const BillingVW = () => {
@@ -21,6 +22,7 @@ const BillingVW = () => {
     setTotalIncome(totalIncome)
     setTotalPending(totalPending)
     setTotalAll(totalAll)
+    return invoices
   }
 
   useEffect(() => {
@@ -34,21 +36,25 @@ const BillingVW = () => {
   }, [])
 
   const [showNewInvoiceModal, setShowNewInvoiceModal] = useState(false)
-  const [updatingStatusId, setUpdatingStatusId] = useState(null)
+  const [annullingId, setAnnullingId] = useState(null)
   const [showViewInvoiceModal, setShowViewInvoiceModal] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
+  const [paymentsInvoice, setPaymentsInvoice] = useState(null)
 
   const handleDownloadInvoice = (inv) => generateInvoicePdf(inv)
 
-  const handleStatusChange = async (invoiceId, newStatus) => {
-    setUpdatingStatusId(invoiceId)
-    const result = await updateBillingInvoiceStatusCtrl(invoiceId, newStatus)
+  const handleAnnul = async (inv) => {
+    const motivo = window.prompt(`Motivo de anulación de la factura #${String(inv.id).padStart(3, '0')}:`)
+    if (motivo === null) return
+
+    setAnnullingId(inv.id)
+    const result = await annulBillingInvoiceCtrl(inv.id, motivo)
     if (!result.ok) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar el estado de la factura: ${result.message}`, variant: 'error' }))
+      dispatch(showAlertModal({ message: `No se pudo anular la factura: ${result.message}`, variant: 'error' }))
     } else {
       await load()
     }
-    setUpdatingStatusId(null)
+    setAnnullingId(null)
   }
 
   return (
@@ -77,7 +83,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon green">
             <FiCheck size={20} />
           </div>
-          <div className="bl-stat-value">${totalIncome}</div>
+          <div className="bl-stat-value">${totalIncome.toLocaleString('es-CO')}</div>
           <div className="bl-stat-label">Ingresos cobrados</div>
         </div>
 
@@ -85,7 +91,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon red">
             <FiClock size={20} />
           </div>
-          <div className="bl-stat-value danger">${totalPending}</div>
+          <div className="bl-stat-value danger">${totalPending.toLocaleString('es-CO')}</div>
           <div className="bl-stat-label">Pendiente de cobro</div>
         </div>
 
@@ -93,7 +99,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon gold">
             <FiDollarSign size={20} />
           </div>
-          <div className="bl-stat-value">${totalAll}</div>
+          <div className="bl-stat-value">${totalAll.toLocaleString('es-CO')}</div>
           <div className="bl-stat-label">Total facturado</div>
         </div>
       </div>
@@ -112,6 +118,7 @@ const BillingVW = () => {
                 <th>Paciente</th>
                 <th>Fecha</th>
                 <th>Monto</th>
+                <th>Saldo</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -133,19 +140,20 @@ const BillingVW = () => {
                       year: 'numeric',
                     })}
                   </td>
-                  <td className="bl-amount">${inv.amount}</td>
+                  <td className="bl-amount">${inv.amount.toLocaleString('es-CO')}</td>
+                  <td className="bl-amount">
+                    {inv.isVoid ? '—' : `$${inv.balance.toLocaleString('es-CO')}`}
+                    {inv.paid > 0 && !inv.isVoid && (
+                      <span className="bl-balance-note">Pagado ${inv.paid.toLocaleString('es-CO')}</span>
+                    )}
+                  </td>
                   <td>
-                    <select
-                      className={`bl-status-select ${inv.status === 'Pagado' ? 'paid' : inv.status === 'Anulado' ? 'void' : 'pending'}`}
-                      value={inv.status}
-                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      disabled={updatingStatusId === inv.id}
-                      aria-label={`Cambiar estado de factura ${inv.id}`}
+                    <span
+                      className={`bl-badge ${inv.isPaid ? 'paid' : inv.isVoid ? 'void' : inv.status === 'Parcial' ? 'partial' : 'pending'}`}
+                      title={inv.isVoid ? inv.raw?.motivo_anulacion || undefined : undefined}
                     >
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Pagado">Pagado</option>
-                      <option value="Anulado">Anulado</option>
-                    </select>
+                      {inv.status}
+                    </span>
                   </td>
                   <td>
                     <div className="bl-actions">
@@ -155,9 +163,14 @@ const BillingVW = () => {
                       <button className="bl-btn-ghost" onClick={() => handleDownloadInvoice(inv)} title="Descargar factura en PDF">
                         <FiDownload size={14} />
                       </button>
-                      {inv.isPending && (
-                        <button className="bl-btn-pay">
-                          Cobrar
+                      {!inv.isVoid && (
+                        <button className="bl-btn-pay" onClick={() => setPaymentsInvoice(inv)}>
+                          {inv.isPending ? 'Registrar pago' : 'Pagos'}
+                        </button>
+                      )}
+                      {!inv.isVoid && (
+                        <button className="bl-btn-void" onClick={() => handleAnnul(inv)} disabled={annullingId === inv.id}>
+                          Anular
                         </button>
                       )}
                     </div>
@@ -173,6 +186,16 @@ const BillingVW = () => {
           invoice={selectedInvoice}
           onClose={() => { setShowViewInvoiceModal(false); setSelectedInvoice(null) }}
           onSaved={async () => { setShowViewInvoiceModal(false); setSelectedInvoice(null); await load() }}
+        />
+      )}
+      {paymentsInvoice && (
+        <ModalPaymentsVW
+          invoice={paymentsInvoice}
+          onClose={() => setPaymentsInvoice(null)}
+          onChanged={async () => {
+            const refreshed = await load()
+            setPaymentsInvoice(refreshed.find((inv) => inv.id === paymentsInvoice.id) ?? null)
+          }}
         />
       )}
     </div>

@@ -11,7 +11,7 @@ export const getBillingInvoicesDAO = async () => {
   try {
     const { data, error } = await supabase
       .from('billing_invoices')
-      .select('*')
+      .select('*, payments(amount, anulado), invoice_items(*)')
       .order('date', { ascending: false })
       .limit(1000);
 
@@ -27,8 +27,9 @@ export const getBillingInvoicesDAO = async () => {
   }
 };
 
-export const createBillingInvoiceDAO = async (payload) => {
-  const { data, error } = await supabase.from('billing_invoices').insert([payload]).select('*').single();
+// Crea la factura y sus items en una sola transaccion (funcion create_invoice_with_items).
+export const createInvoiceWithItemsDAO = async (invoice, items) => {
+  const { data, error } = await supabase.rpc('create_invoice_with_items', { p_invoice: invoice, p_items: items });
   if (error) throw error;
   return data;
 };
@@ -39,7 +40,41 @@ export const updateBillingInvoiceDAO = async (id, payload) => {
   return data;
 };
 
-export const deleteBillingInvoiceDAO = async (id) => {
-  const { error } = await supabase.from('billing_invoices').delete().eq('id', id);
+// Las facturas no se borran: se anulan con motivo (la base de datos no tiene politica de DELETE).
+export const annulBillingInvoiceDAO = async (id, motivo) => {
+  const { data, error } = await supabase
+    .from('billing_invoices')
+    .update({ status: 'Anulado', motivo_anulacion: motivo })
+    .eq('id', id)
+    .select('*')
+    .single();
   if (error) throw error;
+  return data;
+};
+
+export const listPaymentsByInvoiceDAO = async (invoiceId) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+};
+
+export const createPaymentDAO = async (payload) => {
+  const { data, error } = await supabase.from('payments').insert([payload]).select('*').single();
+  if (error) throw error;
+  return data;
+};
+
+export const annulPaymentDAO = async (id, motivo) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ anulado: true, motivo_anulacion: motivo })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
 };
