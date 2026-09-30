@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showAlertModal } from '../app/store';
-import { deletePatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/HistoriaClinicaCtrl';
+import { annulPatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/HistoriaClinicaCtrl';
 import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
 import { updatePatientDAO } from '../dao/PatientsDAO';
 import { captureOdontogramState } from '../utils/odontogramPersistence';
@@ -131,11 +131,11 @@ const PatientDetailVW = () => {
     setHistoryModalOpen(true);
   };
 
-  const handleDeleteHistory = async (history) => {
-    const confirmed = window.confirm('¿Seguro que quieres eliminar esta historia clínica?');
-    if (!confirmed) return;
+  const handleAnnulHistory = async (history) => {
+    const motivo = window.prompt('Motivo de anulación de esta historia clínica:');
+    if (motivo === null) return;
 
-    const result = await deletePatientHistoryCtrl(history.id);
+    const result = await annulPatientHistoryCtrl(history.id, motivo);
     if (!result.ok) {
       dispatch(showAlertModal({ message: result.message, variant: 'error' }));
       return;
@@ -396,22 +396,28 @@ const PatientDetailVW = () => {
                           <span><b>Medio de remisión:</b> {history.medio_remision || historyData.medio_remision || '—'}</span>
                           <span><b>Motivo:</b> {history.motivo_consulta || historyData.motivo_consulta || '—'}</span>
                         </div>
-                        <div className="pd-history-actions">
-                          <button
-                            type="button"
-                            className="pd-history-action pd-history-action-edit"
-                            onClick={() => openEditHistoryModal(history)}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="pd-history-action pd-history-action-delete"
-                            onClick={() => handleDeleteHistory(history)}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
+                        {history.anulada ? (
+                          <div className="mhc-history-summary">
+                            <span><b>Anulada:</b> {history.motivo_anulacion || '—'}</span>
+                          </div>
+                        ) : (
+                          <div className="pd-history-actions">
+                            <button
+                              type="button"
+                              className="pd-history-action pd-history-action-edit"
+                              onClick={() => openEditHistoryModal(history)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="pd-history-action pd-history-action-delete"
+                              onClick={() => handleAnnulHistory(history)}
+                            >
+                              Anular con nota
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

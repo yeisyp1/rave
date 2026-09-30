@@ -27,7 +27,7 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
   const toDateEnd = toDateValue ? new Date(toDateValue.getFullYear(), toDateValue.getMonth(), toDateValue.getDate(), 23, 59, 59, 999) : null
 
   const [patients, billing, inventory, laboratory] = await Promise.all([
-    loadPatientsCtrl(),
+    loadPatientsCtrl('todos'),
     getBillingCtrlData(),
     loadInventoryItemsCtrl(),
     loadLaboratoryDataCtrl(),

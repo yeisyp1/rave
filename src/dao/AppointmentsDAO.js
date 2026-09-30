@@ -84,18 +84,18 @@ export const createOutboundWhatsappMessageDAO = async (payload) => {
   if (error) throw error;
 };
 
-export const checkAppointmentAvailabilityDAO = async (start, end) => {
-  // Check for confirmed appointments that overlap with the requested time slot
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-
-  const { data, error } = await supabase
+export const checkAppointmentAvailabilityDAO = async (start, end, ignoreGoogleEventId = null) => {
+  // Citas confirmadas que se cruzan con el rango [start, end)
+  let query = supabase
     .from("appointments")
-    .select("id, start_time, end_time, status")
+    .select("id, google_event_id, start_at, end_at, status")
     .eq("status", "Confirmada")
-    .lte("start_time", endDate.toISOString())
-    .gte("end_time", startDate.toISOString());
+    .lt("start_at", new Date(end).toISOString())
+    .gt("end_at", new Date(start).toISOString());
 
+  if (ignoreGoogleEventId) query = query.neq("google_event_id", ignoreGoogleEventId);
+
+  const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
 };

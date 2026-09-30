@@ -4,7 +4,6 @@ import { useDispatch } from "react-redux";
 import { showAlertModal } from "../app/store";
 import {
   createPatientHistoryCtrl,
-  deletePatientHistoryCtrl,
   HISTORIA_EMPTY_FORM,
   loadHistoryCityDepartmentsCtrl,
   loadPatientHistoriesCtrl,
@@ -12,7 +11,7 @@ import {
   annulPatientHistoryCtrl,
 } from "../controllers/HistoriaClinicaCtrl";
 import {
-  deleteRadiographyCtrl,
+  annulRadiographyCtrl,
   loadHistoryRadiographiesCtrl,
   uploadRadiographiesCtrl,
 } from "../controllers/RadiographiesCtrl";
@@ -222,20 +221,25 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     }
   };
 
-  const handleDeleteRadiography = async (radiography) => {
-    const confirmed = window.confirm(
-      `¿Quieres eliminar la radiografía "${radiography.file_name || "seleccionada"}"?`,
+  const handleAnnulRadiography = async (radiography) => {
+    const motivo = window.prompt(
+      `Motivo de anulación de la radiografía "${radiography.file_name || "seleccionada"}":`,
     );
-    if (!confirmed) return;
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+      setMediaStatus("El motivo de anulación es obligatorio.");
+      return;
+    }
 
     try {
-      await deleteRadiographyCtrl(radiography);
-
-      setRadiographies((current) => current.filter((item) => item.id !== radiography.id));
-      setMediaStatus("Radiografía eliminada correctamente.");
+      await annulRadiographyCtrl(radiography.id, motivo);
+      setRadiographies((current) =>
+        current.map((item) => (item.id === radiography.id ? { ...item, anulada: true, motivo_anulacion: motivo.trim() } : item)),
+      );
+      setMediaStatus("Radiografía anulada correctamente.");
     } catch (error) {
-      console.error("Error eliminando radiografía:", error);
-      setMediaStatus(error?.message || "No se pudo eliminar la radiografía.");
+      console.error("Error anulando radiografía:", error);
+      setMediaStatus(error?.message || "No se pudo anular la radiografía.");
     }
   };
 
@@ -310,21 +314,6 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     setShowForm(true);
     setEditingHistoryId(history.id);
     setOriginalPatientData(null);
-  };
-
-  const handleDeleteHistory = async (history) => {
-    const confirmed = window.confirm("¿Estás seguro de que quieres eliminar esta historia clínica?");
-    if (!confirmed) return;
-
-    const result = await deletePatientHistoryCtrl(history.id);
-    if (!result.ok) {
-      if (result.error) console.error("Error eliminando historia clínica:", result.error);
-      dispatch(showAlertModal({ message: result.message, variant: "error" }));
-      return;
-    }
-
-    dispatch(showAlertModal({ message: result.message, variant: "success" }));
-    await fetchHistories();
   };
 
   const handleOpenAnnulModal = (history) => {
@@ -766,15 +755,21 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                               <p className="pd-radiography-date">
                                 {radio.created_at?.split('T')[0] || '—'}
                               </p>
-                              <button
-                                type="button"
-                                className="pd-radiography-delete"
-                                onClick={() => handleDeleteRadiography(radio)}
-                                title="Eliminar radiografía"
-                              >
-                                <FiTrash2 size={14} />
-                                Eliminar
-                              </button>
+                              {radio.anulada ? (
+                                <p className="pd-radiography-type" title={radio.motivo_anulacion || ""}>
+                                  Anulada
+                                </p>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="pd-radiography-delete"
+                                  onClick={() => handleAnnulRadiography(radio)}
+                                  title="Anular radiografía"
+                                >
+                                  <FiTrash2 size={14} />
+                                  Anular
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -851,22 +846,28 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                           <span><b>Medio de remisión:</b> {fieldToText(history.medio_remision || historyData.medio_remision)}</span>
                           <span><b>Motivo:</b> {fieldToText(history.motivo_consulta || historyData.motivo_consulta)}</span>
                         </div>
-                        <div className="mhc-history-actions">
-                          <button
-                            type="button"
-                            className="mhc-btn-ghost"
-                            onClick={() => handleEditHistory(history)}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="mhc-btn-danger"
-                            onClick={() => handleOpenAnnulModal(history)}
-                          >
-                            Anular con nota
-                          </button>
-                        </div>
+                        {history.anulada ? (
+                          <div className="mhc-history-summary">
+                            <span><b>Anulada:</b> {fieldToText(history.motivo_anulacion)}</span>
+                          </div>
+                        ) : (
+                          <div className="mhc-history-actions">
+                            <button
+                              type="button"
+                              className="mhc-btn-ghost"
+                              onClick={() => handleEditHistory(history)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="mhc-btn-danger"
+                              onClick={() => handleOpenAnnulModal(history)}
+                            >
+                              Anular con nota
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -879,32 +880,26 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
 
       {/* Modal de anulación */}
       {showAnnulModal && (
-        <div className="mhc-annul-overlay" onClick={() => setShowAnnulModal(false)}>
-          <div className="mhc-annul-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Anular Historia Clínica</h3>
-            <div className="mhc-annul-field">
-              <label>Motivo de anulación *</label>
+        <div className="mhc-overlay mhc-annul-overlay" onClick={(e) => e.target === e.currentTarget && setShowAnnulModal(false)}>
+          <div className="mhc-modal mhc-annul-modal" role="dialog" aria-labelledby="mhc-annul-title">
+            <h3 id="mhc-annul-title">Anular historia clínica</h3>
+            <p className="mhc-annul-hint">La atención queda registrada como anulada. No se borra del sistema.</p>
+            <label className="mhc-field">
+              <span className="mhc-label">Motivo de anulación *</span>
               <textarea
                 value={annulReason}
                 onChange={(e) => setAnnulReason(e.target.value)}
-                placeholder="Describe el motivo por el cual se anula esta historia clínica..."
-                className="mhc-annul-textarea"
-                rows="4"
+                placeholder="Describe por qué se anula esta atención"
+                className="mhc-textarea"
+                rows={4}
+                autoFocus
               />
-            </div>
-            <div className="mhc-annul-actions">
-              <button
-                type="button"
-                className="mhc-btn-ghost"
-                onClick={() => setShowAnnulModal(false)}
-              >
+            </label>
+            <div className="mhc-form-actions">
+              <button type="button" className="mhc-btn-ghost" onClick={() => setShowAnnulModal(false)}>
                 Cancelar
               </button>
-              <button
-                type="button"
-                className="mhc-btn-danger"
-                onClick={handleAnnulHistory}
-              >
+              <button type="button" className="mhc-btn-danger" onClick={handleAnnulHistory} disabled={!annulReason.trim()}>
                 Anular
               </button>
             </div>

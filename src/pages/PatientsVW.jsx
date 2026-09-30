@@ -5,13 +5,14 @@ import {
   deletePatientCtrl,
   filterPatientsCtrl,
   loadPatientsCtrl,
+  reactivatePatientCtrl,
 } from "../controllers/PatientsCtrl";
 import { usePatientModal } from "../hooks/usePatientModal";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
 import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
-import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2 } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2, FiRotateCcw } from 'react-icons/fi'
 import { showAlertModal } from "../app/store";
 
 const PatientsVW = () => {
@@ -21,13 +22,14 @@ const PatientsVW = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [viewPatient, setViewPatient] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("activos");
 
   const patientModal = usePatientModal(() => getPatients());
 
   const getPatients = async () => {
     setLoading(true);
     try {
-      const data = await loadPatientsCtrl();
+      const data = await loadPatientsCtrl(statusFilter);
       setPatients(data);
     } catch (error) {
       console.error("Error cargando pacientes:", error);
@@ -35,7 +37,8 @@ const PatientsVW = () => {
     setLoading(false);
   };
 
-  useEffect(() => { getPatients(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { getPatients(); }, [statusFilter]);
 
   /* ── Handlers ── */
   const viewHistory = (patient) => {
@@ -54,6 +57,12 @@ const PatientsVW = () => {
       dispatch(showAlertModal({ message: result.message, variant: "success" }));
       getPatients();
     }
+  };
+
+  const reactivatePatient = async (id) => {
+    const result = await reactivatePatientCtrl(id);
+    dispatch(showAlertModal({ message: result.message, variant: result.ok ? "success" : "error" }));
+    if (result.ok) getPatients();
   };
 
   /* ── Filtro de búsqueda ── */
@@ -84,9 +93,20 @@ const PatientsVW = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <div className="pt-select-wrap">
+          <select
+            className="pt-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filtrar pacientes por estado"
+          >
+            <option value="activos">Activos</option>
+            <option value="inactivos">Inactivos</option>
+          </select>
+        </div>
         <div className="pt-stat">
           <span className="pt-stat-num">{patients.length}</span>
-          <span className="pt-stat-label">Pacientes</span>
+          <span className="pt-stat-label">{statusFilter === "activos" ? "Pacientes" : "Inactivos"}</span>
         </div>
       </div>
 
@@ -116,7 +136,7 @@ const PatientsVW = () => {
                       <div className="pt-empty-icon">
                         <FiUser size={48} />
                       </div>
-                      <p>{search ? "Sin resultados para la búsqueda" : "No hay pacientes registrados"}</p>
+                      <p>{search ? "Sin resultados para la búsqueda" : statusFilter === "activos" ? "No hay pacientes registrados" : "No hay pacientes inactivos"}</p>
                     </td>
                   </tr>
                 ) : (
@@ -171,14 +191,24 @@ const PatientsVW = () => {
                           <FiEdit size={16} />
                         </button>
 
-                        {/* Inactivar */}
-                        <button
-                          className="pt-btn-action pt-btn-action-danger"
-                          onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
-                          title="Inactivar paciente"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        {/* Inactivar / Reactivar */}
+                        {p.activo === false ? (
+                          <button
+                            className="pt-btn-action"
+                            onClick={(e) => { e.stopPropagation(); reactivatePatient(p.id); }}
+                            title="Reactivar paciente"
+                          >
+                            <FiRotateCcw size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            className="pt-btn-action pt-btn-action-danger"
+                            onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
+                            title="Inactivar paciente"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        )}
 
                       </td>
                     </tr>

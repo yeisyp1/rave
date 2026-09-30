@@ -1,13 +1,12 @@
 import {
   createRadiographiesDAO,
-  deleteRadiographyRowDAO,
   getRadiographyPublicUrlDAO,
   getRadiographySignedUrlDAO,
   listHistoryRadiographiesDAO,
-  removeRadiographyFileDAO,
   uploadRadiographyFileDAO,
   annulRadiographyDAO,
 } from "../dao/RadiographiesDAO";
+import { getCurrentUserIdDAO } from "../dao/SupabaseDAO";
 
 const buildStoragePath = (patientId, file) => {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
@@ -31,28 +30,10 @@ export const loadHistoryRadiographiesCtrl = async (patientId, historyId) => {
   return Promise.all(rows.map(resolveRadiographyUrl));
 };
 
-export const deleteRadiographyCtrl = async (radiography) => {
-  await deleteRadiographyRowDAO(radiography.id);
-
-  if (radiography.file_path) {
-    try {
-      await removeRadiographyFileDAO(radiography.file_path);
-    } catch (error) {
-      console.warn("La radiografía se eliminó de la base de datos, pero no del almacenamiento:", error);
-    }
-  }
-};
-
 export const annulRadiographyCtrl = async (radiographyId, motivo) => {
-  // Get current user for tracking who annuls the radiography
-  const { supabase } = await import("./SupabaseDAO");
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const userId = user?.id || null;
-
-  return annulRadiographyDAO(radiographyId, motivo, userId);
+  if (!motivo?.trim()) throw new Error("El motivo de anulación es obligatorio");
+  const userId = await getCurrentUserIdDAO();
+  return annulRadiographyDAO(radiographyId, motivo.trim(), userId);
 };
 
 // Uploads each file to Storage and inserts one radiographies row per file,

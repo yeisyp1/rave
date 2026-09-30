@@ -3,6 +3,7 @@ import {
   deletePatientDAO,
   getPatientByDocumentDAO,
   listPatientsDAO,
+  reactivatePatientDAO,
   updatePatientDAO,
 } from "../dao/PatientsDAO";
 import { PatientModel } from "../models/PatientModel";
@@ -49,8 +50,8 @@ export const calcPatientAgeCtrl = (dob) => {
   return age >= 0 ? String(age) : "";
 };
 
-export const loadPatientsCtrl = async () => {
-  const { data, error } = await listPatientsDAO();
+export const loadPatientsCtrl = async (status = "activos") => {
+  const { data, error } = await listPatientsDAO(status);
   if (error) throw error;
   return (data ?? []).map((item) => new PatientModel(item));
 };
@@ -91,7 +92,6 @@ export const deletePatientCtrl = async (id) => {
 export const inactivatePatientCtrl = deletePatientCtrl;
 
 export const reactivatePatientCtrl = async (id) => {
-  const { reactivatePatientDAO } = await import("../dao/PatientsDAO");
   const { error } = await reactivatePatientDAO(id);
   if (error) return { ok: false, message: "Error al reactivar el paciente", error };
   return { ok: true, message: "Paciente reactivado correctamente" };

@@ -787,3 +787,23 @@
 [data-theme="dark"] .mhc-history-summary span b {
   color: #e2e8f0;
 }
+/* ── MODAL DE ANULACIÓN ── */
+.mhc-annul-overlay {
+  z-index: 1100;
+}
+
+.mhc-annul-modal {
+  max-width: 480px;
+  padding: 1.5rem;
+  gap: 1rem;
+}
+
+.mhc-annul-modal h3 {
+  margin: 0;
+}
+
+.mhc-annul-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.75;
+}

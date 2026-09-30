@@ -1,6 +1,5 @@
 import {
   createClinicalHistoryDAO,
-  deleteClinicalHistoryDAO,
   updateClinicalHistoryDAO,
   getCurrentDoctorLabelDAO,
   getLatestOdontogramDAO,
@@ -10,6 +9,7 @@ import {
   saveOdontogramDAO,
 } from "../dao/ClinicalHistoriesDAO";
 import { getPatientByIdDAO, listPatientsDAO, updatePatientDAO } from "../dao/PatientsDAO";
+import { getCurrentUserIdDAO } from "../dao/SupabaseDAO";
 import { ClinicalHistoryModel } from "../models/ClinicalHistoryModel";
 import { PatientModel } from "../models/PatientModel";
 
@@ -242,22 +242,6 @@ export const updatePatientHistoryCtrl = async (
   form,
 ) => savePatientHistoryCtrl(patientId, form, null, historyId);
 
-export const deletePatientHistoryCtrl = async (historyId) => {
-  const { error } = await deleteClinicalHistoryDAO(historyId);
-  if (error) {
-    return {
-      ok: false,
-      message: "Error al eliminar la historia clínica",
-      error,
-    };
-  }
-
-  return {
-    ok: true,
-    message: "Historia clínica eliminada exitosamente",
-  };
-};
-
 export const annulPatientHistoryCtrl = async (historyId, motivo) => {
   if (!motivo?.trim()) {
     return {
@@ -266,15 +250,8 @@ export const annulPatientHistoryCtrl = async (historyId, motivo) => {
     };
   }
 
-  // Get the current user ID from auth
-  const { supabase } = await import("./SupabaseDAO");
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const userId = user?.id || null;
-
-  const { error } = await annulClinicalHistoryDAO(historyId, motivo, userId);
+  const userId = await getCurrentUserIdDAO();
+  const { error } = await annulClinicalHistoryDAO(historyId, motivo.trim(), userId);
   if (error) {
     return {
       ok: false,
