@@ -9,6 +9,7 @@ import {
   loadHistoryCityDepartmentsCtrl,
   loadPatientHistoriesCtrl,
   updatePatientHistoryCtrl,
+  annulPatientHistoryCtrl,
 } from "../controllers/HistoriaClinicaCtrl";
 import {
   deleteRadiographyCtrl,
@@ -91,6 +92,9 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   const [radiographies, setRadiographies] = useState([]);
   const [mediaStatus, setMediaStatus] = useState("");
   const [editingHistoryId, setEditingHistoryId] = useState(null);
+  const [showAnnulModal, setShowAnnulModal] = useState(false);
+  const [annulHistoryId, setAnnulHistoryId] = useState(null);
+  const [annulReason, setAnnulReason] = useState("");
 
   // Pre-populate form with patient data when showing form
   useEffect(() => {
@@ -320,6 +324,31 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     }
 
     dispatch(showAlertModal({ message: result.message, variant: "success" }));
+    await fetchHistories();
+  };
+
+  const handleOpenAnnulModal = (history) => {
+    setAnnulHistoryId(history.id);
+    setAnnulReason("");
+    setShowAnnulModal(true);
+  };
+
+  const handleAnnulHistory = async () => {
+    if (!annulReason.trim()) {
+      dispatch(showAlertModal({ message: "El motivo de anulación es obligatorio", variant: "error" }));
+      return;
+    }
+
+    const result = await annulPatientHistoryCtrl(annulHistoryId, annulReason);
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: result.message, variant: "error" }));
+      return;
+    }
+
+    dispatch(showAlertModal({ message: result.message, variant: "success" }));
+    setShowAnnulModal(false);
+    setAnnulReason("");
+    setAnnulHistoryId(null);
     await fetchHistories();
   };
 
@@ -833,9 +862,9 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                           <button
                             type="button"
                             className="mhc-btn-danger"
-                            onClick={() => handleDeleteHistory(history)}
+                            onClick={() => handleOpenAnnulModal(history)}
                           >
-                            Eliminar
+                            Anular con nota
                           </button>
                         </div>
                       </div>
@@ -847,6 +876,41 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
           )}
         </div>
       </div>
+
+      {/* Modal de anulación */}
+      {showAnnulModal && (
+        <div className="mhc-annul-overlay" onClick={() => setShowAnnulModal(false)}>
+          <div className="mhc-annul-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Anular Historia Clínica</h3>
+            <div className="mhc-annul-field">
+              <label>Motivo de anulación *</label>
+              <textarea
+                value={annulReason}
+                onChange={(e) => setAnnulReason(e.target.value)}
+                placeholder="Describe el motivo por el cual se anula esta historia clínica..."
+                className="mhc-annul-textarea"
+                rows="4"
+              />
+            </div>
+            <div className="mhc-annul-actions">
+              <button
+                type="button"
+                className="mhc-btn-ghost"
+                onClick={() => setShowAnnulModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="mhc-btn-danger"
+                onClick={handleAnnulHistory}
+              >
+                Anular
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );

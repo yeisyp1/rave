@@ -6,6 +6,7 @@ import {
   getLatestOdontogramDAO,
   listHistoryCityDepartmentsDAO,
   listClinicalHistoriesByPatientDAO,
+  annulClinicalHistoryDAO,
 } from "../dao/ClinicalHistoriesDAO";
 import { getPatientByIdDAO, listPatientsDAO, updatePatientDAO } from "../dao/PatientsDAO";
 import { ClinicalHistoryModel } from "../models/ClinicalHistoryModel";
@@ -253,5 +254,36 @@ export const deletePatientHistoryCtrl = async (historyId) => {
   return {
     ok: true,
     message: "Historia clínica eliminada exitosamente",
+  };
+};
+
+export const annulPatientHistoryCtrl = async (historyId, motivo) => {
+  if (!motivo?.trim()) {
+    return {
+      ok: false,
+      message: "El motivo de anulación es obligatorio",
+    };
+  }
+
+  // Get the current user ID from auth
+  const { supabase } = await import("./SupabaseDAO");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const userId = user?.id || null;
+
+  const { error } = await annulClinicalHistoryDAO(historyId, motivo, userId);
+  if (error) {
+    return {
+      ok: false,
+      message: "Error al anular la historia clínica",
+      error,
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Historia clínica anulada exitosamente",
   };
 };

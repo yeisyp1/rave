@@ -910,3 +910,121 @@ alter table public.appointments add constraint appointments_status_check
 --    (admin ve todo + cada usuario ve su propio correo): es una decision de
 --    diseño (dos audiencias distintas), no una redundancia real, asi que se
 --    dejo tal cual en vez de forzar una fusion que complicaria la logica.
+
+
+-- ============================================
+-- Schema updates for thesis compliance (Points 1-3)
+-- These ALTER statements add new columns and constraints
+-- ============================================
+
+-- Point 1: Soft delete - Add 'activo' column
+ALTER TABLE public.patients
+ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
+
+CREATE INDEX IF NOT EXISTS idx_patients_activo ON public.patients(activo);
+
+-- Point 2: Add annulation tracking columns
+-- Clinical histories annulation fields
+ALTER TABLE public.clinical_histories
+ADD COLUMN IF NOT EXISTS anulada boolean NOT NULL DEFAULT false;
+
+ALTER TABLE public.clinical_histories
+ADD COLUMN IF NOT EXISTS motivo_anulacion text;
+
+ALTER TABLE public.clinical_histories
+ADD COLUMN IF NOT EXISTS anulada_por uuid;
+
+ALTER TABLE public.clinical_histories
+ADD COLUMN IF NOT EXISTS anulada_at timestamp with time zone;
+
+CREATE INDEX IF NOT EXISTS idx_clinical_histories_anulada ON public.clinical_histories(anulada);
+CREATE INDEX IF NOT EXISTS idx_clinical_histories_anulada_at ON public.clinical_histories(anulada_at);
+
+-- Radiographies annulation fields
+ALTER TABLE public.radiographies
+ADD COLUMN IF NOT EXISTS anulada boolean NOT NULL DEFAULT false;
+
+ALTER TABLE public.radiographies
+ADD COLUMN IF NOT EXISTS motivo_anulacion text;
+
+ALTER TABLE public.radiographies
+ADD COLUMN IF NOT EXISTS anulada_por uuid;
+
+ALTER TABLE public.radiographies
+ADD COLUMN IF NOT EXISTS anulada_at timestamp with time zone;
+
+CREATE INDEX IF NOT EXISTS idx_radiographies_anulada ON public.radiographies(anulada);
+CREATE INDEX IF NOT EXISTS idx_radiographies_anulada_at ON public.radiographies(anulada_at);
+
+-- Point 5: Authorization method tracking
+ALTER TABLE public.patients
+ADD COLUMN IF NOT EXISTS autorizacion_datos_medio text;
+
+-- Add/update foreign key constraints
+-- Clinical histories: Add FK to patients with RESTRICT
+ALTER TABLE public.clinical_histories
+DROP CONSTRAINT IF EXISTS clinical_histories_patient_id_fkey;
+
+ALTER TABLE public.clinical_histories
+ADD CONSTRAINT clinical_histories_patient_id_fkey
+  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+  ON DELETE RESTRICT;
+
+-- Radiographies: Change CASCADE to RESTRICT
+ALTER TABLE public.radiographies
+DROP CONSTRAINT IF EXISTS radiographies_patient_id_fkey;
+
+ALTER TABLE public.radiographies
+ADD CONSTRAINT radiographies_patient_id_fkey
+  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+  ON DELETE RESTRICT;
+
+-- Patient procedures: Change CASCADE to RESTRICT
+ALTER TABLE public.patient_procedures
+DROP CONSTRAINT IF EXISTS patient_procedures_patient_id_fkey;
+
+ALTER TABLE public.patient_procedures
+ADD CONSTRAINT patient_procedures_patient_id_fkey
+  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+  ON DELETE RESTRICT;
+
+-- Laboratory cases: Change CASCADE to RESTRICT
+ALTER TABLE public.laboratory_cases
+DROP CONSTRAINT IF EXISTS laboratory_cases_patient_id_fkey;
+
+ALTER TABLE public.laboratory_cases
+ADD CONSTRAINT laboratory_cases_patient_id_fkey
+  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+  ON DELETE RESTRICT;
+
+-- Billing invoices: Ensure RESTRICT
+ALTER TABLE public.billing_invoices
+DROP CONSTRAINT IF EXISTS billing_invoices_patient_id_fkey;
+
+ALTER TABLE public.billing_invoices
+ADD CONSTRAINT billing_invoices_patient_id_fkey
+  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
+  ON DELETE RESTRICT;
+
+-- Create triggers for annulation timestamps
+CREATE OR REPLACE FUNCTION set_anulada_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.anulada = true AND OLD.anulada = false THEN
+    NEW.anulada_at := now();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_clinical_histories_anulada_at ON public.clinical_histories;
+CREATE TRIGGER trg_clinical_histories_anulada_at
+BEFORE UPDATE ON public.clinical_histories
+FOR EACH ROW
+EXECUTE FUNCTION set_anulada_timestamp();
+
+DROP TRIGGER IF EXISTS trg_radiographies_anulada_at ON public.radiographies;
+CREATE TRIGGER trg_radiographies_anulada_at
+BEFORE UPDATE ON public.radiographies
+FOR EACH ROW
+EXECUTE FUNCTION set_anulada_timestamp();

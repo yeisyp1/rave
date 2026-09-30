@@ -82,9 +82,19 @@ export const savePatientCtrl = async ({ form, editingId }) => {
 };
 
 export const deletePatientCtrl = async (id) => {
+  // Soft delete: inactivates the patient
   const { error } = await deletePatientDAO(id);
-  if (error) return { ok: false, message: "Error al eliminar", error };
-  return { ok: true };
+  if (error) return { ok: false, message: "Error al inactivar el paciente", error };
+  return { ok: true, message: "Paciente inactivado correctamente" };
+};
+
+export const inactivatePatientCtrl = deletePatientCtrl;
+
+export const reactivatePatientCtrl = async (id) => {
+  const { reactivatePatientDAO } = await import("../dao/PatientsDAO");
+  const { error } = await reactivatePatientDAO(id);
+  if (error) return { ok: false, message: "Error al reactivar el paciente", error };
+  return { ok: true, message: "Paciente reactivado correctamente" };
 };
 
 export const canNextPatientStepCtrl = (step, form) => {

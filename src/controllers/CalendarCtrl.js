@@ -8,6 +8,7 @@ import {
   signInGoogleCalendarDAO,
   updateGoogleEventDAO,
 } from "../dao/CalendarDAO";
+import { checkAppointmentAvailabilityDAO } from "../dao/AppointmentsDAO";
 import { CalendarEventModel } from "../models/CalendarEventModel";
 import {
   cancelAppointmentMirrorCtrl,
@@ -48,12 +49,27 @@ export class ScheduleConflictError extends Error {
   }
 }
 
+export const verificarDisponibilidad = async (start, end) => {
+  // Verify appointment availability against confirmed appointments in database
+  try {
+    const conflictingAppointments = await checkAppointmentAvailabilityDAO(start, end);
+    return {
+      available: conflictingAppointments.length === 0,
+      conflicts: conflictingAppointments,
+    };
+  } catch (error) {
+    console.error("Error checking appointment availability:", error);
+    throw error;
+  }
+};
+
 const assertSlotAvailable = async (token, { start, end }, ignoreGoogleId) => {
   const newStart = new Date(start);
   const newEnd = new Date(end);
-  const events = await syncGoogleEventsCtrl(token);
 
-  const conflicts = events.filter(
+  // Check Google Calendar events
+  const events = await syncGoogleEventsCtrl(token);
+  const googleConflicts = events.filter(
     (event) =>
       !event.allDay &&
       event.id !== ignoreGoogleId &&
@@ -61,7 +77,12 @@ const assertSlotAvailable = async (token, { start, end }, ignoreGoogleId) => {
       newStart < event.end,
   );
 
-  if (conflicts.length > 0) throw new ScheduleConflictError(conflicts);
+  // Check database confirmed appointments
+  const dbConflicts = await checkAppointmentAvailabilityDAO(start, end);
+
+  const allConflicts = [...googleConflicts, ...dbConflicts];
+
+  if (allConflicts.length > 0) throw new ScheduleConflictError(allConflicts);
 };
 
 export const createGoogleEventCtrl = async (token, payload) => {

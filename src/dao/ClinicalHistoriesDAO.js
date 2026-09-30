@@ -32,6 +32,20 @@ export const deleteClinicalHistoryDAO = async (historyId) => {
     .eq("id", historyId);
 };
 
+export const annulClinicalHistoryDAO = async (historyId, motivo, userId) => {
+  return supabase
+    .from("clinical_histories")
+    .update({
+      anulada: true,
+      motivo_anulacion: motivo,
+      anulada_por: userId,
+      anulada_at: new Date().toISOString(),
+    })
+    .eq("id", historyId)
+    .select("id")
+    .single();
+};
+
 export const getClinicalHistoryByIdDAO = async (historyId) => {
   return supabase
     .from("clinical_histories")

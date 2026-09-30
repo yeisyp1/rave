@@ -6,6 +6,7 @@ import {
   listHistoryRadiographiesDAO,
   removeRadiographyFileDAO,
   uploadRadiographyFileDAO,
+  annulRadiographyDAO,
 } from "../dao/RadiographiesDAO";
 
 const buildStoragePath = (patientId, file) => {
@@ -40,6 +41,18 @@ export const deleteRadiographyCtrl = async (radiography) => {
       console.warn("La radiografía se eliminó de la base de datos, pero no del almacenamiento:", error);
     }
   }
+};
+
+export const annulRadiographyCtrl = async (radiographyId, motivo) => {
+  // Get current user for tracking who annuls the radiography
+  const { supabase } = await import("./SupabaseDAO");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const userId = user?.id || null;
+
+  return annulRadiographyDAO(radiographyId, motivo, userId);
 };
 
 // Uploads each file to Storage and inserts one radiographies row per file,
