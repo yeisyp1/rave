@@ -102,6 +102,54 @@ export const getLatestOdontogramDAO = async (patientId) => {
   return data?.odontograma ?? null;
 };
 
+export const saveOdontogramDAO = async (patientId, odontogramData) => {
+  // Get the latest clinical history or create a new one
+  const { data: histories, error: getError } = await supabase
+    .from("clinical_histories")
+    .select("id")
+    .eq("patient_id", patientId)
+    .order("fecha", { ascending: false })
+    .limit(1);
+
+  if (getError) throw getError;
+
+  const doctor = await getCurrentDoctorLabelDAO();
+  const timestamp = new Date().toISOString();
+
+  if (histories && histories.length > 0) {
+    // Update existing latest history
+    const { error: updateError } = await supabase
+      .from("clinical_histories")
+      .update({
+        odontograma: odontogramData,
+        updated_at: timestamp,
+      })
+      .eq("id", histories[0].id);
+
+    if (updateError) throw updateError;
+    return { id: histories[0].id, created: false };
+  } else {
+    // Create new history record with odontogram
+    const { data: newHistory, error: insertError } = await supabase
+      .from("clinical_histories")
+      .insert([
+        {
+          patient_id: patientId,
+          doctor: doctor || null,
+          fecha: timestamp,
+          motivo_consulta: "Actualización de odontograma",
+          history_data: { tipo: "odontograma_update" },
+          odontograma: odontogramData,
+        },
+      ])
+      .select("id")
+      .single();
+
+    if (insertError) throw insertError;
+    return { id: newHistory.id, created: true };
+  }
+};
+
 export const getCurrentDoctorLabelDAO = async () => {
   const {
     data: { user },

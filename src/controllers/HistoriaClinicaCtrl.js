@@ -7,6 +7,7 @@ import {
   listHistoryCityDepartmentsDAO,
   listClinicalHistoriesByPatientDAO,
   annulClinicalHistoryDAO,
+  saveOdontogramDAO,
 } from "../dao/ClinicalHistoriesDAO";
 import { getPatientByIdDAO, listPatientsDAO, updatePatientDAO } from "../dao/PatientsDAO";
 import { ClinicalHistoryModel } from "../models/ClinicalHistoryModel";
@@ -286,4 +287,37 @@ export const annulPatientHistoryCtrl = async (historyId, motivo) => {
     ok: true,
     message: "Historia clínica anulada exitosamente",
   };
+};
+
+export const saveOdontogramCtrl = async (patientId, odontogramData) => {
+  if (!patientId) {
+    return {
+      ok: false,
+      message: "ID del paciente es requerido",
+    };
+  }
+
+  if (!odontogramData) {
+    return {
+      ok: false,
+      message: "Datos del odontograma son requeridos",
+    };
+  }
+
+  try {
+    const result = await saveOdontogramDAO(patientId, odontogramData);
+    return {
+      ok: true,
+      message: result.created
+        ? "Odontograma guardado exitosamente"
+        : "Odontograma actualizado exitosamente",
+      historyId: result.id,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: "Error al guardar el odontograma",
+      error,
+    };
+  }
 };
