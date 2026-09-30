@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showAlertModal } from '../app/store';
-import { deletePatientHistoryCtrl } from '../controllers/HistoriaClinicaCtrl';
+import { deletePatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/HistoriaClinicaCtrl';
 import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
+import { updatePatientDAO } from '../dao/PatientsDAO';
+import { captureOdontogramState } from '../utils/odontogramPersistence';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -47,6 +49,8 @@ const PatientDetailVW = () => {
   const [savingConsent, setSavingConsent] = useState(false);
   const [requestForm, setRequestForm] = useState({ request_type: 'Rectificación', description: '' });
   const [savingRequest, setSavingRequest] = useState(false);
+  const [savingOdontogram, setSavingOdontogram] = useState(false);
+  const [authorizationMedium, setAuthorizationMedium] = useState('');
 
   // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => fetchPatientData());
@@ -66,10 +70,54 @@ const PatientDetailVW = () => {
       setConsents(detail.consents);
       setDataRequests(detail.dataRequests);
       setRadiographies(detail.radiographies);
+      setAuthorizationMedium(detail.patient?.autorizacion_datos_medio || '');
     } catch (error) {
       console.error('Error fetching patient data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveOdontogram = async () => {
+    setSavingOdontogram(true);
+    try {
+      const odontogramData = await captureOdontogramState();
+      if (!odontogramData) {
+        dispatch(showAlertModal({ message: 'No hay datos de odontograma para guardar', variant: 'warning' }));
+        setSavingOdontogram(false);
+        return;
+      }
+
+      const result = await saveOdontogramCtrl(patientId, odontogramData);
+      if (result.ok) {
+        dispatch(showAlertModal({ message: result.message, variant: 'success' }));
+      } else {
+        dispatch(showAlertModal({ message: result.message, variant: 'error' }));
+      }
+    } catch (error) {
+      console.error('Error saving odontogram:', error);
+      dispatch(showAlertModal({ message: 'Error al guardar el odontograma', variant: 'error' }));
+    } finally {
+      setSavingOdontogram(false);
+    }
+  };
+
+  const handleSaveAuthorizationMedium = async () => {
+    if (!patient || !authorizationMedium) {
+      dispatch(showAlertModal({ message: 'Selecciona un medio de autorización', variant: 'warning' }));
+      return;
+    }
+
+    try {
+      const { error } = await updatePatientDAO(patient.id, { autorizacion_datos_medio: authorizationMedium });
+      if (error) {
+        dispatch(showAlertModal({ message: 'Error al guardar el medio de autorización', variant: 'error' }));
+      } else {
+        dispatch(showAlertModal({ message: 'Medio de autorización guardado exitosamente', variant: 'success' }));
+      }
+    } catch (error) {
+      console.error('Error saving authorization medium:', error);
+      dispatch(showAlertModal({ message: 'Error al guardar', variant: 'error' }));
     }
   };
 
@@ -414,6 +462,15 @@ const PatientDetailVW = () => {
                     numberingSystem={numberingSystem}
                     onNumberingChange={setNumberingSystem}
                   />
+                  <button
+                    className="pd-btn-action-primary"
+                    onClick={handleSaveOdontogram}
+                    disabled={savingOdontogram}
+                    style={{ marginTop: '1rem', width: '100%' }}
+                  >
+                    <FiSave size={14} />
+                    {savingOdontogram ? 'Guardando...' : 'Guardar odontograma'}
+                  </button>
                 </div>
               </div>
             </details>
@@ -436,6 +493,31 @@ const PatientDetailVW = () => {
                     ? ` — ${new Date(patient.autorizacion_datos_fecha).toLocaleString('es-CO')}`
                     : ''}
                 </span>
+              </div>
+              <div className="pd-info-row" style={{ marginTop: '1rem' }}>
+                <span className="pd-info-label">Medio de autorización:</span>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                  <select
+                    value={authorizationMedium}
+                    onChange={(e) => setAuthorizationMedium(e.target.value)}
+                    style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="presencial">Presencial</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="telefono">Teléfono</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                  <button
+                    className="pd-btn-action-primary"
+                    onClick={handleSaveAuthorizationMedium}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    <FiSave size={14} />
+                    Guardar
+                  </button>
+                </div>
               </div>
             </div>
 
