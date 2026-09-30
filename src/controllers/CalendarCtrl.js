@@ -49,18 +49,9 @@ export class ScheduleConflictError extends Error {
   }
 }
 
-export const verificarDisponibilidad = async (start, end) => {
-  // Verify appointment availability against confirmed appointments in database
-  try {
-    const conflictingAppointments = await checkAppointmentAvailabilityDAO(start, end);
-    return {
-      available: conflictingAppointments.length === 0,
-      conflicts: conflictingAppointments,
-    };
-  } catch (error) {
-    console.error("Error checking appointment availability:", error);
-    throw error;
-  }
+export const verificarDisponibilidad = async (start, end, ignoreGoogleId = null) => {
+  const conflicts = await checkAppointmentAvailabilityDAO(start, end, ignoreGoogleId);
+  return { available: conflicts.length === 0, conflicts };
 };
 
 const assertSlotAvailable = async (token, { start, end }, ignoreGoogleId) => {
@@ -77,8 +68,8 @@ const assertSlotAvailable = async (token, { start, end }, ignoreGoogleId) => {
       newStart < event.end,
   );
 
-  // Check database confirmed appointments
-  const dbConflicts = await checkAppointmentAvailabilityDAO(start, end);
+  // Citas confirmadas en la base de datos (excluye la cita que se está reprogramando)
+  const { conflicts: dbConflicts } = await verificarDisponibilidad(start, end, ignoreGoogleId);
 
   const allConflicts = [...googleConflicts, ...dbConflicts];
 

@@ -32,11 +32,6 @@ export const createRadiographiesDAO = async (rows) => {
   if (error) throw new Error(error.message || "No se pudo guardar el registro de radiografía");
 };
 
-export const deleteRadiographyRowDAO = async (id) => {
-  const { error } = await supabase.from("radiographies").delete().eq("id", id);
-  if (error) throw error;
-};
-
 export const annulRadiographyDAO = async (id, motivo, userId) => {
   const { error } = await supabase
     .from("radiographies")
@@ -72,9 +67,4 @@ export const uploadRadiographyFileDAO = async (filePath, file) => {
   });
 
   if (error) throw new Error(error.message || "No se pudo subir la radiografía a Storage");
-};
-
-export const removeRadiographyFileDAO = async (filePath) => {
-  const { error } = await supabase.storage.from(RADIOGRAPHY_BUCKET).remove([filePath]);
-  if (error) throw error;
 };

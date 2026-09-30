@@ -1,10 +1,15 @@
 import { supabase } from "./SupabaseDAO";
 
-export const listPatientsDAO = async () => {
-  return supabase
+// status: "activos" (por defecto), "inactivos" o "todos"
+export const listPatientsDAO = async (status = "activos") => {
+  let query = supabase
     .from("patients")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (status === "activos") query = query.eq("activo", true);
+  if (status === "inactivos") query = query.eq("activo", false);
+  return query;
 };
 
 export const createPatientDAO = async (patient) => {
@@ -18,22 +23,6 @@ export const updatePatientDAO = async (id, patient) => {
 export const deletePatientDAO = async (id) => {
   // Soft delete: mark patient as inactive instead of deleting
   return supabase.from("patients").update({ activo: false }).eq("id", id);
-};
-
-export const listActivePatientsDAO = async () => {
-  return supabase
-    .from("patients")
-    .select("*")
-    .eq("activo", true)
-    .order("created_at", { ascending: false });
-};
-
-export const listInactivePatientsDAO = async () => {
-  return supabase
-    .from("patients")
-    .select("*")
-    .eq("activo", false)
-    .order("created_at", { ascending: false });
 };
 
 export const reactivatePatientDAO = async (id) => {

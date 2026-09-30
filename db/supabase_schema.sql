@@ -912,119 +912,58 @@ alter table public.appointments add constraint appointments_status_check
 --    dejo tal cual en vez de forzar una fusion que complicaria la logica.
 
 
--- ============================================
--- Schema updates for thesis compliance (Points 1-3)
--- These ALTER statements add new columns and constraints
--- ============================================
+----------------------
 
--- Point 1: Soft delete - Add 'activo' column
-ALTER TABLE public.patients
-ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT true;
 
-CREATE INDEX IF NOT EXISTS idx_patients_activo ON public.patients(activo);
+-- Migracion thesis_points_1_to_5_soft_delete_annul (aplicada 2026-09-29).
+-- Ley 38 de 1993 / Resolucion 839 de 2017: los pacientes se inactivan y las
+-- atenciones y radiografias se anulan con nota; nada de esto se borra.
 
--- Point 2: Add annulation tracking columns
--- Clinical histories annulation fields
-ALTER TABLE public.clinical_histories
-ADD COLUMN IF NOT EXISTS anulada boolean NOT NULL DEFAULT false;
+-- CU-05: inactivar pacientes en vez de borrarlos.
+alter table public.patients add column if not exists activo boolean not null default true;
+create index if not exists idx_patients_activo on public.patients(activo);
 
-ALTER TABLE public.clinical_histories
-ADD COLUMN IF NOT EXISTS motivo_anulacion text;
+-- CU-20: medio por el que el paciente dio la autorizacion de datos.
+alter table public.patients add column if not exists autorizacion_datos_medio text;
+alter table public.patients add constraint patients_autorizacion_datos_medio_check
+  check (autorizacion_datos_medio is null or autorizacion_datos_medio in ('presencial','whatsapp','email','telefono','otro'));
 
-ALTER TABLE public.clinical_histories
-ADD COLUMN IF NOT EXISTS anulada_por uuid;
+-- CU-09: anular atenciones clinicas y radiografias.
+alter table public.clinical_histories
+  add column if not exists anulada boolean not null default false,
+  add column if not exists motivo_anulacion text,
+  add column if not exists anulada_por uuid references auth.users(id),
+  add column if not exists anulada_at timestamptz;
+alter table public.radiographies
+  add column if not exists anulada boolean not null default false,
+  add column if not exists motivo_anulacion text,
+  add column if not exists anulada_por uuid references auth.users(id),
+  add column if not exists anulada_at timestamptz;
+create index if not exists idx_clinical_histories_anulada on public.clinical_histories(anulada);
+create index if not exists idx_radiographies_anulada on public.radiographies(anulada);
+create index if not exists idx_clinical_histories_anulada_por on public.clinical_histories(anulada_por);
+create index if not exists idx_radiographies_anulada_por on public.radiographies(anulada_por);
 
-ALTER TABLE public.clinical_histories
-ADD COLUMN IF NOT EXISTS anulada_at timestamp with time zone;
+-- La base de datos no deja borrar un paciente que tenga registros clinicos.
+alter table public.clinical_histories drop constraint clinical_histories_patient_id_fkey,
+  add constraint clinical_histories_patient_id_fkey foreign key (patient_id) references public.patients(id) on delete restrict;
+alter table public.radiographies drop constraint radiographies_patient_id_fkey,
+  add constraint radiographies_patient_id_fkey foreign key (patient_id) references public.patients(id) on delete restrict;
+alter table public.patient_procedures drop constraint patient_procedures_patient_id_fkey,
+  add constraint patient_procedures_patient_id_fkey foreign key (patient_id) references public.patients(id) on delete restrict;
+alter table public.laboratory_cases drop constraint laboratory_cases_patient_id_fkey,
+  add constraint laboratory_cases_patient_id_fkey foreign key (patient_id) references public.patients(id) on delete restrict;
 
-CREATE INDEX IF NOT EXISTS idx_clinical_histories_anulada ON public.clinical_histories(anulada);
-CREATE INDEX IF NOT EXISTS idx_clinical_histories_anulada_at ON public.clinical_histories(anulada_at);
-
--- Radiographies annulation fields
-ALTER TABLE public.radiographies
-ADD COLUMN IF NOT EXISTS anulada boolean NOT NULL DEFAULT false;
-
-ALTER TABLE public.radiographies
-ADD COLUMN IF NOT EXISTS motivo_anulacion text;
-
-ALTER TABLE public.radiographies
-ADD COLUMN IF NOT EXISTS anulada_por uuid;
-
-ALTER TABLE public.radiographies
-ADD COLUMN IF NOT EXISTS anulada_at timestamp with time zone;
-
-CREATE INDEX IF NOT EXISTS idx_radiographies_anulada ON public.radiographies(anulada);
-CREATE INDEX IF NOT EXISTS idx_radiographies_anulada_at ON public.radiographies(anulada_at);
-
--- Point 5: Authorization method tracking
-ALTER TABLE public.patients
-ADD COLUMN IF NOT EXISTS autorizacion_datos_medio text;
-
--- Add/update foreign key constraints
--- Clinical histories: Add FK to patients with RESTRICT
-ALTER TABLE public.clinical_histories
-DROP CONSTRAINT IF EXISTS clinical_histories_patient_id_fkey;
-
-ALTER TABLE public.clinical_histories
-ADD CONSTRAINT clinical_histories_patient_id_fkey
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
-  ON DELETE RESTRICT;
-
--- Radiographies: Change CASCADE to RESTRICT
-ALTER TABLE public.radiographies
-DROP CONSTRAINT IF EXISTS radiographies_patient_id_fkey;
-
-ALTER TABLE public.radiographies
-ADD CONSTRAINT radiographies_patient_id_fkey
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
-  ON DELETE RESTRICT;
-
--- Patient procedures: Change CASCADE to RESTRICT
-ALTER TABLE public.patient_procedures
-DROP CONSTRAINT IF EXISTS patient_procedures_patient_id_fkey;
-
-ALTER TABLE public.patient_procedures
-ADD CONSTRAINT patient_procedures_patient_id_fkey
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
-  ON DELETE RESTRICT;
-
--- Laboratory cases: Change CASCADE to RESTRICT
-ALTER TABLE public.laboratory_cases
-DROP CONSTRAINT IF EXISTS laboratory_cases_patient_id_fkey;
-
-ALTER TABLE public.laboratory_cases
-ADD CONSTRAINT laboratory_cases_patient_id_fkey
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
-  ON DELETE RESTRICT;
-
--- Billing invoices: Ensure RESTRICT
-ALTER TABLE public.billing_invoices
-DROP CONSTRAINT IF EXISTS billing_invoices_patient_id_fkey;
-
-ALTER TABLE public.billing_invoices
-ADD CONSTRAINT billing_invoices_patient_id_fkey
-  FOREIGN KEY (patient_id) REFERENCES public.patients(id)
-  ON DELETE RESTRICT;
-
--- Create triggers for annulation timestamps
-CREATE OR REPLACE FUNCTION set_anulada_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.anulada = true AND OLD.anulada = false THEN
-    NEW.anulada_at := now();
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_clinical_histories_anulada_at ON public.clinical_histories;
-CREATE TRIGGER trg_clinical_histories_anulada_at
-BEFORE UPDATE ON public.clinical_histories
-FOR EACH ROW
-EXECUTE FUNCTION set_anulada_timestamp();
-
-DROP TRIGGER IF EXISTS trg_radiographies_anulada_at ON public.radiographies;
-CREATE TRIGGER trg_radiographies_anulada_at
-BEFORE UPDATE ON public.radiographies
-FOR EACH ROW
-EXECUTE FUNCTION set_anulada_timestamp();
+create or replace function public.set_anulada_timestamp()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if new.anulada and not old.anulada then
+    new.anulada_at := now();
+  end if;
+  return new;
+end;
+$$;
+create trigger trg_clinical_histories_anulada_at before update on public.clinical_histories
+  for each row execute function public.set_anulada_timestamp();
+create trigger trg_radiographies_anulada_at before update on public.radiographies
+  for each row execute function public.set_anulada_timestamp();
