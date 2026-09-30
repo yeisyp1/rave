@@ -3,7 +3,7 @@ import { supabase } from "./SupabaseDAO";
 export const listInformedConsentsByPatientDAO = async (patientId) => {
   const { data, error } = await supabase
     .from("informed_consents")
-    .select("*")
+    .select("*, treatment_plans(title)")
     .eq("patient_id", patientId)
     .order("signed_at", { ascending: false });
 

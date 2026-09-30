@@ -124,20 +124,20 @@ export const fetchDashboardCtrlData = async () => {
   }).length
 
   const currentMonthIncome = billing.invoices
-    .filter((invoice) => invoice.isPaid)
+    .filter((invoice) => !invoice.isVoid)
     .filter((invoice) => {
       const date = toDate(invoice.date)
       return date && date >= currentMonthStart
     })
-    .reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)
+    .reduce((sum, invoice) => sum + invoice.paid, 0)
 
   const previousMonthIncome = billing.invoices
-    .filter((invoice) => invoice.isPaid)
+    .filter((invoice) => !invoice.isVoid)
     .filter((invoice) => {
       const date = toDate(invoice.date)
       return date && date >= previousMonthStart && date < previousMonthEnd
     })
-    .reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0)
+    .reduce((sum, invoice) => sum + invoice.paid, 0)
 
   const currentMonthPending = billing.invoices.filter((invoice) => {
     if (!invoice.isPending) return false

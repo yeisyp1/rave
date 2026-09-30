@@ -7,8 +7,11 @@ import {
   computeLaboratoryStatsCtrl,
   createLaboratoryCaseCtrl,
   deleteLaboratoryCaseCtrl,
+  findLaboratoryPatient,
   getLaboratoryPatientLabel,
+  getLaboratoryTreatmentLabel,
   loadLaboratoryDataCtrl,
+  loadLaboratoryPatientTreatmentsCtrl,
   updateLaboratoryCaseCtrl,
   updateLaboratoryCaseStatusCtrl,
 } from '../controllers/LaboratoryCtrl'
@@ -21,6 +24,7 @@ const LaboratoryVW = () => {
   const [form, setForm] = useState(LABORATORY_EMPTY_FORM)
   const [patients, setPatients] = useState([])
   const [procedures, setProcedures] = useState([])
+  const [treatments, setTreatments] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -49,12 +53,27 @@ const LaboratoryVW = () => {
 
   const stats = useMemo(() => computeLaboratoryStatsCtrl(cases), [cases])
 
+  const selectedPatientId = findLaboratoryPatient(patients, form.patient)?.id
+
+  useEffect(() => {
+    let mounted = true
+    loadLaboratoryPatientTreatmentsCtrl(selectedPatientId)
+      .then((data) => { if (mounted) setTreatments(data) })
+      .catch(() => { if (mounted) setTreatments([]) })
+    return () => { mounted = false }
+  }, [selectedPatientId])
+
+  const selectTreatment = (treatmentId) => {
+    const treatment = treatments.find((item) => String(item.id) === treatmentId)
+    setForm({ ...form, treatmentId, work: treatment?.procedure_catalog?.name ?? form.work })
+  }
+
   const addCase = async (event) => {
     event.preventDefault()
 
     setSaving(true)
 
-    const result = await createLaboratoryCaseCtrl({ form, patients, procedures })
+    const result = await createLaboratoryCaseCtrl({ form, patients, procedures, treatments })
     if (!result.ok) {
       dispatch(showAlertModal({ message: result.message, variant: 'error' }))
     } else {
@@ -136,12 +155,21 @@ const LaboratoryVW = () => {
         <form className="admin-form full" onSubmit={addCase}>
           <div className="admin-field">
             <label>Paciente</label>
-            <input className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value })} required />
+            <input className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value, treatmentId: '' })} required />
             <datalist id="lab-patient-list">
               {patients.map((patient) => (
                 <option key={patient.id} value={getLaboratoryPatientLabel(patient)} />
               ))}
             </datalist>
+          </div>
+          <div className="admin-field">
+            <label>Tratamiento del paciente</label>
+            <select className="admin-input" value={form.treatmentId} onChange={(event) => selectTreatment(event.target.value)} disabled={!selectedPatientId}>
+              <option value="">{selectedPatientId ? 'Sin tratamiento asociado' : 'Selecciona primero el paciente'}</option>
+              {treatments.map((treatment) => (
+                <option key={treatment.id} value={treatment.id}>{getLaboratoryTreatmentLabel(treatment)}</option>
+              ))}
+            </select>
           </div>
           <div className="admin-field">
             <label>Trabajo</label>
@@ -205,7 +233,15 @@ const LaboratoryVW = () => {
                   return (
                     <tr key={item.id}>
                       <td>{patientLabel || '-'}</td>
-                      <td>{item.work_name}</td>
+                      <td>
+                        {item.work_name}
+                        {item.patient_procedures && (
+                          <div className="admin-subtitle">
+                            Tratamiento del {item.patient_procedures.procedure_date}
+                            {item.patient_procedures.tooth_number ? `, pieza ${item.patient_procedures.tooth_number}` : ''}
+                          </div>
+                        )}
+                      </td>
                       <td>{item.lab_name || '-'}</td>
                       <td>{item.due_date || '-'}</td>
                       <td><span className={`admin-pill ${item.status === 'Entregado' ? 'good' : item.status === 'En proceso' ? 'warn' : ''}`}>{item.status}</span></td>

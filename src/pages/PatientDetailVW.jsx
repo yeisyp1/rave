@@ -24,6 +24,7 @@ import ModalPatientsVW from '../modals/ModalPatientsVW';
 import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW';
 import { usePatientModal } from '../hooks/usePatientModal';
 import LoaderVW from '../components/LoaderVW';
+import TreatmentPlansVW from '../components/TreatmentPlansVW';
 import '../styles/PatientDetailVW.css';
 
 const PatientDetailVW = () => {
@@ -480,6 +481,11 @@ const PatientDetailVW = () => {
                 </div>
               </div>
             </details>
+
+            <TreatmentPlansVW
+              patientId={patientId}
+              onConsentRegistered={(consent) => setConsents((current) => [consent, ...current])}
+            />
           </div>
         )}
 
@@ -564,6 +570,8 @@ const PatientDetailVW = () => {
                       </div>
                       <div className="mhc-history-summary">
                         <span><b>Firmado por:</b> {consent.patient_signature_name}</span>
+                        {consent.treatment_plans?.title && <span><b>Plan de tratamiento:</b> {consent.treatment_plans.title}</span>}
+                        {consent.aceptado === false && <span><b>Decisión:</b> El paciente no aceptó el tratamiento</span>}
                         <span>{consent.content}</span>
                       </div>
                     </div>

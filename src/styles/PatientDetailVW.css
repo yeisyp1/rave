@@ -750,3 +750,138 @@
     font-size: 0.92rem;
   }
 }
+
+/* ── Planes de tratamiento (CU-10) ── */
+.pd-plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.pd-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.pd-plan-header h4 {
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.pd-plan-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.pd-plan-consent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.pd-plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pd-plan-form input,
+.pd-plan-form textarea,
+.pd-plan-form select,
+.pd-inline-form input,
+.pd-inline-form select,
+.pd-procedures-table select {
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.pd-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pd-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pd-pill.good {
+  background: rgba(76, 175, 130, 0.14);
+  color: #2e7d5b;
+}
+
+.pd-pill.warn {
+  background: rgba(201, 147, 74, 0.16);
+  color: #9a6a24;
+}
+
+.pd-pill.bad {
+  background: rgba(220, 80, 80, 0.12);
+  color: #b33a3a;
+}
+
+.pd-pill.muted {
+  background: rgba(120, 130, 145, 0.14);
+  color: var(--text-secondary);
+}
+
+.pd-materials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pd-material-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.pd-material-chip button {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pd-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}

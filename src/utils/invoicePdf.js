@@ -32,8 +32,16 @@ export const generateInvoicePdf = async (inv) => {
   const pageHeight = doc.internal.pageSize.getHeight()
   const invoiceNumber = String(inv.id).padStart(6, '0')
   const invoiceDate = formatInvoiceDate(inv.date)
-  const statusText = inv.isPaid ? 'Pagado' : 'Pendiente'
+  const statusText = inv.status || 'Pendiente'
   const amountText = Number(inv.amount).toLocaleString('es-CO')
+  const rows = inv.items?.length
+    ? inv.items.map((item) => ({
+      concept: item.description,
+      quantity: Number(item.quantity).toFixed(1),
+      unitPrice: Number(item.unit_price).toLocaleString('es-CO'),
+      total: Number(item.total).toLocaleString('es-CO'),
+    }))
+    : [{ concept: inv.raw?.metadata?.concept || 'Servicio facturado', quantity: '1.0', unitPrice: amountText, total: amountText }]
   const notes = inv.raw?.metadata?.notes?.trim() || 'Factura generada automáticamente desde el sistema de cartera.'
 
   doc.setFillColor(242, 246, 252)
@@ -101,35 +109,36 @@ export const generateInvoicePdf = async (inv) => {
 
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(28, 39, 54)
-  doc.rect(14, tableTop + rowHeight, pageWidth - 28, rowHeight, 'S')
-  doc.line(colX[1] - 2, tableTop, colX[1] - 2, tableTop + rowHeight * 2)
-  doc.line(colX[2] - 2, tableTop, colX[2] - 2, tableTop + rowHeight * 2)
-  doc.line(colX[3] - 2, tableTop, colX[3] - 2, tableTop + rowHeight * 2)
-  doc.line(colX[4] - 2, tableTop, colX[4] - 2, tableTop + rowHeight * 2)
-  doc.line(colX[5] - 2, tableTop, colX[5] - 2, tableTop + rowHeight * 2)
-  doc.text('1', colX[0] + 2, tableTop + 20)
-  doc.text('Servicio facturado', colX[1], tableTop + 20)
-  doc.text('1.0', colX[2], tableTop + 20)
-  doc.text('Unidad', colX[3], tableTop + 20)
-  doc.text(amountText, colX[4], tableTop + 20)
-  doc.text(amountText, colX[5], tableTop + 20)
+  const tableBottom = tableTop + rowHeight * (rows.length + 1)
+  doc.rect(14, tableTop + rowHeight, pageWidth - 28, rowHeight * rows.length, 'S')
+  colX.slice(1).forEach((x) => doc.line(x - 2, tableTop, x - 2, tableBottom))
+  rows.forEach((row, index) => {
+    const y = tableTop + rowHeight * (index + 1) + 8
+    doc.text(String(index + 1), colX[0] + 2, y)
+    doc.text(doc.splitTextToSize(row.concept, colX[2] - colX[1] - 4)[0], colX[1], y)
+    doc.text(row.quantity, colX[2], y)
+    doc.text('Unidad', colX[3], y)
+    doc.text(row.unitPrice, colX[4], y)
+    doc.text(row.total, colX[5], y)
+  })
 
   const totalsX = pageWidth - 72
-  const totalsY = tableTop + 34
+  const totalsY = tableBottom + 10
   doc.setDrawColor(218, 224, 232)
   doc.roundedRect(totalsX, totalsY, 58, 34, 2, 2)
   doc.setFontSize(9)
   doc.setTextColor(51, 65, 85)
   doc.text('Valor:', totalsX + 4, totalsY + 8)
   doc.text(`$${amountText}`, totalsX + 54, totalsY + 8, { align: 'right' })
-  doc.text('Descuento:', totalsX + 4, totalsY + 14)
-  doc.text('$0', totalsX + 54, totalsY + 14, { align: 'right' })
+  const hasPayments = Number(inv.paid) > 0
+  doc.text(hasPayments ? 'Pagado:' : 'Descuento:', totalsX + 4, totalsY + 14)
+  doc.text(hasPayments ? `$${Number(inv.paid).toLocaleString('es-CO')}` : '$0', totalsX + 54, totalsY + 14, { align: 'right' })
   doc.text('Impuestos:', totalsX + 4, totalsY + 20)
   doc.text('$0', totalsX + 54, totalsY + 20, { align: 'right' })
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(18, 54, 121)
-  doc.text('Total a pagar:', totalsX + 4, totalsY + 28)
-  doc.text(`$${amountText}`, totalsX + 54, totalsY + 28, { align: 'right' })
+  doc.text(hasPayments ? 'Saldo a pagar:' : 'Total a pagar:', totalsX + 4, totalsY + 28)
+  doc.text(`$${(hasPayments ? inv.balance : Number(inv.amount)).toLocaleString('es-CO')}`, totalsX + 54, totalsY + 28, { align: 'right' })
 
   doc.setDrawColor(220, 226, 236)
   doc.roundedRect(14, totalsY + 44, pageWidth - 28, 46, 2, 2)
