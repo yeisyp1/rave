@@ -83,3 +83,19 @@ export const createOutboundWhatsappMessageDAO = async (payload) => {
   const { error } = await supabase.from("whatsapp_messages").insert([payload]);
   if (error) throw error;
 };
+
+export const checkAppointmentAvailabilityDAO = async (start, end) => {
+  // Check for confirmed appointments that overlap with the requested time slot
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, start_time, end_time, status")
+    .eq("status", "Confirmada")
+    .lte("start_time", endDate.toISOString())
+    .gte("end_time", startDate.toISOString());
+
+  if (error) throw error;
+  return data ?? [];
+};

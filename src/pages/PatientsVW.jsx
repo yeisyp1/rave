@@ -47,10 +47,13 @@ const PatientsVW = () => {
   };
 
   const deletePatient = async (id) => {
-    if (!confirm("¿Eliminar paciente?")) return;
+    if (!confirm("¿Inactivar este paciente? Sus datos se conservarán en el sistema.")) return;
     const result = await deletePatientCtrl(id);
     if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
-    else getPatients();
+    else {
+      dispatch(showAlertModal({ message: result.message, variant: "success" }));
+      getPatients();
+    }
   };
 
   /* ── Filtro de búsqueda ── */
@@ -168,11 +171,11 @@ const PatientsVW = () => {
                           <FiEdit size={16} />
                         </button>
 
-                        {/* Eliminar */}
+                        {/* Inactivar */}
                         <button
                           className="pt-btn-action pt-btn-action-danger"
                           onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
-                          title="Eliminar paciente"
+                          title="Inactivar paciente"
                         >
                           <FiTrash2 size={16} />
                         </button>

@@ -37,6 +37,19 @@ export const deleteRadiographyRowDAO = async (id) => {
   if (error) throw error;
 };
 
+export const annulRadiographyDAO = async (id, motivo, userId) => {
+  const { error } = await supabase
+    .from("radiographies")
+    .update({
+      anulada: true,
+      motivo_anulacion: motivo,
+      anulada_por: userId,
+      anulada_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+};
+
 export const getRadiographySignedUrlDAO = async (filePath) => {
   const { data, error } = await supabase.storage
     .from(RADIOGRAPHY_BUCKET)
