@@ -6,9 +6,26 @@ import '../styles/ModalViewEventVW.css'
 import { showAlertModal } from '../app/store'
 
 /* MODAL VER CITA */
-const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting }) => {
+const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoShow, onClose, deleting }) => {
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
+  const today = moment().format('YYYY-MM-DD')
+  const originalDate = moment(event?.start).format('YYYY-MM-DD')
+
+  const getPatientLabel = (patient) => {
+    const fullName = `${patient?.nombre ?? ''} ${patient?.apellidos ?? ''}`.trim()
+    const document = patient?.numero_documento ? ` - ${patient.numero_documento}` : ''
+    return `${fullName}${document}`.trim()
+  }
+
+  // Un paciente es válido solo si existe en la BD (por etiqueta "Nombre - documento" o nombre completo)
+  const findPatient = (text) => {
+    const value = text.trim().toLowerCase()
+    return patientOptions.find((patient) =>
+      getPatientLabel(patient).toLowerCase() === value ||
+      `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim().toLowerCase() === value)
+  }
+
   const [form, setForm] = useState({
     patientName: event?.resource?.patient || '',
     service:     event?.resource?.service || '',
@@ -23,6 +40,9 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
 
   const handleSave = () => {
     if (!form.patientName.trim()) return dispatch(showAlertModal({ message: 'El paciente es obligatorio', variant: 'error' }))
+    const patient = findPatient(form.patientName)
+    if (!patient) return dispatch(showAlertModal({ message: 'Selecciona un paciente registrado en la base de datos', variant: 'error' }))
+    if (form.date < today && form.date !== originalDate) return dispatch(showAlertModal({ message: 'No puedes elegir una fecha anterior a hoy', variant: 'error' }))
     if (!form.service.trim()) return dispatch(showAlertModal({ message: 'El servicio es obligatorio', variant: 'error' }))
 
     // Build start/end from selected date + times
@@ -37,9 +57,9 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
 
     if (end <= start) return dispatch(showAlertModal({ message: 'La hora de fin debe ser posterior a la de inicio', variant: 'error' }))
     
-    const patientName = form.patientName.trim()
+    const patientName = getPatientLabel(patient)
     const service = form.service.trim()
-    onEdit({ ...form, patientName, service, title: `${patientName} - ${service}`, start, end })
+    onEdit({ ...form, patientId: patient.id, patientName, service, title: `${patientName} - ${service}`, start, end })
     setIsEditing(false)
   }
 
@@ -75,7 +95,12 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
             <>
               <div className="cl-field">
                 <label className="cl-label">Paciente <span className="cl-req">*</span></label>
-                <input name="patientName" value={form.patientName} onChange={handleChange} placeholder="Ej. Juan Pérez" className="cl-input" autoFocus/>
+                <input name="patientName" list="edit-patient-list" value={form.patientName} onChange={handleChange} placeholder="Buscar paciente por nombre o documento" className="cl-input" autoFocus/>
+                <datalist id="edit-patient-list">
+                  {patientOptions.map((patient) => (
+                    <option key={patient.id} value={getPatientLabel(patient)} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="cl-field">
@@ -106,7 +131,7 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
 
               <div className="cl-field">
                 <label className="cl-label">Fecha</label>
-                <input type="date" name="date" value={form.date} onChange={handleChange} className="cl-input" />
+                <input type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
               </div>
             </>
           ) : (
