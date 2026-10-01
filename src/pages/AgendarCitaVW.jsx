@@ -145,12 +145,13 @@ const AgendarCitaVW = () => {
 
       await createGoogleEventCtrl(googleToken, {
         title: `${form.patientName} - ${form.service}`,
-        description: `${form.notes}${form.document ? `\nDocumento: ${form.document}` : ''}`,
+        description: form.notes.trim(),
         location: form.location,
         start,
         end,
         patientId: patientExists.id,
         service: form.service,
+        patientName: form.patientName,
       })
       setMessage('')
       setShowSuccessNotice(true)

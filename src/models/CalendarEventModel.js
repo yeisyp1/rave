@@ -4,6 +4,14 @@ export class CalendarEventModel {
   }
 
   static fromGoogleEvent(event) {
+    const summary = event.summary ?? "";
+    const stored = event.extendedProperties?.private ?? {};
+    // Eventos antiguos: "Paciente - Servicio" en el título.
+    const sep = summary.lastIndexOf(" - ");
+    const patient = stored.patientName ?? (sep > -1 ? summary.slice(0, sep) : summary);
+    const service =
+      stored.service ?? (sep > -1 ? summary.slice(sep + 3) : event.description || "Cita");
+
     return new CalendarEventModel({
       id: event.id,
       title: event.summary ?? "(Sin titulo)",
@@ -11,8 +19,8 @@ export class CalendarEventModel {
       end: new Date(event.end?.dateTime ?? event.end?.date),
       allDay: !event.start?.dateTime,
       resource: {
-        patient: event.summary ?? "",
-        service: event.description ?? "Cita",
+        patient,
+        service,
         status: event.status === "confirmed" ? "confirmed" : "pending",
         googleId: event.id,
         htmlLink: event.htmlLink,

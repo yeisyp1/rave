@@ -47,7 +47,6 @@ const NewEventModal = ({
     setForm((prev) => ({
       ...prev,
       serviceType,
-      description: serviceType,
     }))
   }
 
@@ -70,7 +69,8 @@ const NewEventModal = ({
     onSave({
       ...form,
       title: `${form.title} - ${form.serviceType}`,
-      description: form.serviceType,
+      description: form.description,
+      patientName: form.title,
       start,
       end,
     })
