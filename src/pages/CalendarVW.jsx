@@ -360,6 +360,7 @@ const CalendarVW = () => {
 {selectedEvent && (
          <ModalViewEventVW
            event={selectedEvent}
+           patientOptions={patientOptions}
            onEdit={handleEditEvent}
            onDelete={handleDeleteEvent}
            onNoShow={handleNoShowEvent}
