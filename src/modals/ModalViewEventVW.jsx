@@ -4,6 +4,7 @@ import { FiX, FiSave, FiTrash2, FiEdit } from 'react-icons/fi'
 import moment from 'moment'
 import '../styles/ModalViewEventVW.css'
 import { showAlertModal } from '../app/store'
+import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
 
 /* MODAL VER CITA */
 const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoShow, onClose, deleting }) => {
@@ -12,22 +13,14 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
   const today = moment().format('YYYY-MM-DD')
   const originalDate = moment(event?.start).format('YYYY-MM-DD')
 
-  const getPatientLabel = (patient) => {
-    const fullName = `${patient?.nombre ?? ''} ${patient?.apellidos ?? ''}`.trim()
-    const document = patient?.numero_documento ? ` - ${patient.numero_documento}` : ''
-    return `${fullName}${document}`.trim()
-  }
+  const findPatient = (text) => findPatientByText(patientOptions, text)
 
-  // Un paciente es válido solo si existe en la BD (por etiqueta "Nombre - documento" o nombre completo)
-  const findPatient = (text) => {
-    const value = text.trim().toLowerCase()
-    return patientOptions.find((patient) =>
-      getPatientLabel(patient).toLowerCase() === value ||
-      `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim().toLowerCase() === value)
-  }
-
+  // Citas nuevas traen patientId; las viejas se buscan por el texto del título
+  const initialPatient =
+    patientOptions.find((p) => String(p.id) === String(event?.resource?.patientId)) ||
+    findPatient(event?.resource?.patient)
   const [form, setForm] = useState({
-    patientName: event?.resource?.patient || '',
+    patientName: initialPatient ? getPatientFullName(initialPatient) : (event?.resource?.patient || ''),
     service:     event?.resource?.service || '',
     description: event?.resource?.description || '',
     location:    event?.resource?.location || '',
@@ -35,6 +28,12 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
     endTime:     moment(event?.end).format('HH:mm'),
     date:        moment(event?.start).format('YYYY-MM-DD'),
   })
+
+  const handlePatientChange = (e) => {
+    const value = e.target.value
+    const selected = findPatient(value)
+    setForm((prev) => ({ ...prev, patientName: selected ? getPatientFullName(selected) : value }))
+  }
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -57,7 +56,7 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
 
     if (end <= start) return dispatch(showAlertModal({ message: 'La hora de fin debe ser posterior a la de inicio', variant: 'error' }))
     
-    const patientName = getPatientLabel(patient)
+    const patientName = getPatientFullName(patient)
     const service = form.service.trim()
     onEdit({ ...form, patientId: patient.id, patientName, service, title: `${patientName} - ${service}`, start, end })
     setIsEditing(false)
@@ -95,7 +94,7 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
             <>
               <div className="cl-field">
                 <label className="cl-label">Paciente <span className="cl-req">*</span></label>
-                <input name="patientName" list="edit-patient-list" value={form.patientName} onChange={handleChange} placeholder="Buscar paciente por nombre o documento" className="cl-input" autoFocus/>
+                <input name="patientName" list="edit-patient-list" value={form.patientName} onChange={handlePatientChange} placeholder="Buscar paciente por nombre o documento" className="cl-input" autoFocus/>
                 <datalist id="edit-patient-list">
                   {patientOptions.map((patient) => (
                     <option key={patient.id} value={getPatientLabel(patient)} />
