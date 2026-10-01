@@ -96,7 +96,9 @@ const CalendarVW = () => {
     description,
     location,
     start,
-    end
+    end,
+    patientName,
+    serviceType
   }) => {
 
     setSaving(true)
@@ -133,7 +135,9 @@ const CalendarVW = () => {
           end,
           description,
           location,
-          patientId
+          patientId,
+          patientName,
+          service: serviceType
         }
       )
 

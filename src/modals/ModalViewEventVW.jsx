@@ -10,7 +10,8 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState({
-    title:       event?.title || '',
+    patientName: event?.resource?.patient || '',
+    service:     event?.resource?.service || '',
     description: event?.resource?.description || '',
     location:    event?.resource?.location || '',
     startTime:   moment(event?.start).format('HH:mm'),
@@ -21,7 +22,8 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSave = () => {
-    if (!form.title.trim()) return dispatch(showAlertModal({ message: 'El título es obligatorio', variant: 'error' }))
+    if (!form.patientName.trim()) return dispatch(showAlertModal({ message: 'El paciente es obligatorio', variant: 'error' }))
+    if (!form.service.trim()) return dispatch(showAlertModal({ message: 'El servicio es obligatorio', variant: 'error' }))
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -35,7 +37,9 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
 
     if (end <= start) return dispatch(showAlertModal({ message: 'La hora de fin debe ser posterior a la de inicio', variant: 'error' }))
     
-    onEdit({ ...form, start, end })
+    const patientName = form.patientName.trim()
+    const service = form.service.trim()
+    onEdit({ ...form, patientName, service, title: `${patientName} - ${service}`, start, end })
     setIsEditing(false)
   }
 
@@ -71,12 +75,17 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
             <>
               <div className="cl-field">
                 <label className="cl-label">Paciente <span className="cl-req">*</span></label>
-                <input name="title" value={form.title} onChange={handleChange} placeholder="Ej. Juan Pérez - Limpieza" className="cl-input" autoFocus/>
+                <input name="patientName" value={form.patientName} onChange={handleChange} placeholder="Ej. Juan Pérez" className="cl-input" autoFocus/>
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Descripción / Servicio</label>
-                <input name="description" value={form.description} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
+                <label className="cl-label">Servicio <span className="cl-req">*</span></label>
+                <input name="service" value={form.service} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
+              </div>
+
+              <div className="cl-field">
+                <label className="cl-label">Notas</label>
+                <input name="description" value={form.description} onChange={handleChange} placeholder="Observaciones de la cita" className="cl-input"/>
               </div>
 
               <div className="cl-field">
@@ -103,13 +112,18 @@ const ModalViewEventVW = ({ event, onEdit, onDelete, onNoShow, onClose, deleting
           ) : (
             <>
               <div className="cl-view-field">
-                <label className="cl-label">Paciente / Evento</label>
-                <p className="cl-view-value">{event?.title || '-'}</p>
+                <label className="cl-label">Paciente</label>
+                <p className="cl-view-value">{event?.resource?.patient || '-'}</p>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Descripción</label>
-                <p className="cl-view-value">{event?.resource?.description || 'Sin descripción'}</p>
+                <label className="cl-label">Servicio</label>
+                <p className="cl-view-value">{event?.resource?.service || '-'}</p>
+              </div>
+
+              <div className="cl-view-field">
+                <label className="cl-label">Notas</label>
+                <p className="cl-view-value">{event?.resource?.description || 'Sin notas'}</p>
               </div>
 
               <div className="cl-view-field">

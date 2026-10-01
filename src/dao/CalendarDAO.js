@@ -9,6 +9,14 @@ export const getGoogleTokenDAO = async () => {
   return session?.provider_token ?? null;
 };
 
+// Guarda paciente y servicio por separado para poder editarlos sin parsear el título.
+const buildExtendedProperties = ({ patientName, service }) => {
+  const priv = {};
+  if (patientName !== undefined) priv.patientName = patientName;
+  if (service !== undefined) priv.service = service;
+  return Object.keys(priv).length ? { extendedProperties: { private: priv } } : {};
+};
+
 export const fetchGoogleEventsDAO = async (token) => {
   const past = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const future = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
@@ -32,7 +40,7 @@ export const fetchGoogleEventsDAO = async (token) => {
 
 export const createGoogleEventDAO = async (
   token,
-  { title, start, end, description = "", location = "" },
+  { title, start, end, description = "", location = "", patientName, service },
 ) => {
   const response = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
     method: "POST",
@@ -44,6 +52,7 @@ export const createGoogleEventDAO = async (
       summary: title,
       description,
       location,
+      ...buildExtendedProperties({ patientName, service }),
       start: {
         dateTime: start.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -76,7 +85,7 @@ export const deleteGoogleEventDAO = async (token, googleId) => {
 export const updateGoogleEventDAO = async (
   token,
   googleId,
-  { title, start, end, description = "", location = "" },
+  { title, start, end, description = "", location = "", patientName, service },
 ) => {
   const response = await fetch(
     `${CALENDAR_API}/calendars/primary/events/${googleId}`,
@@ -90,6 +99,7 @@ export const updateGoogleEventDAO = async (
         summary: title,
         description,
         location,
+        ...buildExtendedProperties({ patientName, service }),
         start: {
           dateTime: start.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
