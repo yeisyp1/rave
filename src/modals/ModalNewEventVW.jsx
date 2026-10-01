@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
 import moment from 'moment'
 import { showAlertModal } from '../app/store'
+import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
 
 /* MODAL NUEVA CITA */
 const NewEventModal = ({
@@ -14,11 +15,7 @@ const NewEventModal = ({
   serviceOptions = [],
 }) => {
   const dispatch = useDispatch()
-  const getPatientLabel = (patient) => {
-    const fullName = `${patient?.nombre ?? ''} ${patient?.apellidos ?? ''}`.trim()
-    const document = patient?.numero_documento ? ` - ${patient.numero_documento}` : ''
-    return `${fullName}${document}`.trim()
-  }
+  const today = moment().format('YYYY-MM-DD')
 
   const [form, setForm] = useState({
     title: '',
@@ -33,12 +30,13 @@ const NewEventModal = ({
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handlePatientChange = (e) => {
-    const label = e.target.value
-    const selectedPatient = patientOptions.find((patient) => getPatientLabel(patient) === label)
+    const value = e.target.value
+    // Al elegir de la lista se guarda solo el nombre; el documento queda enlazado por patientId
+    const selectedPatient = findPatientByText(patientOptions, value)
 
     setForm((prev) => ({
       ...prev,
-      title: selectedPatient ? getPatientLabel(selectedPatient) : label,
+      title: selectedPatient ? getPatientFullName(selectedPatient) : value,
     }))
   }
 
@@ -51,7 +49,10 @@ const NewEventModal = ({
   }
 
   const handleSave = () => {
-    if (!form.title.trim()) return dispatch(showAlertModal({ message: 'El título es obligatorio', variant: 'error' }))
+    if (!form.title.trim()) return dispatch(showAlertModal({ message: 'El paciente es obligatorio', variant: 'error' }))
+    const patient = findPatientByText(patientOptions, form.title)
+    if (!patient) return dispatch(showAlertModal({ message: 'Selecciona un paciente registrado en la base de datos', variant: 'error' }))
+    if (form.date < today) return dispatch(showAlertModal({ message: 'No puedes elegir una fecha anterior a hoy', variant: 'error' }))
     if (!form.serviceType.trim()) return dispatch(showAlertModal({ message: 'El tipo de servicio es obligatorio', variant: 'error' }))
 
     // Build start/end from selected date + times
@@ -68,9 +69,10 @@ const NewEventModal = ({
 
     onSave({
       ...form,
-      title: `${form.title} - ${form.serviceType}`,
+      title: `${getPatientFullName(patient)} - ${form.serviceType}`,
       description: form.description,
-      patientName: form.title,
+      patientName: getPatientFullName(patient),
+      patientId: patient.id,
       start,
       end,
     })
@@ -144,7 +146,7 @@ const NewEventModal = ({
 
           <div className="cl-field">
             <label className="cl-label">Fecha</label>
-            <input type="date" name="date" value={form.date} onChange={handleChange} className="cl-input" />
+            <input type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
           </div>
         </div>
 

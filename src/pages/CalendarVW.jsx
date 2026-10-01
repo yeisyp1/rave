@@ -98,34 +98,13 @@ const CalendarVW = () => {
     start,
     end,
     patientName,
+    patientId,
     serviceType
   }) => {
 
     setSaving(true)
 
     try {
-
-      const titleText = title || ''
-      const documentMatch = titleText.match(/-\s*(\S+)$/)
-      const document = documentMatch ? documentMatch[1] : ''
-      let patientId
-
-      if (document) {
-
-        const patientExists = await getPatientByDocumentCtrl(document)
-
-        if (!patientExists) {
-
-          setPatientValidationError(
-            `El paciente con documento ${document} no está registrado en la base de datos. No se puede guardar la cita.`
-          )
-
-          setSaving(false)
-          return
-        }
-
-        patientId = patientExists.id
-      }
 
       const newEv = await createGoogleEventCtrl(
         googleToken,

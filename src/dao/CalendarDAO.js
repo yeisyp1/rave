@@ -10,8 +10,9 @@ export const getGoogleTokenDAO = async () => {
 };
 
 // Guarda paciente y servicio por separado para poder editarlos sin parsear el título.
-const buildExtendedProperties = ({ patientName, service }) => {
+const buildExtendedProperties = ({ patientName, service, patientId }) => {
   const priv = {};
+  if (patientId) priv.patientId = String(patientId);
   if (patientName !== undefined) priv.patientName = patientName;
   if (service !== undefined) priv.service = service;
   return Object.keys(priv).length ? { extendedProperties: { private: priv } } : {};
@@ -40,7 +41,7 @@ export const fetchGoogleEventsDAO = async (token) => {
 
 export const createGoogleEventDAO = async (
   token,
-  { title, start, end, description = "", location = "", patientName, service },
+  { title, start, end, description = "", location = "", patientName, service, patientId },
 ) => {
   const response = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
     method: "POST",
@@ -52,7 +53,7 @@ export const createGoogleEventDAO = async (
       summary: title,
       description,
       location,
-      ...buildExtendedProperties({ patientName, service }),
+      ...buildExtendedProperties({ patientName, service, patientId }),
       start: {
         dateTime: start.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -85,7 +86,7 @@ export const deleteGoogleEventDAO = async (token, googleId) => {
 export const updateGoogleEventDAO = async (
   token,
   googleId,
-  { title, start, end, description = "", location = "", patientName, service },
+  { title, start, end, description = "", location = "", patientName, service, patientId },
 ) => {
   const response = await fetch(
     `${CALENDAR_API}/calendars/primary/events/${googleId}`,
@@ -99,7 +100,7 @@ export const updateGoogleEventDAO = async (
         summary: title,
         description,
         location,
-        ...buildExtendedProperties({ patientName, service }),
+        ...buildExtendedProperties({ patientName, service, patientId }),
         start: {
           dateTime: start.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

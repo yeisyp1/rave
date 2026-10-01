@@ -12,6 +12,11 @@ export class CalendarEventModel {
     const service =
       stored.service ?? (sep > -1 ? summary.slice(sep + 3) : event.description || "Cita");
 
+    // Notas: sin el "Documento: ..." de citas viejas ni el servicio repetido
+    const notes = (event.description ?? "")
+      .replace(/\s*Documento:\s*\S+/g, "")
+      .trim();
+
     return new CalendarEventModel({
       id: event.id,
       title: event.summary ?? "(Sin titulo)",
@@ -20,11 +25,12 @@ export class CalendarEventModel {
       allDay: !event.start?.dateTime,
       resource: {
         patient,
+        patientId: stored.patientId ?? null,
         service,
         status: event.status === "confirmed" ? "confirmed" : "pending",
         googleId: event.id,
         htmlLink: event.htmlLink,
-        description: event.description ?? "",
+        description: notes === service ? "" : notes,
         location: event.location ?? "",
       },
       fromGoogle: true,
