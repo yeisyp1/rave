@@ -766,6 +766,7 @@ create table public.whatsapp_messages (
   status text not null default 'pending',
   provider_message_id text null,
   error text null,
+  template_variables jsonb null,
   constraint whatsapp_messages_pkey primary key (id),
   constraint whatsapp_messages_patient_id_fkey foreign key (patient_id) references public.patients (id) on delete set null,
   constraint whatsapp_messages_appointment_id_fkey foreign key (appointment_id) references public.appointments (id) on delete set null,
@@ -1418,3 +1419,243 @@ insert into public.payments (invoice_id, amount, paid_at, method, notes, registe
 select id, amount, date, 'Otro', 'Pago registrado antes del módulo de pagos (migración).', null
 from public.billing_invoices
 where status = 'Pagado' and amount > 0;
+
+
+----------------------
+
+
+-- Migracion role_based_policies_private_radiographies (2026-10-01).
+
+
+create or replace function public.current_app_role()
+returns text language sql stable security definer set search_path = '' as $$
+  select role from public.profiles where id = (select auth.uid())
+$$;
+revoke all on function public.current_app_role() from public, anon;
+grant execute on function public.current_app_role() to authenticated;
+
+-- profiles: nadie puede cambiarse el rol; el perfil solo se crea con el rol de authorized_emails.
+drop policy insert_own_profile on public.profiles;
+create policy insert_own_profile on public.profiles for insert to authenticated
+  with check (
+    (select auth.uid()) = id
+    and exists (
+      select 1 from public.authorized_emails a
+      where a.active
+        and lower(a.email) = lower((select auth.jwt()) ->> 'email')
+        and a.role = profiles.role
+    )
+  );
+drop policy update_own_profile on public.profiles;
+create policy update_own_profile on public.profiles for update to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id and role = (select public.current_app_role()));
+
+-- patients
+drop policy "Allow delete for authenticated users" on public.patients;
+drop policy "Allow read for authenticated users" on public.patients;
+drop policy "Allow update for authenticated users" on public.patients;
+drop policy "Enable insert for authenticated users only" on public.patients;
+create policy patients_select_staff on public.patients for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy patients_insert_staff on public.patients for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy patients_update_staff on public.patients for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'))
+  with check ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy patients_delete_admin on public.patients for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+-- Agenda y comunicacion con pacientes: todo el personal.
+drop policy appointments_all_authenticated on public.appointments;
+create policy appointments_all_staff on public.appointments for all to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'))
+  with check ((select public.current_app_role()) in ('admin','dentist','assistant'));
+drop policy whatsapp_messages_all_authenticated on public.whatsapp_messages;
+create policy whatsapp_messages_all_staff on public.whatsapp_messages for all to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'))
+  with check ((select public.current_app_role()) in ('admin','dentist','assistant'));
+drop policy data_rectification_requests_all_authenticated on public.data_rectification_requests;
+create policy data_rectification_requests_all_staff on public.data_rectification_requests for all to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'))
+  with check ((select public.current_app_role()) in ('admin','dentist','assistant'));
+
+-- Configuracion y catalogos: todo el personal lee, solo admin escribe.
+drop policy message_templates_all_authenticated on public.message_templates;
+create policy message_templates_select_staff on public.message_templates for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy message_templates_write_admin on public.message_templates for all to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+drop policy system_settings_all_authenticated on public.system_settings;
+create policy system_settings_select_staff on public.system_settings for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy system_settings_write_admin on public.system_settings for all to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+drop policy procedure_catalog_all_authenticated on public.procedure_catalog;
+create policy procedure_catalog_select_staff on public.procedure_catalog for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy procedure_catalog_write_admin on public.procedure_catalog for all to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+drop policy doctors_all_authenticated on public.doctors;
+create policy doctors_select_staff on public.doctors for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+create policy doctors_write_admin on public.doctors for all to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+
+-- Informacion clinica: admin y odontologa; la asistente no accede. Borrar solo admin.
+drop policy clinical_histories_select_authenticated on public.clinical_histories;
+drop policy clinical_histories_insert_authenticated on public.clinical_histories;
+drop policy clinical_histories_update_authenticated on public.clinical_histories;
+drop policy clinical_histories_delete_authenticated on public.clinical_histories;
+create policy clinical_histories_select_clinical on public.clinical_histories for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy clinical_histories_insert_clinical on public.clinical_histories for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy clinical_histories_update_clinical on public.clinical_histories for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy clinical_histories_delete_admin on public.clinical_histories for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+drop policy radiographies_all_authenticated on public.radiographies;
+create policy radiographies_select_clinical on public.radiographies for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy radiographies_insert_clinical on public.radiographies for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy radiographies_update_clinical on public.radiographies for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy radiographies_delete_admin on public.radiographies for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+drop policy informed_consents_all_authenticated on public.informed_consents;
+create policy informed_consents_select_clinical on public.informed_consents for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy informed_consents_insert_clinical on public.informed_consents for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy informed_consents_update_clinical on public.informed_consents for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy informed_consents_delete_admin on public.informed_consents for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+drop policy patient_procedures_all_authenticated on public.patient_procedures;
+create policy patient_procedures_select_clinical on public.patient_procedures for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy patient_procedures_insert_clinical on public.patient_procedures for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy patient_procedures_update_clinical on public.patient_procedures for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy patient_procedures_delete_admin on public.patient_procedures for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+drop policy procedures_select_authenticated on public.procedures;
+drop policy procedures_insert_authenticated on public.procedures;
+drop policy procedures_update_authenticated on public.procedures;
+drop policy procedures_delete_authenticated on public.procedures;
+create policy procedures_select_clinical on public.procedures for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy procedures_insert_clinical on public.procedures for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy procedures_update_clinical on public.procedures for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy procedures_delete_admin on public.procedures for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+drop policy treatment_plans_select_authenticated on public.treatment_plans;
+drop policy treatment_plans_insert_authenticated on public.treatment_plans;
+drop policy treatment_plans_update_authenticated on public.treatment_plans;
+create policy treatment_plans_select_clinical on public.treatment_plans for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy treatment_plans_insert_clinical on public.treatment_plans for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy treatment_plans_update_clinical on public.treatment_plans for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+
+drop policy treatment_inventory_items_select_authenticated on public.treatment_inventory_items;
+drop policy treatment_inventory_items_insert_authenticated on public.treatment_inventory_items;
+drop policy treatment_inventory_items_delete_authenticated on public.treatment_inventory_items;
+create policy treatment_inventory_items_select_clinical on public.treatment_inventory_items for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy treatment_inventory_items_insert_clinical on public.treatment_inventory_items for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy treatment_inventory_items_delete_clinical on public.treatment_inventory_items for delete to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+
+drop policy laboratory_cases_all_authenticated on public.laboratory_cases;
+create policy laboratory_cases_select_clinical on public.laboratory_cases for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy laboratory_cases_insert_clinical on public.laboratory_cases for insert to authenticated
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy laboratory_cases_update_clinical on public.laboratory_cases for update to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'))
+  with check ((select public.current_app_role()) in ('admin','dentist'));
+create policy laboratory_cases_delete_admin on public.laboratory_cases for delete to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+-- Inventario: la odontologa lo consulta para asignar materiales; solo admin lo modifica.
+drop policy inventory_items_all_authenticated on public.inventory_items;
+create policy inventory_items_select_clinical on public.inventory_items for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist'));
+create policy inventory_items_write_admin on public.inventory_items for all to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+
+-- Facturacion y pagos: solo admin.
+drop policy billing_invoices_select_authenticated on public.billing_invoices;
+drop policy billing_invoices_insert_authenticated on public.billing_invoices;
+drop policy billing_invoices_update_authenticated on public.billing_invoices;
+create policy billing_invoices_select_admin on public.billing_invoices for select to authenticated
+  using ((select public.current_app_role()) = 'admin');
+create policy billing_invoices_insert_admin on public.billing_invoices for insert to authenticated
+  with check ((select public.current_app_role()) = 'admin');
+create policy billing_invoices_update_admin on public.billing_invoices for update to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+drop policy invoice_items_select_authenticated on public.invoice_items;
+drop policy invoice_items_insert_authenticated on public.invoice_items;
+create policy invoice_items_select_admin on public.invoice_items for select to authenticated
+  using ((select public.current_app_role()) = 'admin');
+create policy invoice_items_insert_admin on public.invoice_items for insert to authenticated
+  with check ((select public.current_app_role()) = 'admin');
+drop policy payments_select_authenticated on public.payments;
+drop policy payments_insert_authenticated on public.payments;
+drop policy payments_update_authenticated on public.payments;
+create policy payments_select_admin on public.payments for select to authenticated
+  using ((select public.current_app_role()) = 'admin');
+create policy payments_insert_admin on public.payments for insert to authenticated
+  with check ((select public.current_app_role()) = 'admin');
+create policy payments_update_admin on public.payments for update to authenticated
+  using ((select public.current_app_role()) = 'admin') with check ((select public.current_app_role()) = 'admin');
+
+-- El descuento de stock lo hacen triggers disparados por la odontologa, que no puede escribir en
+-- inventory_items: pasan a SECURITY DEFINER (y deduct_inventory_stock no se expone como RPC).
+alter function public.deduct_inventory_stock(bigint, numeric) security definer;
+alter function public.apply_procedure_inventory() security definer;
+alter function public.treatment_inventory_item_changes() security definer;
+revoke execute on function public.deduct_inventory_stock(bigint, numeric) from public, anon, authenticated;
+
+-- Radiografias: bucket privado (se leen con URL firmada) y acceso por rol.
+update storage.buckets set public = false where id = 'radiographies';
+drop policy "Allow authenticated read radiographies" on storage.objects;
+drop policy "Allow authenticated upload radiographies" on storage.objects;
+drop policy "Allow authenticated update radiographies" on storage.objects;
+drop policy "Allow authenticated delete radiographies" on storage.objects;
+create policy "radiographies_select_clinical" on storage.objects for select to authenticated
+  using (bucket_id = 'radiographies' and (select public.current_app_role()) in ('admin','dentist'));
+create policy "radiographies_insert_clinical" on storage.objects for insert to authenticated
+  with check (bucket_id = 'radiographies' and (select public.current_app_role()) in ('admin','dentist'));
+create policy "radiographies_update_admin" on storage.objects for update to authenticated
+  using (bucket_id = 'radiographies' and (select public.current_app_role()) = 'admin')
+  with check (bucket_id = 'radiographies' and (select public.current_app_role()) = 'admin');
+create policy "radiographies_delete_admin" on storage.objects for delete to authenticated
+  using (bucket_id = 'radiographies' and (select public.current_app_role()) = 'admin');
+
+-- La asistente puede leer las historias clinicas (crear/editar siguen siendo admin y odontologa).
+drop policy clinical_histories_select_clinical on public.clinical_histories;
+create policy clinical_histories_select_staff on public.clinical_histories for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+
+-- Las historias clinicas no se borran nunca (solo se anulan con motivo): sin politica de DELETE.
+drop policy clinical_histories_delete_admin on public.clinical_histories;

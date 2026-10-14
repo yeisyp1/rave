@@ -52,10 +52,16 @@ Deno.serve(async (_req: Request) => {
     if (!phone) continue;
 
     const start = new Date(appointment.start_at);
+    const fecha = start.toLocaleDateString("es-CO", { timeZone: "America/Bogota" });
+    const hora = start.toLocaleTimeString("es-CO", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "America/Bogota",
+    });
     const body = renderTemplate(template?.body || fallbackBody, {
       nombre: patient?.nombre || "",
-      fecha: start.toLocaleDateString("es-CO"),
-      hora: start.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" }),
+      fecha,
+      hora,
     });
 
     const { error: insertError } = await supabaseAdmin.from("whatsapp_messages").insert([
@@ -66,6 +72,7 @@ Deno.serve(async (_req: Request) => {
         appointment_id: appointment.id,
         template_id: template?.id ?? null,
         body,
+        template_variables: { "1": fecha, "2": hora },
         status: "pending",
       },
     ]);

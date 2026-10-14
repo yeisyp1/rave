@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
 const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
 const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 const TWILIO_WHATSAPP_FROM = Deno.env.get("TWILIO_WHATSAPP_FROM");
+const TWILIO_CONTENT_SID = Deno.env.get("TWILIO_CONTENT_SID");
 
 const isTwilioConfigured = Boolean(
   TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM,
@@ -18,9 +19,26 @@ const normalizePhone = (phone: string) => {
   return digits.startsWith("+") ? digits : `+${digits}`;
 };
 
-const sendViaTwilio = async (phone: string, body: string) => {
+const sendViaTwilio = async (
+  phone: string,
+  body: string,
+  variables?: Record<string, string> | null,
+) => {
   const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
   const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+
+  const params = new URLSearchParams({
+    To: `whatsapp:${normalizePhone(phone)}`,
+    From: `whatsapp:${normalizePhone(TWILIO_WHATSAPP_FROM!)}`,
+  });
+
+  // Fuera de la ventana de 24h WhatsApp solo permite plantillas aprobadas (ContentSid).
+  if (TWILIO_CONTENT_SID && variables) {
+    params.set("ContentSid", TWILIO_CONTENT_SID);
+    params.set("ContentVariables", JSON.stringify(variables));
+  } else {
+    params.set("Body", body);
+  }
 
   const response = await fetch(url, {
     method: "POST",
@@ -28,11 +46,7 @@ const sendViaTwilio = async (phone: string, body: string) => {
       Authorization: `Basic ${auth}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      To: `whatsapp:${normalizePhone(phone)}`,
-      From: `whatsapp:${normalizePhone(TWILIO_WHATSAPP_FROM!)}`,
-      Body: body,
-    }),
+    body: params,
   });
 
   const data = await response.json();
@@ -79,7 +93,11 @@ Deno.serve(async (_req: Request) => {
 
   for (const message of pending) {
     try {
-      const providerMessageId = await sendViaTwilio(message.phone, message.body);
+      const providerMessageId = await sendViaTwilio(
+        message.phone,
+        message.body,
+        message.template_variables,
+      );
       await supabaseAdmin
         .from("whatsapp_messages")
         .update({ status: "sent", sent_at: new Date().toISOString(), provider_message_id: providerMessageId })
