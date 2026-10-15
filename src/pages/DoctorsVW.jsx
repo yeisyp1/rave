@@ -51,6 +51,8 @@ const DoctorsVW = () => {
   }
 
   useEffect(() => {
+    // Carga inicial de usuarios autorizados al montar la vista.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers()
   }, [])
 

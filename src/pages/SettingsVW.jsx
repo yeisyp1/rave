@@ -25,6 +25,8 @@ const SettingsVW = () => {
   }
 
   useEffect(() => {
+    // Carga inicial de la configuración al montar la vista.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSettings()
   }, [])
 

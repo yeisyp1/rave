@@ -40,12 +40,8 @@ const PatientDetailVW = () => {
   const [activeTab, setActiveTab] = useState('personal');
   const [procedures, setProcedures] = useState([]);
   const [clinicalHistories, setClinicalHistories] = useState([]);
-  const [radiographies, setRadiographies] = useState([]);
   const [numberingSystem, setNumberingSystem] = useState('FDI');
   const [odontogramOpen, setOdontogramOpen] = useState(true);
-  const [mediaOpen, setMediaOpen] = useState(false);
-  const [selectedRadiographies, setSelectedRadiographies] = useState([]);
-  const [clinicalNote, setClinicalNote] = useState('');
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyToEdit, setHistoryToEdit] = useState(null);
   const [consents, setConsents] = useState([]);
@@ -74,7 +70,6 @@ const PatientDetailVW = () => {
       setClinicalHistories(detail.clinicalHistories);
       setConsents(detail.consents);
       setDataRequests(detail.dataRequests);
-      setRadiographies(detail.radiographies);
       setAuthorizationMedium(detail.patient?.autorizacion_datos_medio || '');
     } catch (error) {
       console.error('Error fetching patient data:', error);

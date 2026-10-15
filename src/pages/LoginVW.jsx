@@ -23,10 +23,12 @@ const Login = () => {
     try {
       const flag = localStorage.getItem('no_autorizado');
       if (flag) {
+        // Lee un indicador externo (localStorage) al montar para mostrar el aviso.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setErrorMsg('Tu cuenta no está autorizada para usar esta aplicación. Contacta al administrador.');
         localStorage.removeItem('no_autorizado');
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);

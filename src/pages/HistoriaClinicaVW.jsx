@@ -27,6 +27,8 @@ const HistoriaClinicaVW = () => {
   }
 
   useEffect(() => {
+    // Carga inicial de pacientes al montar la vista.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     getPatients()
   }, [])
 
