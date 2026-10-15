@@ -1,59 +1,48 @@
 # Edge Functions — mensajería WhatsApp (CU-17, CU-21, CU-22, CU-23)
 
-Proyecto Supabase: `czfuquhkjuhbwnkbgkze` (Rave).
+Proyecto Supabase: `czfuquhkjuhbwnkbgkze` (Rave). Proveedor: **WhatsApp Business Cloud API de Meta**.
 
-## Estado
+## Funciones
 
-| Función | Desplegada | Qué hace |
+| Función | JWT | Qué hace |
 |---|---|---|
-| `queue-appointment-reminders` | Sí (cron cada hora) | Busca citas confirmadas entre 23-25h en el futuro sin recordatorio enviado y encola un mensaje en `whatsapp_messages`. |
-| `process-whatsapp-queue` | Sí (cron cada 5 min) | Entrega los mensajes `pending` de `whatsapp_messages` vía Twilio. Si no hay credenciales de Twilio configuradas, los marca `no_provider` sin fallar. |
-| `whatsapp-webhook` | **No** — el despliegue con `verify_jwt: false` fue bloqueado por el clasificador de permisos de Claude Code | Recibe mensajes entrantes de Twilio, registra al paciente por teléfono, y crea solicitudes de cita (`cita`/`agendar`/`turno`) o de cancelación (`cancelar`) en `appointments`. |
+| `queue-appointment-reminders` | Sí (cron cada hora) | Busca citas confirmadas entre 23-25 h en el futuro sin recordatorio enviado y encola un mensaje en `whatsapp_messages`. Omite pacientes con `whatsapp_baja`. |
+| `process-whatsapp-queue` | Sí (cron cada 5 min) | Entrega los mensajes `pending` por la Cloud API. Omite (`skipped`) a quien dio de baja WhatsApp. Si faltan los secrets de Meta los marca `no_provider`. |
+| `whatsapp-webhook` | **No** (`--no-verify-jwt`) | Recibe los mensajes del paciente: crea solicitudes de cita (`cita`/`agendar`/`turno`) o de cancelación (`cancelar`), y gestiona `BAJA`/`ALTA`. Verifica la firma `X-Hub-Signature-256` de Meta. |
 
-El código de las tres funciones está en este directorio (`whatsapp-webhook/`, `process-whatsapp-queue/`, `queue-appointment-reminders/`).
+## Secrets (Dashboard → Edge Functions → Secrets)
 
-## Desplegar `whatsapp-webhook` manualmente
+| Secret | Para qué |
+|---|---|
+| `META_VERIFY_TOKEN` | Texto que tú inventas; lo pegas también en Meta al registrar el webhook. |
+| `META_APP_SECRET` | App Dashboard → Settings → Basic → App secret. Firma cada petición de Meta. |
+| `META_WA_TOKEN` | Token de acceso permanente (usuario del sistema) o temporal para pruebas. |
+| `META_WA_PHONE_NUMBER_ID` | WhatsApp → API Setup → Phone number ID. |
+| `META_WA_TEMPLATE_NAME` | Nombre de la plantilla aprobada para recordatorios (cuerpo con `{{1}}` fecha y `{{2}}` hora). |
+| `META_WA_TEMPLATE_LANG` | Opcional, por defecto `es`. |
 
-Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
+Ninguno tiene valor de respaldo en el código: sin ellos la función rechaza las peticiones.
 
-```bash
-supabase login
-supabase link --project-ref czfuquhkjuhbwnkbgkze
-supabase functions deploy whatsapp-webhook --no-verify-jwt
-```
-
-O desde el Dashboard: Edge Functions → Deploy a new function → pega el contenido de `whatsapp-webhook/index.ts`, y desmarca "Verify JWT" en la configuración de la función (Twilio no puede enviar un JWT de Supabase).
-
-## Configurar el secreto del webhook
-
-La función no tiene secreto de respaldo
+## Desplegar
 
 ```bash
-openssl rand -hex 24
-supabase secrets set WEBHOOK_SHARED_SECRET=<el valor generado>
+npx supabase login
+npx supabase functions deploy whatsapp-webhook --no-verify-jwt --project-ref czfuquhkjuhbwnkbgkze
+npx supabase functions deploy process-whatsapp-queue queue-appointment-reminders --project-ref czfuquhkjuhbwnkbgkze
 ```
 
-La URL que le das a Twilio debe incluir ese secreto como query param:
-`https://czfuquhkjuhbwnkbgkze.supabase.co/functions/v1/whatsapp-webhook?secret=<el valor>`
+## Configurar Meta
 
-## Crear una cuenta de WhatsApp para pruebas (Twilio)
+1. Crea una app en [developers.facebook.com](https://developers.facebook.com) (tipo **Business**) y agrega el producto **WhatsApp**.
+2. En **WhatsApp → API Setup** obtienes un número de prueba gratis, el *Phone number ID* y un token temporal. Agrega tu celular como destinatario de prueba.
+3. En **WhatsApp → Configuration → Webhook** pega:
+   - URL: `https://czfuquhkjuhbwnkbgkze.supabase.co/functions/v1/whatsapp-webhook`
+   - Verify token: el valor de `META_VERIFY_TOKEN`
+   - Suscríbete al campo `messages`.
+4. Para producción: verifica el negocio en Meta Business, agrega el número de la clínica (no puede estar activo en la app de WhatsApp normal), crea un token permanente de usuario del sistema y registra la plantilla de recordatorio (categoría *Utility*, idioma español) en **WhatsApp Manager → Message templates**.
 
-1. Crea una cuenta gratuita en [twilio.com](https://www.twilio.com/try-twilio).
-2. En el panel, ve a **Messaging → Try it out → Send a WhatsApp message** y activa el **WhatsApp Sandbox** (gratis, permite enviar/recibir mensajes de inmediato uniéndote con un código desde tu WhatsApp).
-3. Copia el **Account SID** y el **Auth Token** (Console → Account Info).
-4. El número del sandbox es `+1 415 523 8886` (o el que te asigne tu sandbox).
-5. En **Sandbox settings**, configura el webhook "WHEN A MESSAGE COMES IN" con la URL del paso anterior (con `?secret=...`), método `HTTP POST`.
+## Reglas de WhatsApp a tener en cuenta
 
-## Configurar los secrets de envío
-
-```bash
-supabase secrets set TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-supabase secrets set TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-supabase secrets set TWILIO_WHATSAPP_FROM=+14155238886
-```
-
-En cuanto estén configurados, `process-whatsapp-queue` empezará a entregar automáticamente (cada 5 min) los recordatorios (CU-17) y confirmaciones de cita (CU-22) que la app ya está encolando en `whatsapp_messages`.
-
-## Migrar de Twilio Sandbox a un número propio / Meta Cloud API
-
-Cuando quieras pasar a producción con tu propio número de WhatsApp Business, solo cambias `TWILIO_WHATSAPP_FROM` (Twilio) o reescribes `sendViaTwilio` en `process-whatsapp-queue/index.ts` para usar la Meta Cloud API — el resto del sistema (cola, plantillas, espejo de citas) no cambia.
+- El primer mensaje a un paciente (recordatorio) solo puede ser una **plantilla aprobada**. Mensajes de texto libre solo se aceptan dentro de las 24 h posteriores a que el paciente escriba.
+- Las respuestas del asistente (cita, cancelar, baja) van dentro de esa ventana, así que no necesitan plantilla.
+- Los pacientes pueden escribir `BAJA` para dejar de recibir mensajes (queda en `patients.whatsapp_baja`) y `ALTA` para reactivarlos.
