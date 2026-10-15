@@ -19,6 +19,8 @@ import "../styles/ModalHistoriaClinicaVW.css";
 import logoDark from "../assets/logo.png";
 import logoLight from "../assets/logo1.png";
 import { FiChevronDown, FiImage, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
+import { useProfile } from "../context/ProfileContext";
+import { isClinicalStaff } from "../utils/roles";
 import OdontogramApp from "react-odontogram-editor-modul/src/App";
 import "react-odontogram-editor-modul/src/index.css";
 import {
@@ -78,6 +80,8 @@ const fieldToText = (value) => {
 
 const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initialHistory = null }) => {
   const dispatch = useDispatch();
+  const profile = useProfile();
+  const canEdit = isClinicalStaff(profile);
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(startInForm);
@@ -490,11 +494,11 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
           <div className="mhc-header-actions">
             <div
               className="mhc-logo-wrap"
-              role="button"
-              tabIndex={0}
-              title="Ver odontograma del paciente"
-              onClick={() => setShowForm(true)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowForm(true); } }}
+              role={canEdit ? "button" : undefined}
+              tabIndex={canEdit ? 0 : undefined}
+              title={canEdit ? "Ver odontograma del paciente" : undefined}
+              onClick={canEdit ? () => setShowForm(true) : undefined}
+              onKeyDown={canEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowForm(true); } } : undefined}
             >
               <img src={logoLight} alt="Rave" className="mhc-logo-light mhc-logo" />
               <img src={logoDark} alt="Rave" className="mhc-logo-dark mhc-logo" />
@@ -698,6 +702,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                     <div className="pd-media-grid">
                       <div className="pd-media-panel">
                         <h3 className="pd-section-title">Subir radiografías</h3>
+                        {canEdit && (
                         <label className="pd-upload-box">
                           <input
                             type="file"
@@ -709,6 +714,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                           <span>Haz clic o arrastra aquí tus archivos</span>
                           <small>JPG, PNG o WEBP</small>
                         </label>
+                        )}
 
                         {selectedRadiographies.length > 0 && (
                           <div className="pd-upload-list">
@@ -759,7 +765,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                                 <p className="pd-radiography-type" title={radio.motivo_anulacion || ""}>
                                   Anulada
                                 </p>
-                              ) : (
+                              ) : canEdit ? (
                                 <button
                                   type="button"
                                   className="pd-radiography-delete"
@@ -769,7 +775,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                                   <FiTrash2 size={14} />
                                   Anular
                                 </button>
-                              )}
+                              ) : null}
                             </div>
                           ))}
                         </div>
@@ -790,9 +796,11 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                   >
                     Cancelar
                   </button>
-                  <button type="submit" className="mhc-btn-primary" disabled={saving}>
-                    {saving ? "Guardando..." : "Guardar Historia"}
-                  </button>
+                  {canEdit && (
+                    <button type="submit" className="mhc-btn-primary" disabled={saving}>
+                      {saving ? "Guardando..." : "Guardar Historia"}
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -800,14 +808,16 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
             <div className="mhc-histories-container">
               <div className="mhc-histories-header">
                 <h3>Historias Registradas</h3>
-                <button
-                  className="mhc-btn-new"
-                  onClick={handleNewHistory}
-                  type="button"
-                >
-                  <FiPlus size={14} />
-                  Nueva Historia
-                </button>
+                {canEdit && (
+                  <button
+                    className="mhc-btn-new"
+                    onClick={handleNewHistory}
+                    type="button"
+                  >
+                    <FiPlus size={14} />
+                    Nueva Historia
+                  </button>
+                )}
               </div>
 
               {loading ? (
@@ -818,13 +828,15 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
               ) : histories.length === 0 ? (
                 <div className="mhc-empty">
                   <p>No hay historias clínicas registradas</p>
-                  <button
-                    className="mhc-btn-primary"
-                    onClick={() => setShowForm(true)}
-                    type="button"
-                  >
-                    Crear primera historia
-                  </button>
+                  {canEdit && (
+                    <button
+                      className="mhc-btn-primary"
+                      onClick={() => setShowForm(true)}
+                      type="button"
+                    >
+                      Crear primera historia
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="mhc-histories-list">
@@ -850,7 +862,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                           <div className="mhc-history-summary">
                             <span><b>Anulada:</b> {fieldToText(history.motivo_anulacion)}</span>
                           </div>
-                        ) : (
+                        ) : canEdit ? (
                           <div className="mhc-history-actions">
                             <button
                               type="button"
@@ -867,7 +879,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                               Anular con nota
                             </button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}

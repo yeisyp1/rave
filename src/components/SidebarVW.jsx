@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar } from '../app/store'
 import { supabase } from '../dao/SupabaseDAO'
+import { isAdmin, isClinicalStaff } from '../utils/roles'
 import '../styles/SidebarVW.css'
 import logoLight from '../assets/logo1.png'
 import logoDark from '../assets/logo.png'
@@ -29,7 +30,8 @@ const Sidebar = ({ profile }) => {
   const open = useSelector((state) => state.ui.sidebarOpen)
   const navigate = useNavigate()
   const isMobile = window.innerWidth < 992
-  const isAdmin = profile?.role === 'admin'
+  const admin = isAdmin(profile)
+  const clinicalStaff = isClinicalStaff(profile)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -52,13 +54,19 @@ const Sidebar = ({ profile }) => {
       ],
     },
     {
+      section: 'Clínico',
+      clinicalOnly: true,
+      items: [
+        { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
+        { to: '/inventory', icon: FiInbox, label: 'Inventario' },
+      ],
+    },
+    {
       section: 'Admin',
       adminOnly: true,
       items: [
         { to: '/billing', icon: FiCreditCard, label: 'Pagos' },
         { to: '/doctors', icon: FiUser, label: 'Doctores' },
-        { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
-        { to: '/inventory', icon: FiInbox, label: 'Inventario' },
         { to: '/reports', icon: FiBarChart2, label: 'Reportes' },
         { to: '/plantillas', icon: FiMail, label: 'Plantillas' },
         { to: '/solicitudes-datos', icon: FiShield, label: 'Solicitudes de datos' },
@@ -73,7 +81,7 @@ const Sidebar = ({ profile }) => {
         { icon: FiLogOut, label: 'Cerrar Sesion', action: 'logout' },
       ],
     },
-  ].filter((section) => !section.adminOnly || isAdmin)
+  ].filter((section) => (!section.adminOnly || admin) && (!section.clinicalOnly || clinicalStaff))
 
   return (
     <>

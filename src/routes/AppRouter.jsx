@@ -26,9 +26,14 @@ import OAuthConsentVW from '../pages/OAuthConsentVW'
 import PublicHomeVW from '../pages/PublicHomeVW'
 import PrivacyPolicyVW from '../pages/PrivacyPolicyVW'
 import AccessActionVW from '../pages/AccessActionVW'
+import { hasRole, ROLES } from '../utils/roles'
 
 const AdminRoute = ({ profile, children }) => {
-  return profile?.role === 'admin' ? children : <Navigate to="/dashboard" replace />
+  return hasRole(profile, [ROLES.ADMIN]) ? children : <Navigate to="/dashboard" replace />
+}
+
+const ClinicalRoute = ({ profile, children }) => {
+  return hasRole(profile, [ROLES.ADMIN, ROLES.DENTIST]) ? children : <Navigate to="/dashboard" replace />
 }
 
 const AppRouter = ({ user, profile }) => {
@@ -56,8 +61,8 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/new-event-modal" element={<NewEventModalVW />} />
           <Route path="/billing" element={<AdminRoute profile={profile}><BillingVW /></AdminRoute>} />
           <Route path="/documentation" element={<AdminRoute profile={profile}><DocumentationVW /></AdminRoute>} />
-          <Route path="/laboratory" element={<AdminRoute profile={profile}><LaboratoryVW /></AdminRoute>} />
-          <Route path="/inventory" element={<AdminRoute profile={profile}><InventoryVW /></AdminRoute>} />
+          <Route path="/laboratory" element={<ClinicalRoute profile={profile}><LaboratoryVW /></ClinicalRoute>} />
+          <Route path="/inventory" element={<ClinicalRoute profile={profile}><InventoryVW /></ClinicalRoute>} />
           <Route path="/reports" element={<AdminRoute profile={profile}><ReportsVW /></AdminRoute>} />
           <Route path="/plantillas" element={<AdminRoute profile={profile}><MessageTemplatesVW /></AdminRoute>} />
           <Route path="/solicitudes-datos" element={<AdminRoute profile={profile}><DataRequestsVW /></AdminRoute>} />

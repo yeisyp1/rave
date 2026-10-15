@@ -25,12 +25,16 @@ import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW';
 import { usePatientModal } from '../hooks/usePatientModal';
 import LoaderVW from '../components/LoaderVW';
 import TreatmentPlansVW from '../components/TreatmentPlansVW';
+import { useProfile } from '../context/ProfileContext';
+import { isClinicalStaff } from '../utils/roles';
 import '../styles/PatientDetailVW.css';
 
 const PatientDetailVW = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const profile = useProfile();
+  const canEdit = isClinicalStaff(profile);
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
@@ -372,10 +376,12 @@ const PatientDetailVW = () => {
             <div className="pd-section">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                 <h3 className="pd-section-title" style={{ margin: 0 }}>Historias clínicas registradas</h3>
-                <button className="pd-btn-action-primary" type="button" onClick={openNewHistoryModal}>
-                  <FiPlus size={14} />
-                  Nueva historia clínica
-                </button>
+                {canEdit && (
+                  <button className="pd-btn-action-primary" type="button" onClick={openNewHistoryModal}>
+                    <FiPlus size={14} />
+                    Nueva historia clínica
+                  </button>
+                )}
               </div>
               {clinicalHistories.length > 0 ? (
                 <div className="mhc-histories-list" style={{ marginTop: 0 }}>
@@ -401,7 +407,7 @@ const PatientDetailVW = () => {
                           <div className="mhc-history-summary">
                             <span><b>Anulada:</b> {history.motivo_anulacion || '—'}</span>
                           </div>
-                        ) : (
+                        ) : canEdit ? (
                           <div className="pd-history-actions">
                             <button
                               type="button"
@@ -418,7 +424,7 @@ const PatientDetailVW = () => {
                               Anular con nota
                             </button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}
@@ -469,15 +475,17 @@ const PatientDetailVW = () => {
                     numberingSystem={numberingSystem}
                     onNumberingChange={setNumberingSystem}
                   />
-                  <button
-                    className="pd-btn-action-primary"
-                    onClick={handleSaveOdontogram}
-                    disabled={savingOdontogram}
-                    style={{ marginTop: '1rem', width: '100%' }}
-                  >
-                    <FiSave size={14} />
-                    {savingOdontogram ? 'Guardando...' : 'Guardar odontograma'}
-                  </button>
+                  {canEdit && (
+                    <button
+                      className="pd-btn-action-primary"
+                      onClick={handleSaveOdontogram}
+                      disabled={savingOdontogram}
+                      style={{ marginTop: '1rem', width: '100%' }}
+                    >
+                      <FiSave size={14} />
+                      {savingOdontogram ? 'Guardando...' : 'Guardar odontograma'}
+                    </button>
+                  )}
                 </div>
               </div>
             </details>
@@ -535,6 +543,7 @@ const PatientDetailVW = () => {
 
             <div className="pd-section">
               <h3 className="pd-section-title">Consentimiento informado (Ley 527 de 1999)</h3>
+              {canEdit && (
               <form className="pd-info-grid" onSubmit={submitConsent} style={{ marginBottom: '1rem' }}>
                 <div className="pd-info-card" style={{ gridColumn: '1 / -1' }}>
                   <label className="pd-info-label" htmlFor="consent-content">Contenido del consentimiento</label>
@@ -560,6 +569,7 @@ const PatientDetailVW = () => {
                   </button>
                 </div>
               </form>
+              )}
 
               {consents.length > 0 ? (
                 <div className="mhc-histories-list">
