@@ -15,7 +15,7 @@ Deno.serve(async (_req: Request) => {
 
   const { data: appointments, error } = await supabaseAdmin
     .from("appointments")
-    .select("*, patients(nombre, apellidos, celular, telefono)")
+    .select("*, patients(nombre, apellidos, celular, telefono, whatsapp_baja)")
     .eq("status", "Confirmada")
     .is("reminder_sent_at", null)
     .not("patient_id", "is", null)
@@ -49,7 +49,7 @@ Deno.serve(async (_req: Request) => {
   for (const appointment of appointments) {
     const patient = appointment.patients;
     const phone = patient?.celular || patient?.telefono;
-    if (!phone) continue;
+    if (!phone || patient?.whatsapp_baja) continue;
 
     const start = new Date(appointment.start_at);
     const fecha = start.toLocaleDateString("es-CO", { timeZone: "America/Bogota" });

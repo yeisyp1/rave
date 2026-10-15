@@ -80,6 +80,26 @@ Deno.serve(async (req: Request) => {
   });
 
   const text = stripAccents(body.toLowerCase());
+  const command = text.trim().replace(/[^a-z ]/g, "").trim();
+
+  // Baja / alta del canal de WhatsApp (Ley 1581: el titular puede dejar de recibir mensajes).
+  if (["baja", "stop", "parar", "detener", "no mas mensajes"].includes(command)) {
+    if (patient) {
+      await supabaseAdmin
+        .from("patients")
+        .update({ whatsapp_baja: true, whatsapp_baja_motivo: "Solicitada por el paciente por WhatsApp" })
+        .eq("id", patient.id);
+    }
+    return twimlResponse(
+      "Listo, no te enviaremos más mensajes por WhatsApp. Si cambias de opinión, escribe 'alta'. Tu atención en la clínica no se ve afectada.",
+    );
+  }
+  if (command === "alta") {
+    if (patient) {
+      await supabaseAdmin.from("patients").update({ whatsapp_baja: false }).eq("id", patient.id);
+    }
+    return twimlResponse("Listo, volverás a recibir recordatorios de tus citas por WhatsApp.");
+  }
 
   if (text.includes("cancel")) {
     if (!patient) {

@@ -42,3 +42,5 @@
 .access-error { color: #9c2525; background: #fff0f0; }
 .access-message { color: #176b4a; background: #edf9f2; }
 .access-back { display: block; margin-top: 22px; color: #1562b9; text-align: center; font-weight: 700; text-decoration: none; }
+.legal-controller { display: grid; gap: 4px; margin: 20px 0 6px; padding: 16px 18px; background: #f3f7fc; border-left: 4px solid #1562b9; border-radius: 8px; color: #13283f; font-size: 15px; }
+.legal-card ul { margin: 0 0 12px; padding-left: 22px; color: #52677d; line-height: 1.7; }

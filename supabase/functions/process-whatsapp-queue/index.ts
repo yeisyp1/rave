@@ -75,8 +75,33 @@ Deno.serve(async (_req: Request) => {
     });
   }
 
+  // Los pacientes que dieron de baja WhatsApp no reciben mensajes (Ley 1581): se omiten.
+  const patientIds = [...new Set(pending.map((row) => row.patient_id).filter(Boolean))];
+  const optedOut = new Set<string>();
+  if (patientIds.length > 0) {
+    const { data: bajas } = await supabaseAdmin
+      .from("patients")
+      .select("id")
+      .in("id", patientIds)
+      .eq("whatsapp_baja", true);
+    (bajas || []).forEach((row) => optedOut.add(row.id));
+  }
+  const skippedIds = pending.filter((row) => optedOut.has(row.patient_id)).map((row) => row.id);
+  if (skippedIds.length > 0) {
+    await supabaseAdmin
+      .from("whatsapp_messages")
+      .update({ status: "skipped", error: "El paciente dio de baja WhatsApp" })
+      .in("id", skippedIds);
+  }
+  const queue = pending.filter((row) => !optedOut.has(row.patient_id));
+  if (queue.length === 0) {
+    return new Response(JSON.stringify({ processed: 0, skipped: skippedIds.length }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   if (!isTwilioConfigured) {
-    const ids = pending.map((row) => row.id);
+    const ids = queue.map((row) => row.id);
     await supabaseAdmin
       .from("whatsapp_messages")
       .update({ status: "no_provider", error: "Twilio no configurado (faltan secrets)" })
@@ -91,7 +116,7 @@ Deno.serve(async (_req: Request) => {
   let sent = 0;
   let failed = 0;
 
-  for (const message of pending) {
+  for (const message of queue) {
     try {
       const providerMessageId = await sendViaTwilio(
         message.phone,
@@ -112,7 +137,7 @@ Deno.serve(async (_req: Request) => {
     }
   }
 
-  return new Response(JSON.stringify({ processed: pending.length, sent, failed }), {
+  return new Response(JSON.stringify({ processed: queue.length, sent, failed, skipped: skippedIds.length }), {
     headers: { "Content-Type": "application/json" },
   });
 });

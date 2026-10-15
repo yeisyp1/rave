@@ -1,31 +1,57 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import LegalTextVW from '../components/LegalTextVW'
+import { getDataControllerDAO, getLatestLegalDocumentDAO } from '../dao/LegalDocumentsDAO'
 import '../styles/PublicPagesVW.css'
 
-const PrivacyPolicyVW = () => (
-  <main className="legal-page">
-    <header className="legal-header">
-      <Link to="/" className="legal-back">← RAVE</Link>
-      <Link to="/login" className="public-login">Acceso al sistema</Link>
-    </header>
-    <article className="legal-card">
-      <p className="public-kicker">RAVE</p>
-      <h1>Política de privacidad</h1>
-      <p className="legal-updated">Última actualización: 13 de agosto de 2026</p>
-      <h2>1. Responsable</h2>
-      <p>RAVE es una plataforma de gestión clínica para consultorios odontológicos. Esta política explica cómo se trata la información utilizada por la aplicación.</p>
-      <h2>2. Información que se gestiona</h2>
-      <p>La plataforma puede gestionar datos de usuarios autorizados, pacientes, citas, historias clínicas, odontogramas, facturación e inventario, según las funciones habilitadas por la clínica.</p>
-      <h2>3. Uso de la información</h2>
-      <p>La información se utiliza para administrar la atención odontológica, coordinar citas, mantener registros clínicos y apoyar los procesos administrativos de la clínica.</p>
-      <h2>4. Servicios integrados</h2>
-      <p>RAVE puede integrarse con Supabase para autenticación y almacenamiento, y con Google Calendar cuando el usuario autoriza esa función. Cada servicio aplica sus propias políticas de privacidad y seguridad.</p>
-      <h2>5. Seguridad y acceso</h2>
-      <p>El acceso a la información está limitado a usuarios autorizados por la clínica. No compartimos información clínica con terceros para fines publicitarios.</p>
-      <h2>6. Contacto</h2>
-      <p>Para consultas sobre privacidad, solicita a la clínica administradora el canal de contacto correspondiente.</p>
-      <p className="legal-note">Esta página es informativa y debe actualizarse con la razón social, correo y dirección oficiales de la clínica antes de solicitar la verificación definitiva.</p>
-    </article>
-  </main>
-)
+const PrivacyPolicyVW = () => {
+  const [doc, setDoc] = useState(null)
+  const [controller, setController] = useState(null)
+  const [status, setStatus] = useState('loading')
+
+  useEffect(() => {
+    let active = true
+    Promise.all([getLatestLegalDocumentDAO('politica_privacidad'), getDataControllerDAO()])
+      .then(([policy, data]) => {
+        if (!active) return
+        setDoc(policy)
+        setController(data)
+        setStatus(policy ? 'ok' : 'empty')
+      })
+      .catch(() => active && setStatus('error'))
+    return () => { active = false }
+  }, [])
+
+  return (
+    <main className="legal-page">
+      <header className="legal-header">
+        <Link to="/" className="legal-back">← RAVE</Link>
+        <Link to="/login" className="public-login">Acceso al sistema</Link>
+      </header>
+      <article className="legal-card">
+        <p className="public-kicker">RAVE</p>
+        <h1>{doc?.title || 'Política de tratamiento de datos personales'}</h1>
+        {doc && (
+          <p className="legal-updated">
+            Versión {doc.version} · Vigente desde el {new Date(doc.published_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        )}
+        {controller && (
+          <section className="legal-controller">
+            <strong>{controller.razon_social}</strong>
+            <span>NIT: {controller.nit}</span>
+            <span>{controller.direccion}, {controller.ciudad}</span>
+            <span>Correo para datos personales: {controller.correo_datos_personales}</span>
+            <span>Teléfono: {controller.telefono}</span>
+          </section>
+        )}
+        {status === 'loading' && <p>Cargando…</p>}
+        {status === 'error' && <p className="legal-note">No se pudo cargar la política. Inténtalo de nuevo más tarde o solicítala en la clínica.</p>}
+        {status === 'empty' && <p className="legal-note">La política aún no ha sido publicada. Solicítala en la clínica.</p>}
+        {doc && <LegalTextVW content={doc.content} />}
+      </article>
+    </main>
+  )
+}
 
 export default PrivacyPolicyVW
