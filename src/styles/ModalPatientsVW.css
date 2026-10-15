@@ -341,3 +341,8 @@
   .pt-step-label  { display: none; }
   .pt-modal       { border-radius: 16px; }
 }
+
+.pt-legal-text { max-height: 220px; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--border-color, #d9e1ea); border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.pt-legal-text p, .pt-legal-text ul { margin: 0 0 8px; }
+.pt-legal-text ul { padding-left: 20px; }
+.pt-legal-text h2 { font-size: 14px; margin: 10px 0 4px; }

@@ -47,3 +47,12 @@ export const updateDataRequestStatusDAO = async (id, { status, resolution_notes 
   if (error) throw error;
   return data;
 };
+
+// Supresion o revocatoria: elimina datos de contacto y conserva la historia clinica (ver apply_data_request).
+export const applyDataRequestDAO = async (id, notes) => {
+  const { error } = await supabase.rpc("apply_data_request", {
+    p_request_id: id,
+    p_notes: notes ?? null,
+  });
+  if (error) throw error;
+};

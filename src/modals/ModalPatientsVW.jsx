@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { createPortal } from "react-dom";
+import LegalTextVW from "../components/LegalTextVW";
+import { getLatestLegalDocumentDAO } from "../dao/LegalDocumentsDAO";
 import "../styles/ModalPatientsVW.css";
 import { FiX, FiCheck, FiChevronDown } from 'react-icons/fi'
 
@@ -25,6 +29,13 @@ export default function ModalPatients({
   canNext,
   isEditing,
 }) {
+  const [authDoc, setAuthDoc] = useState(null);
+
+  useEffect(() => {
+    if (!showModal) return;
+    getLatestLegalDocumentDAO("autorizacion_datos").then(setAuthDoc).catch(() => setAuthDoc(null));
+  }, [showModal]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const updated = { ...form, [name]: value };
@@ -244,12 +255,17 @@ export default function ModalPatients({
               <div className="pt-section-title">Autorización de tratamiento de datos personales</div>
 
               <div className="pt-field pt-field-full">
-                <p className="pt-label" style={{ fontWeight: 400, lineHeight: 1.5 }}>
-                  De acuerdo con la Ley 1581 de 2012 y el Decreto 1377 de 2013, autorizo a la
-                  Clínica RAVE para recolectar, almacenar y tratar mis datos personales y de
-                  salud con el fin de gestionar mi atención odontológica, historia clínica,
-                  citas y facturación.
-                </p>
+                <div className="pt-legal-text">
+                  {authDoc ? (
+                    <LegalTextVW content={authDoc.content} />
+                  ) : (
+                    <p>No se pudo cargar el texto de la autorización. Revisa tu conexión antes de continuar.</p>
+                  )}
+                </div>
+                <span className="pt-age-placeholder">
+                  {authDoc && `Versión ${authDoc.version} · `}
+                  <Link to="/politica-privacidad" target="_blank" rel="noreferrer">Ver política de tratamiento de datos</Link>
+                </span>
               </div>
 
               <div className="pt-field pt-field-full">
@@ -258,6 +274,7 @@ export default function ModalPatients({
                     type="checkbox"
                     checked={Boolean(form.autorizacion_datos)}
                     onChange={handleAuthorizationChange}
+                    disabled={!authDoc}
                   />
                   Autorizo el tratamiento de mis datos personales <span className="pt-req">*</span>
                 </label>

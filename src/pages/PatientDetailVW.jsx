@@ -5,6 +5,7 @@ import { showAlertModal } from '../app/store';
 import { annulPatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/HistoriaClinicaCtrl';
 import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
 import { updatePatientDAO } from '../dao/PatientsDAO';
+import { logPatientAccessDAO } from '../dao/AuditDAO';
 import { captureOdontogramState } from '../utils/odontogramPersistence';
 import {
   FiArrowLeft,
@@ -58,6 +59,8 @@ const PatientDetailVW = () => {
 
   useEffect(() => {
     fetchPatientData();
+    // Bitacora de acceso a datos de salud (Ley 2015 de 2020); un fallo no bloquea la ficha.
+    logPatientAccessDAO(patientId, 'ficha').catch((error) => console.error('No se pudo registrar el acceso:', error));
   }, [patientId]);
 
   const fetchPatientData = async () => {
@@ -118,6 +121,25 @@ const PatientDetailVW = () => {
     } catch (error) {
       console.error('Error saving authorization medium:', error);
       dispatch(showAlertModal({ message: 'Error al guardar', variant: 'error' }));
+    }
+  };
+
+  const handleToggleWhatsappBaja = async () => {
+    const baja = !patient.whatsapp_baja;
+    try {
+      const { error } = await updatePatientDAO(patient.id, {
+        whatsapp_baja: baja,
+        whatsapp_baja_motivo: baja ? 'Registrada por el personal de la clínica' : null,
+      });
+      if (error) throw error;
+      setPatient((current) => ({ ...current, whatsapp_baja: baja }));
+      dispatch(showAlertModal({
+        message: baja ? 'El paciente no recibirá más mensajes por WhatsApp' : 'El paciente volverá a recibir mensajes por WhatsApp',
+        variant: 'success',
+      }));
+    } catch (error) {
+      console.error('Error updating WhatsApp opt-out:', error);
+      dispatch(showAlertModal({ message: 'No se pudo actualizar la preferencia de WhatsApp', variant: 'error' }));
     }
   };
 
@@ -531,6 +553,19 @@ const PatientDetailVW = () => {
                   >
                     <FiSave size={14} />
                     Guardar
+                  </button>
+                </div>
+              </div>
+              <div className="pd-info-row" style={{ marginTop: '1rem' }}>
+                <span className="pd-info-label">Mensajes por WhatsApp:</span>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                  <span className="pd-info-value" style={{ flex: 1 }}>
+                    {patient.whatsapp_baja
+                      ? `Dado de baja${patient.whatsapp_baja_at ? ` el ${new Date(patient.whatsapp_baja_at).toLocaleDateString('es-CO')}` : ''}`
+                      : 'Recibe recordatorios'}
+                  </span>
+                  <button className="pd-btn-action-primary" onClick={handleToggleWhatsappBaja} style={{ whiteSpace: 'nowrap' }}>
+                    {patient.whatsapp_baja ? 'Reactivar' : 'Dar de baja'}
                   </button>
                 </div>
               </div>

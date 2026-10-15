@@ -4,6 +4,9 @@ import { FiCheckCircle, FiClock, FiShield } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
   DATA_REQUEST_STATUS_OPTIONS,
+  applyDataRequestCtrl,
+  canApplyDataRequest,
+  isDataRequestOverdue,
   computeDataRequestStatsCtrl,
   getDataRequestPatientLabel,
   loadDataRequestsCtrl,
@@ -47,6 +50,21 @@ const DataRequestsVW = () => {
     setRequests((current) => current.map((item) => (item.id === id ? { ...item, ...result.data } : item)))
   }
 
+  const applyRequest = async (item) => {
+    const confirmed = window.confirm(
+      `${item.request_type}: se eliminarán los datos de contacto del paciente, se revocará su autorización y se dará de baja WhatsApp. ` +
+      'La historia clínica se conserva por obligación legal (15 años). Esta acción no se puede deshacer. ¿Continuar?',
+    )
+    if (!confirmed) return
+    const result = await applyDataRequestCtrl(item.id)
+    if (!result.ok) {
+      dispatch(showAlertModal({ message: `No se pudo aplicar la solicitud: ${result.message}`, variant: 'error' }))
+      return
+    }
+    dispatch(showAlertModal({ message: 'Solicitud aplicada. La historia clínica se conservó.', variant: 'success' }))
+    loadRequests()
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -79,13 +97,13 @@ const DataRequestsVW = () => {
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>Fecha</th><th>Paciente</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Actualizar</th></tr>
+              <tr><th>Fecha</th><th>Paciente</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Plazo</th><th>Actualizar</th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6"><LoaderVW text="Cargando solicitudes..." className="loader-inline" /></td></tr>
+                <tr><td colSpan="7"><LoaderVW text="Cargando solicitudes..." className="loader-inline" /></td></tr>
               ) : requests.length === 0 ? (
-                <tr><td colSpan="6" className="admin-empty">No hay solicitudes registradas.</td></tr>
+                <tr><td colSpan="7" className="admin-empty">No hay solicitudes registradas.</td></tr>
               ) : (
                 requests.map((item) => (
                   <tr key={item.id}>
@@ -95,7 +113,20 @@ const DataRequestsVW = () => {
                     <td>{item.description}</td>
                     <td><span className={`admin-pill ${item.status === 'Resuelta' ? 'good' : item.status === 'Rechazada' ? 'bad' : 'warn'}`}>{item.status}</span></td>
                     <td>
+                      {item.due_at ? (
+                        <span className={isDataRequestOverdue(item) ? 'admin-pill bad' : ''}>
+                          {new Date(item.due_at).toLocaleDateString('es-CO')}
+                          {isDataRequestOverdue(item) ? ' · vencida' : ''}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td>
                       <div className="admin-actions">
+                        {canApplyDataRequest(item) && (
+                          <button type="button" className="admin-btn danger" onClick={() => applyRequest(item)}>
+                            Aplicar {item.request_type === 'Supresión' ? 'supresión' : 'revocatoria'}
+                          </button>
+                        )}
                         <select
                           className="admin-input"
                           value={item.status}
