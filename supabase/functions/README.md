@@ -26,7 +26,7 @@ O desde el Dashboard: Edge Functions → Deploy a new function → pega el conte
 
 ## Configurar el secreto del webhook
 
-La función viene con un secreto de respaldo embebido (`7f4d51a4af8307b93ff8b54c27f6620d9373187cd65c3cd3`) solo para que funcione de inmediato. **Genera uno nuevo antes de usarlo en producción**:
+La función no tiene secreto de respaldo
 
 ```bash
 openssl rand -hex 24
