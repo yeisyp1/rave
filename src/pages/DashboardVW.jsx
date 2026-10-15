@@ -7,6 +7,8 @@ import {
 import {
   FiCalendar, FiCheck, FiCheckCircle, FiCreditCard, FiDollarSign, FiDownload, FiInfo, FiPercent, FiSliders, FiUserX, FiUsers, FiX,
 } from 'react-icons/fi'
+import { useProfile } from '../context/ProfileContext'
+import { isAssistant } from '../utils/roles'
 
 // Dashboard solo de interfaz: todos los datos son de demostración (sin conexión al backend).
 
@@ -265,6 +267,8 @@ const ChartBody = ({ kind, factor, gran, c }) => {
 /* ───────────── Página ───────────── */
 
 const Dashboard = () => {
+  const profile = useProfile()
+  const limited = isAssistant(profile)
   const dark = useDarkTheme()
   const c = CHART_COLORS[dark ? 'dark' : 'light']
   const stColor = { g: c.g, a: c.a, r: c.r }
@@ -332,6 +336,47 @@ const Dashboard = () => {
   const citas = CITAS.filter((r) => (!dentist || r[2] === dentist) && (!service || r[3] === service))
   const pagos = PAGOS.filter((p) => !service || p[2] === service)
   const widgets = [...kpis.map((k) => ({ key: k.id, label: 'KPI · ' + k.label })), ...CHARTS.map((ch) => ({ key: 'c_' + ch.id, label: 'Gráfico · ' + ch.title }))]
+
+  if (limited) {
+    return (
+      <div className="rv-dash">
+        <div className="rv-head">
+          <div>
+            <h1 className="rv-title">Dashboard</h1>
+            <div className="rv-sub">lunes, 5 de octubre de 2026 · Clínica Sonrisa Norte, Bogotá</div>
+          </div>
+        </div>
+
+        <div className="rv-lists rv-li">
+          <div className="rv-card">
+            <div className="rv-list-head"><h2>Citas de hoy</h2></div>
+            {citas.length === 0 && <div className="rv-list-empty"><strong>Sin citas programadas</strong><span>No hay citas para hoy.</span></div>}
+            {citas.map((r) => (
+              <div key={r[0]} className="rv-row">
+                <div className="rv-avatar brand">{initials(r[0])}</div>
+                <div className="rv-row-info"><div className="rv-row-name">{r[0]}</div><div className="rv-row-sub">{r[1]} · {DENTISTS[r[2]].split(' ').slice(0, 2).join(' ')}</div></div>
+                {r[6] && <span className="rv-wa" title="Confirmada por WhatsApp"><FiCheckCircle size={17} /></span>}
+                <div className="rv-time">{r[4]}</div>
+                <span className={`rv-pill ${CHIP[r[5]]}`}>{r[5]}</span>
+              </div>
+            ))}
+          </div>
+          <div className="rv-card">
+            <div className="rv-list-head"><h2>Pagos recientes</h2></div>
+            {pagos.length === 0 && <div className="rv-list-empty"><strong>Sin pagos recientes</strong><span>No hay pagos recientes.</span></div>}
+            {pagos.map((p) => (
+              <div key={p[0] + p[5]} className="rv-row">
+                <div className="rv-avatar">{initials(p[0])}</div>
+                <div className="rv-row-info"><div className="rv-row-name">{p[0]}</div><div className="rv-row-sub">{p[1]} · {p[5]}</div></div>
+                <div className="rv-amount">{p[3]}</div>
+                <span className={`rv-pill ${CHIP[p[4]]}`}>{p[4]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rv-dash" onClick={() => { setMenu(null); setRepOpen(false) }}>

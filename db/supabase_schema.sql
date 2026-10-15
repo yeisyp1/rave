@@ -1659,3 +1659,13 @@ create policy clinical_histories_select_staff on public.clinical_histories for s
 
 -- Las historias clinicas no se borran nunca (solo se anulan con motivo): sin politica de DELETE.
 drop policy clinical_histories_delete_admin on public.clinical_histories;
+
+
+----------------------
+
+create policy admin_select_all_profiles on public.profiles for select to authenticated
+  using ((select public.current_app_role()) = 'admin');
+
+create policy admin_update_any_profile on public.profiles for update to authenticated
+  using ((select public.current_app_role()) = 'admin')
+  with check ((select public.current_app_role()) = 'admin');

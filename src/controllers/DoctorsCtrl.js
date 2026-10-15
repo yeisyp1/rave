@@ -2,6 +2,7 @@ import {
   listAuthorizedUsersDAO,
   listStaffProfilesDAO,
   setAuthorizedUserActiveDAO,
+  syncProfileRoleDAO,
   upsertAuthorizedUserDAO,
 } from "../dao/DoctorsDAO";
 import { signInWithOtpDAO } from "../dao/AuthDAO";
@@ -41,7 +42,19 @@ export const authorizeUserCtrl = async (form) => {
 
   const { error } = await upsertAuthorizedUserDAO(payload);
   if (error) return { ok: false, message: `No se pudo autorizar el usuario: ${error.message}` };
-  return { ok: true, message: "Usuario autorizado. Cuando inicie sesion se validara contra su perfil." };
+
+  // Si ya tenia un profile (sesion previa), sincroniza su rol para que el cambio
+  // aplique de inmediato. Si aun no existe profile, no afecta ninguna fila y se
+  // validara normalmente contra authorized_emails en su primer login.
+  const { error: syncError } = await syncProfileRoleDAO(payload.email, payload.role);
+  if (syncError) {
+    return {
+      ok: true,
+      message: `Usuario autorizado, pero no se pudo sincronizar el rol de su sesion actual: ${syncError.message}. Se aplicara en su proximo inicio de sesion.`,
+    };
+  }
+
+  return { ok: true, message: "Usuario autorizado. Si ya tenia sesion, su rol se actualizo de inmediato." };
 };
 
 export const setAuthorizedUserActiveCtrl = async (id, active) => {

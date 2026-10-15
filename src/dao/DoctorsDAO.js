@@ -11,3 +11,7 @@ export const upsertAuthorizedUserDAO = (payload) =>
 
 export const setAuthorizedUserActiveDAO = (id, active) =>
   supabase.from("authorized_emails").update({ active }).eq("id", id);
+
+
+export const syncProfileRoleDAO = (email, role) =>
+  supabase.from("profiles").update({ role }).eq("email", email);
