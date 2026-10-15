@@ -5,12 +5,8 @@ const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-// Fallback used only until WEBHOOK_SHARED_SECRET is set as a Supabase Edge
-// Function secret (supabase secrets set WEBHOOK_SHARED_SECRET=...). Configure
-// Twilio's webhook URL with ?secret=<the value> so only Twilio can reach this
-// endpoint.
-const WEBHOOK_SHARED_SECRET =
-  Deno.env.get("WEBHOOK_SHARED_SECRET") ?? "7f4d51a4af8307b93ff8b54c27f6620d9373187cd65c3cd3";
+// Secreto compartido con Twilio:
+const WEBHOOK_SHARED_SECRET = Deno.env.get("WEBHOOK_SHARED_SECRET") ?? "";
 
 const normalizeDigits = (value: string) => value.replace(/\D/g, "");
 
@@ -30,7 +26,7 @@ const twimlResponse = (message: string) =>
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-  if (url.searchParams.get("secret") !== WEBHOOK_SHARED_SECRET) {
+  if (!WEBHOOK_SHARED_SECRET || url.searchParams.get("secret") !== WEBHOOK_SHARED_SECRET) {
     return new Response("Forbidden", { status: 403 });
   }
 
