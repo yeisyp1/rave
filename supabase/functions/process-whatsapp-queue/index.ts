@@ -5,55 +5,59 @@ const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-const TWILIO_WHATSAPP_FROM = Deno.env.get("TWILIO_WHATSAPP_FROM");
-const TWILIO_CONTENT_SID = Deno.env.get("TWILIO_CONTENT_SID");
+// WhatsApp Business Cloud API (Meta). Secrets: META_WA_TOKEN, META_WA_PHONE_NUMBER_ID y,
+// para recordatorios fuera de la ventana de 24 h, META_WA_TEMPLATE_NAME (plantilla aprobada).
+const META_WA_TOKEN = Deno.env.get("META_WA_TOKEN");
+const META_WA_PHONE_NUMBER_ID = Deno.env.get("META_WA_PHONE_NUMBER_ID");
+const META_WA_TEMPLATE_NAME = Deno.env.get("META_WA_TEMPLATE_NAME");
+const META_WA_TEMPLATE_LANG = Deno.env.get("META_WA_TEMPLATE_LANG") ?? "es";
+const META_API_VERSION = Deno.env.get("META_API_VERSION") ?? "v21.0";
 
-const isTwilioConfigured = Boolean(
-  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM,
-);
+const isMetaConfigured = Boolean(META_WA_TOKEN && META_WA_PHONE_NUMBER_ID);
 
-const normalizePhone = (phone: string) => {
-  const digits = phone.replace(/[^\d+]/g, "");
-  return digits.startsWith("+") ? digits : `+${digits}`;
-};
-
-const sendViaTwilio = async (
+const sendViaMeta = async (
   phone: string,
   body: string,
   variables?: Record<string, string> | null,
 ) => {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-  const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+  const to = phone.replace(/\D/g, "");
 
-  const params = new URLSearchParams({
-    To: `whatsapp:${normalizePhone(phone)}`,
-    From: `whatsapp:${normalizePhone(TWILIO_WHATSAPP_FROM!)}`,
-  });
+  // Fuera de la ventana de 24 h WhatsApp solo permite plantillas aprobadas.
+  const payload = META_WA_TEMPLATE_NAME && variables
+    ? {
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: META_WA_TEMPLATE_NAME,
+        language: { code: META_WA_TEMPLATE_LANG },
+        components: [{
+          type: "body",
+          parameters: Object.keys(variables)
+            .sort((x, y) => Number(x) - Number(y))
+            .map((key) => ({ type: "text", text: String(variables[key]) })),
+        }],
+      },
+    }
+    : { messaging_product: "whatsapp", to, type: "text", text: { body } };
 
-  // Fuera de la ventana de 24h WhatsApp solo permite plantillas aprobadas (ContentSid).
-  if (TWILIO_CONTENT_SID && variables) {
-    params.set("ContentSid", TWILIO_CONTENT_SID);
-    params.set("ContentVariables", JSON.stringify(variables));
-  } else {
-    params.set("Body", body);
-  }
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+  const response = await fetch(
+    `https://graph.facebook.com/${META_API_VERSION}/${META_WA_PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${META_WA_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: params,
-  });
+  );
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data?.message || `Twilio error ${response.status}`);
+    throw new Error(data?.error?.message || `Meta error ${response.status}`);
   }
-  return data.sid as string;
+  return data.messages?.[0]?.id as string;
 };
 
 Deno.serve(async (_req: Request) => {
@@ -100,11 +104,11 @@ Deno.serve(async (_req: Request) => {
     });
   }
 
-  if (!isTwilioConfigured) {
+  if (!isMetaConfigured) {
     const ids = queue.map((row) => row.id);
     await supabaseAdmin
       .from("whatsapp_messages")
-      .update({ status: "no_provider", error: "Twilio no configurado (faltan secrets)" })
+      .update({ status: "no_provider", error: "Meta WhatsApp no configurado (faltan secrets)" })
       .in("id", ids);
 
     return new Response(
@@ -118,7 +122,7 @@ Deno.serve(async (_req: Request) => {
 
   for (const message of queue) {
     try {
-      const providerMessageId = await sendViaTwilio(
+      const providerMessageId = await sendViaMeta(
         message.phone,
         message.body,
         message.template_variables,
