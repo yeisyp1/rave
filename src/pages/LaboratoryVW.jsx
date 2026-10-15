@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useProfile } from '../context/ProfileContext'
+import { isAdmin } from '../utils/roles'
 import {
   LABORATORY_EMPTY_FORM,
   computeLaboratoryStatsCtrl,
@@ -20,6 +22,8 @@ import '../styles/AdminViewsVW.css'
 
 const LaboratoryVW = () => {
   const dispatch = useDispatch()
+  const profile = useProfile()
+  const canDelete = isAdmin(profile)
   const [cases, setCases] = useState([])
   const [form, setForm] = useState(LABORATORY_EMPTY_FORM)
   const [patients, setPatients] = useState([])
@@ -250,7 +254,9 @@ const LaboratoryVW = () => {
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>Proceso</button>
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>Entregado</button>
                           <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
-                          <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar"><FiTrash2 /></button>
+                          {canDelete && (
+                            <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar"><FiTrash2 /></button>
+                          )}
                         </div>
                       </td>
                     </tr>

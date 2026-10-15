@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useProfile } from '../context/ProfileContext'
+import { isAdmin } from '../utils/roles'
 import {
   INVENTORY_EMPTY_FORM,
   adjustInventoryStockCtrl,
@@ -18,6 +20,8 @@ import '../styles/AdminViewsVW.css'
 
 const InventoryVW = () => {
   const dispatch = useDispatch()
+  const profile = useProfile()
+  const canWrite = isAdmin(profile)
   const [items, setItems] = useState([])
   const [form, setForm] = useState(INVENTORY_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
@@ -132,6 +136,7 @@ const InventoryVW = () => {
         </div>
       </div>
 
+      {canWrite && (
       <div className="admin-card">
         <h2 className="admin-card-title">Nuevo insumo</h2>
         <form className="admin-form full" onSubmit={addItem}>
@@ -178,25 +183,26 @@ const InventoryVW = () => {
         </form>
         {message && <p className="admin-message">{message}</p>}
       </div>
+      )}
 
       <div className="admin-card">
         <h2 className="admin-card-title">Existencias</h2>
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>Insumo</th><th>Categoria</th><th>Stock</th><th>Minimo</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th>Insumo</th><th>Categoria</th><th>Stock</th><th>Minimo</th><th>Estado</th>{canWrite && <th>Acciones</th>}</tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6"><LoaderVW text="Cargando inventario..." className="loader-inline" /></td></tr>
+                <tr><td colSpan={canWrite ? 6 : 5}><LoaderVW text="Cargando inventario..." className="loader-inline" /></td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan="6" className="admin-empty">No hay insumos registrados.</td></tr>
+                <tr><td colSpan={canWrite ? 6 : 5} className="admin-empty">No hay insumos registrados.</td></tr>
               ) : (
                 items.map((item) => {
                 const isLow = isInventoryItemLow(item)
                 const isEditing = editingId === item.id
 
-                if (isEditing) {
+                if (isEditing && canWrite) {
                   return (
                     <tr key={item.id}>
                       <td><input className="admin-input" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} /></td>
@@ -221,14 +227,16 @@ const InventoryVW = () => {
                     <td>{item.stock} {item.unit}</td>
                     <td>{item.min_stock} {item.unit}</td>
                     <td><span className={`admin-pill ${isLow ? 'bad' : 'good'}`}>{isLow ? 'Reponer' : 'Disponible'}</span></td>
-                    <td>
-                      <div className="admin-actions">
-                        <button className="admin-btn" type="button" onClick={() => adjustStock(item, -1)}>-1</button>
-                        <button className="admin-btn" type="button" onClick={() => adjustStock(item, 1)}>+1</button>
-                        <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
-                        <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar"><FiTrash2 /></button>
-                      </div>
-                    </td>
+                    {canWrite && (
+                      <td>
+                        <div className="admin-actions">
+                          <button className="admin-btn" type="button" onClick={() => adjustStock(item, -1)}>-1</button>
+                          <button className="admin-btn" type="button" onClick={() => adjustStock(item, 1)}>+1</button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                          <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar"><FiTrash2 /></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 )
               }))}

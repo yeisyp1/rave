@@ -17,6 +17,8 @@ import {
   updateTreatmentStatusCtrl,
 } from '../controllers/TreatmentPlansCtrl';
 import LoaderVW from './LoaderVW';
+import { useProfile } from '../context/ProfileContext';
+import { isClinicalStaff } from '../utils/roles';
 
 const today = () => {
   const tzOffset = new Date().getTimezoneOffset() * 60000;
@@ -38,6 +40,8 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString('es-CO
 // (materiales de inventario que consume cada tratamiento).
 const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
   const dispatch = useDispatch();
+  const profile = useProfile();
+  const canEdit = isClinicalStaff(profile);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ plans: [], unplannedTreatments: [], catalog: [], inventoryItems: [], histories: [] });
   const [showNewPlan, setShowNewPlan] = useState(false);
@@ -222,13 +226,15 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
     <div className="pd-section">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
         <h3 className="pd-section-title" style={{ margin: 0 }}>Planes de tratamiento</h3>
-        <button className="pd-btn-action-primary" type="button" onClick={openNewPlan} disabled={showNewPlan}>
-          <FiPlus size={14} />
-          Nuevo plan
-        </button>
+        {canEdit && (
+          <button className="pd-btn-action-primary" type="button" onClick={openNewPlan} disabled={showNewPlan}>
+            <FiPlus size={14} />
+            Nuevo plan
+          </button>
+        )}
       </div>
 
-      {showNewPlan && (
+      {canEdit && showNewPlan && (
         data.histories.length === 0 ? (
           <p className="pd-info-value">
             El paciente no tiene historias clínicas vigentes. Registra una en la pestaña "Historial médico" antes de crear el plan.
@@ -280,7 +286,7 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
               <span className={`pd-pill ${PLAN_PILL[plan.status]}`}>{plan.status}</span>
             </div>
 
-            {editingPlanId === plan.id ? (
+            {editingPlanId === plan.id && canEdit ? (
               <form className="pd-plan-form" onSubmit={submitEditPlan}>
                 <label className="pd-info-label">Título</label>
                 <input value={editPlanForm.title} onChange={(event) => setEditPlanForm({ ...editPlanForm, title: event.target.value })} />
@@ -309,14 +315,14 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
                   {plan.consents[0].patient_signature_name} · {new Date(plan.consents[0].signed_at).toLocaleString('es-CO')}
                 </span>
               )}
-              {isOpen && consentPlanId !== plan.id && (
+              {canEdit && isOpen && consentPlanId !== plan.id && (
                 <button type="button" className="pd-link-button" onClick={() => { setConsentPlanId(plan.id); setConsentForm(EMPTY_CONSENT_FORM); }}>
                   Registrar consentimiento
                 </button>
               )}
             </div>
 
-            {consentPlanId === plan.id && (
+            {canEdit && consentPlanId === plan.id && (
               <form className="pd-plan-form" onSubmit={(event) => submitConsent(event, plan)}>
                 <label className="pd-info-label">Información presentada al paciente</label>
                 <textarea rows={3} value={consentForm.content} onChange={(event) => setConsentForm({ ...consentForm, content: event.target.value })} placeholder="Procedimientos del plan, riesgos, alternativas y costos explicados." />
@@ -334,9 +340,9 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
               </form>
             )}
 
-            {renderTreatmentsTable(plan.treatments, isOpen)}
+            {renderTreatmentsTable(plan.treatments, isOpen && canEdit)}
 
-            {isOpen && (
+            {canEdit && isOpen && (
               <form className="pd-inline-form pd-treatment-form" onSubmit={(event) => submitTreatment(event, plan)}>
                 <select
                   value={treatmentForm.procedure_catalog_id}
@@ -360,19 +366,21 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
               </form>
             )}
 
-            <div className="pd-history-actions">
-              {isOpen ? (
-                <>
-                  <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => startEditPlan(plan)}>Editar</button>
-                  <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => closePlan(plan)} disabled={busy}>Cerrar plan</button>
-                  <button type="button" className="pd-history-action pd-history-action-delete" onClick={() => cancelPlan(plan)} disabled={busy}>Cancelar plan</button>
-                </>
-              ) : (
-                <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => run(() => reopenTreatmentPlanCtrl(plan.id))} disabled={busy}>
-                  Reabrir plan
-                </button>
-              )}
-            </div>
+            {canEdit && (
+              <div className="pd-history-actions">
+                {isOpen ? (
+                  <>
+                    <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => startEditPlan(plan)}>Editar</button>
+                    <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => closePlan(plan)} disabled={busy}>Cerrar plan</button>
+                    <button type="button" className="pd-history-action pd-history-action-delete" onClick={() => cancelPlan(plan)} disabled={busy}>Cancelar plan</button>
+                  </>
+                ) : (
+                  <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => run(() => reopenTreatmentPlanCtrl(plan.id))} disabled={busy}>
+                    Reabrir plan
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
@@ -382,7 +390,7 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
           <div className="pd-plan-header">
             <h4>Tratamientos sin plan</h4>
           </div>
-          {renderTreatmentsTable(data.unplannedTreatments, true)}
+          {renderTreatmentsTable(data.unplannedTreatments, canEdit)}
         </div>
       )}
     </div>
