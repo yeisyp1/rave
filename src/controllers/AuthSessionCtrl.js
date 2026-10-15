@@ -73,6 +73,24 @@ export function useAuthSessionCtrl() {
   useEffect(() => {
     let mounted = true;
 
+
+    const refreshProfile = async () => {
+      const { data } = await supabase.auth.getSession();
+      const u = data.session?.user;
+      if (!u || !mounted) return;
+
+      const prof = await fetchProfileForUser(u);
+      if (prof && mounted) setProfile(prof);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refreshProfile();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", refreshProfile);
+    const intervalId = window.setInterval(refreshProfile, 60000);
+
     const handleSession = async (session) => {
       if (!session || !session.user) {
         if (mounted) {
@@ -146,6 +164,9 @@ export function useAuthSessionCtrl() {
     return () => {
       mounted = false;
       listener.subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", refreshProfile);
+      window.clearInterval(intervalId);
     };
   }, []);
 
