@@ -44,9 +44,9 @@ const verifySignature = async (rawBody: string, header: string | null) => {
 };
 
 // Responde dentro de la ventana de 24 h abierta por el mensaje del paciente.
-const sendText = async (to: string, body: string) => {
+const sendText = async (phoneNumberId: string, to: string, body: string) => {
   const response = await fetch(
-    `https://graph.facebook.com/${META_API_VERSION}/${META_WA_PHONE_NUMBER_ID}/messages`,
+    `https://graph.facebook.com/${META_API_VERSION}/${phoneNumberId}/messages`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${META_WA_TOKEN}`, "Content-Type": "application/json" },
@@ -54,7 +54,7 @@ const sendText = async (to: string, body: string) => {
     },
   );
   if (!response.ok) {
-    console.error("No se pudo responder por WhatsApp:", await response.text());
+    console.error("No se pudo responder por WhatsApp:", response.status, await response.text());
   }
 };
 
@@ -194,7 +194,9 @@ Deno.serve(async (req: Request) => {
           ]);
 
           const reply = await handleIncoming(phoneDigits, body);
-          await sendText(phoneDigits, reply);
+          // Se responde desde el mismo numero al que escribio el paciente (viene en el evento).
+          const senderId = String(change?.value?.metadata?.phone_number_id || META_WA_PHONE_NUMBER_ID);
+          await sendText(senderId, phoneDigits, reply);
         } catch (err) {
           console.error("Error procesando mensaje entrante:", err);
         }
