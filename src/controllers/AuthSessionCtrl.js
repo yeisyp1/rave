@@ -115,13 +115,14 @@ export function useAuthSessionCtrl() {
         // before taking action (useful in dev environments).
         try {
           console.warn('Usuario autenticado pero sin profile:', u.email, 'uid:', u.id);
-        } catch (e) {
+        } catch {
+          // ignore
         }
 
         // Mark a flag so the login page can show a message and sign out.
         try {
           localStorage.setItem('no_autorizado', '1');
-        } catch (e) {
+        } catch {
           // ignore
         }
 

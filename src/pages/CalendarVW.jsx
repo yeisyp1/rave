@@ -19,7 +19,6 @@ import {
   syncGoogleEventsCtrl,
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
-import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
 import ModalViewEventVW from '../modals/ModalViewEventVW'
 

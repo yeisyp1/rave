@@ -7,21 +7,21 @@ import { createBillingInvoiceCtrl, loadBillableProceduresCtrl } from '../control
 import { loadPatientsCtrl } from '../controllers/PatientsCtrl';
 import { showAlertModal } from '../app/store';
 
+const getLocalDate = () => {
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    return new Date(Date.now() - tzOffset).toISOString().slice(0, 10);
+};
+
 const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
     const dispatch = useDispatch();
     const [patients, setPatients] = useState([]);
 
-    const getLocalDate = () => {
-        const tzOffset = new Date().getTimezoneOffset() * 60000;
-        return new Date(Date.now() - tzOffset).toISOString().slice(0, 10);
-    };
-
-    const [form, setForm] = useState({
+    const [form, setForm] = useState(() => ({
         patientDocument: '',
         patientName: '',
         date: getLocalDate(),
         notes: '',
-    });
+    }));
 
     const [saving, setSaving] = useState(false);
     const [billableProcedures, setBillableProcedures] = useState([]);

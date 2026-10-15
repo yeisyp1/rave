@@ -14,6 +14,8 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
 
   useEffect(() => {
     if (!invoice) return
+    // Sincroniza el formulario con la factura seleccionada (prop externa).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       patient: invoice.patient || '',
       date: (invoice.date || '').slice(0, 10),
