@@ -406,3 +406,81 @@
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
 }
+
+/* Tarjeta de configuración de la integración de WhatsApp */
+.wa-config {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: .5rem;
+}
+
+.wa-config-title {
+  margin: 0 0 .5rem;
+  font-size: .95rem;
+  color: var(--text-primary);
+}
+
+.wa-config-text {
+  margin: .35rem 0;
+  font-size: .85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.wa-config-text code,
+.wa-config-list code,
+.wa-config-url code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8rem;
+}
+
+.wa-config-url {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: .5rem .6rem;
+  overflow-x: auto;
+}
+
+.wa-config-url code {
+  color: var(--button-primary, #1562b9);
+  white-space: nowrap;
+}
+
+.wa-config-list {
+  list-style: none;
+  margin: .25rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.wa-config-list li {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.wa-config-list li code {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.wa-config-list li span {
+  font-size: .8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.wa-config-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: .25rem;
+}
+
+.wa-config-links .admin-btn {
+  text-decoration: none;
+}

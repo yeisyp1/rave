@@ -18,6 +18,7 @@ import {
   FiImage,
   FiSave,
   FiShield,
+  FiDownload,
 } from 'react-icons/fi'
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
@@ -26,6 +27,7 @@ import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW';
 import { usePatientModal } from '../hooks/usePatientModal';
 import LoaderVW from '../components/LoaderVW';
 import TreatmentPlansVW from '../components/TreatmentPlansVW';
+import { generateConsentPdf } from '../utils/consentPdf';
 import { useProfile } from '../context/ProfileContext';
 import { isClinicalStaff } from '../utils/roles';
 import '../styles/PatientDetailVW.css';
@@ -61,6 +63,8 @@ const PatientDetailVW = () => {
     fetchPatientData();
     // Bitacora de acceso a datos de salud (Ley 2015 de 2020); un fallo no bloquea la ficha.
     logPatientAccessDAO(patientId, 'ficha').catch((error) => console.error('No se pudo registrar el acceso:', error));
+    // Recarga solo al cambiar de paciente; fetchPatientData es estable para este efecto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
   const fetchPatientData = async () => {
@@ -509,6 +513,7 @@ const PatientDetailVW = () => {
 
             <TreatmentPlansVW
               patientId={patientId}
+              patient={patient}
               onConsentRegistered={(consent) => setConsents((current) => [consent, ...current])}
             />
           </div>
@@ -613,6 +618,15 @@ const PatientDetailVW = () => {
                         {consent.treatment_plans?.title && <span><b>Plan de tratamiento:</b> {consent.treatment_plans.title}</span>}
                         {consent.aceptado === false && <span><b>Decisión:</b> El paciente no aceptó el tratamiento</span>}
                         <span>{consent.content}</span>
+                      </div>
+                      <div className="pd-history-actions">
+                        <button
+                          type="button"
+                          className="pd-history-action pd-history-action-edit"
+                          onClick={() => generateConsentPdf(consent, patient, consent.treatment_plans?.title)}
+                        >
+                          <FiDownload size={13} /> PDF
+                        </button>
                       </div>
                     </div>
                   ))}

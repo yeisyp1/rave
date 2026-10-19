@@ -2190,3 +2190,22 @@ where not exists (select 1 from public.legal_documents where doc_type = 'autoriz
 alter table public.whatsapp_messages drop constraint if exists whatsapp_messages_status_check;
 alter table public.whatsapp_messages add constraint whatsapp_messages_status_check
   check (status = any (array['pending'::text,'sent'::text,'failed'::text,'received'::text,'no_provider'::text,'skipped'::text]));
+
+
+----------------------
+
+-- Migracion appointment_attendance_states (2026-10-18).
+-- CU: registro de asistencia de la cita. El boton "No asistio" del calendario
+-- (CalendarVW -> markAppointmentNoShowByGoogleIdDAO) escribe status = 'No asistida',
+-- valor que el CHECK anterior no permitia: cada clic fallaba. Se agregan los
+-- estados de asistencia 'No asistida' y 'Atendida'.
+alter table public.appointments drop constraint if exists appointments_status_check;
+alter table public.appointments add constraint appointments_status_check
+  check (status = any (array[
+    'Solicitada'::text,
+    'Confirmada'::text,
+    'Cancelación solicitada'::text,
+    'Cancelada'::text,
+    'No asistida'::text,
+    'Atendida'::text
+  ]));

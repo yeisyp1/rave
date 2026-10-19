@@ -1,16 +1,60 @@
-# React + Vite
+# RAVE — Sistema de gestión odontológica
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema web de gestión para **RAVE Odontología Integral y Estética**, consultorio
+odontológico independiente en Cali. Es también el proyecto de grado de Yeisy
+Paola Angulo. Lo usa únicamente el personal del consultorio (administración,
+atención clínica, agenda, facturación, historias clínicas); no hay portal de
+autoservicio para pacientes.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend:** React 18 + Vite, React Router v7, Redux Toolkit
+- **Datos/Auth:** Supabase (Postgres + Auth + RLS), Google OAuth con lista blanca
+  de correos (`authorized_emails`)
+- **Agenda:** `react-big-calendar` + `moment` · **Odontograma:** `react-odontogram-editor-modul`
+- **PDFs:** `jspdf` (facturas y consentimientos) · **Gráficos:** `recharts`
+- **WhatsApp:** Supabase Edge Functions sobre la Cloud API de Meta (`supabase/functions/`)
+- **Lint:** ESLint · **Tests:** Vitest
 
-## React Compiler
+## Arquitectura
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Patrón por capas: `pages/` (vistas, sufijo `VW`) → `controllers/` (lógica de
+negocio) → `dao/` (acceso a Supabase) → Supabase. Ver [`Context`](./Context)
+para el detalle completo del proyecto, roles y trabajo pendiente.
 
-## Expanding the ESLint configuration
+## Puesta en marcha
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Requisitos: Node 20+ y un proyecto Supabase.
+
+```bash
+npm install
+cp .env.example .env   # completa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
+npm run dev
+```
+
+El esquema de la base de datos está en [`db/supabase_schema.sql`](./db/supabase_schema.sql).
+
+## Scripts
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo (Vite) |
+| `npm run build` | Build de producción |
+| `npm run preview` | Previsualiza el build |
+| `npm run lint` | ESLint |
+| `npm test` | Pruebas unitarias (Vitest) |
+| `npm run test:watch` | Pruebas en modo watch |
+
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `VITE_SUPABASE_URL` | URL del proyecto Supabase |
+| `VITE_SUPABASE_ANON_KEY` | Clave pública (anon) de Supabase |
+
+No subas `.env` ni secretos. Los secrets de WhatsApp/Meta se configuran en
+Supabase (Edge Functions → Secrets); ver [`supabase/functions/README.md`](./supabase/functions/README.md).
+
+## Repositorio
+
+https://github.com/yeisyp1/rave

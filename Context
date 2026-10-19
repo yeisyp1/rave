@@ -25,11 +25,12 @@ ortodoncia, blanqueamiento dental, endodoncia.
   autorizados (tabla `authorized_emails`)
 - Calendario/agenda: `react-big-calendar`, `moment`
 - Odontograma: módulo externo `react-odontogram-editor-modul`
-- PDFs (facturas, documentos): `jspdf`
-- Hay dependencias de `express`, `googleapis` y `jsonwebtoken` en package.json
-  — revisar si corresponden a un backend/servicio aparte (ej. integración con
-  Google Calendar) antes de asumir que todo es frontend puro.
-- Lint: ESLint (`npm run lint`)
+- PDFs (facturas `src/utils/invoicePdf.js`, consentimientos
+  `src/utils/consentPdf.js`): `jspdf`
+- Gráficos del dashboard: `recharts`
+- Mensajería WhatsApp: Supabase Edge Functions (`supabase/functions/`) sobre la
+  Cloud API de Meta; no es un backend Node aparte. El frontend es React puro.
+- Lint: ESLint (`npm run lint`). Tests: Vitest (`npm test`).
 
 ## 3. Arquitectura del código (src/)
 
@@ -68,38 +69,68 @@ políticas de RLS en cualquier tabla, ten cuidado con ese mismo patrón
 
 ## 5. Roles y control de acceso
 
-Estado real en el código hoy: `profiles.role` y `authorized_emails.role`
-solo aceptan los valores `admin` y `user` (constraint CHECK en la BD).
-`AppRouter.jsx` solo distingue admin vs. no-admin (`AdminRoute`) para proteger
-`/billing`, `/documentation`, `/laboratory`, `/inventory`, `/doctors`.
+Estado real en el código hoy (actualizado 2026-10-18): los 3 roles de la tesis
+ya existen. `profiles.role` y `authorized_emails.role` aceptan `admin`,
+`dentist` y `assistant` (constraint CHECK en la BD). Los helpers viven en
+`src/utils/roles.js` (`isAdmin`, `isDentist`, `isAssistant`, `isClinicalStaff`,
+`isStaff`).
 
-Estado deseado según la tesis: 3 roles — Administrador, Odontólogo,
-Asistente — con el Asistente también habilitado para gestionar historias
-clínicas (decisión de negocio ya tomada). **Hoy esa distinción de 3 roles
-NO existe en el código**: todo lo que no es admin cae en "user" genérico.
-Separar Odontólogo/Asistente (nuevo valor de rol, o tabla/campo adicional,
-y ajustar rutas + políticas RLS) es trabajo pendiente, no algo ya resuelto.
+`AppRouter.jsx` usa dos guardas:
+- `AdminRoute` (solo admin): `/billing`, `/documentation`, `/reports`,
+  `/plantillas`, `/solicitudes-datos`, `/whatsapp-solicitudes`, `/doctors`,
+  `/settings`.
+- `ClinicalRoute` (admin + dentist, vía `isClinicalStaff`): `/laboratory`,
+  `/inventory`.
+
+OJO con la edición clínica: en los componentes (`PatientDetailVW`,
+`ModalHistoriaClinicaVW`, `TreatmentPlansVW`) `canEdit = isClinicalStaff(profile)`,
+y `isClinicalStaff` = admin + dentist **únicamente**. El Asistente NO puede
+editar historias clínicas ni planes. Esto es una **decisión deliberada** del
+código: la migración `role_based_policies_private_radiographies` (2026-10-01)
+en `db/supabase_schema.sql` restringe `clinical_histories`, `radiographies`,
+`informed_consents` y `patient_procedures` a `admin`/`dentist` con el comentario
+explícito "la asistente no accede". Esto **contradice** lo que la tesis pedía
+(Asistente habilitado para historias clínicas). Es un conflicto de decisión de
+negocio/legal (datos médicos, Ley 1581): NO cambiar a la ligera. Si se decide
+habilitar al Asistente hay que tocar tanto `roles.js` como esas políticas RLS.
 
 ## 6. Módulos/páginas existentes
 
-Dashboard, Pacientes (lista + detalle), Historia clínica, Odontograma,
-Calendario/Agenda (agendar cita), Facturación (billing, solo admin),
-Laboratorio (solo admin), Inventario (solo admin), Doctores (solo admin),
-Documentación (solo admin), Login, flujo de OAuth/consentimiento, páginas
-públicas (home, política de privacidad), acciones de acceso (crear/recuperar/
-restablecer contraseña).
+Dashboard (datos reales de Supabase vía `DashboardCtrl`), Pacientes (lista +
+detalle), Historia clínica, Odontograma, Calendario/Agenda (agendar cita),
+Planes de tratamiento + consentimiento informado (dentro del detalle de
+paciente, `components/TreatmentPlansVW.jsx`), Facturación (solo admin),
+Reportes (solo admin), Laboratorio e Inventario (admin + dentist),
+Doctores, Documentación, Plantillas de mensajes, Solicitudes de datos
+(Ley 1581), Solicitudes por WhatsApp, Configuración (todos solo admin),
+Login, flujo de OAuth/consentimiento, páginas públicas (home, política de
+privacidad), acciones de acceso (crear/recuperar/restablecer contraseña).
 
 ## 7. Trabajo pendiente por implementar de verdad (no solo documentado en la tesis)
 
-- **Planes y tratamientos**: módulo aún no codificado.
-- **Recordatorios/confirmaciones de citas por WhatsApp** (RF-36/RF-37/RF-38
-  del documento de tesis): planeado, sin implementar.
-- **Consentimiento informado** (Ley 527 de 1999): falta el caso de uso en
-  código, más allá del flujo de OAuth consent que ya existe (que es otra cosa).
-- **Solicitudes/rectificación de datos personales** (Ley 1581 de 2012): falta
-  implementar.
-- **Separación real de roles Odontólogo/Asistente** (ver sección 5), incluyendo
-  que el Asistente pueda gestionar historias clínicas.
+Actualizado 2026-10-18. Mucho de lo que este archivo daba por pendiente ya está
+codificado (planes/tratamientos, consentimiento informado con PDF, WhatsApp,
+solicitudes de datos, 3 roles). Lo que sigue pendiente de verdad:
+
+- **Decisión pendiente: ¿el Asistente debe gestionar historias clínicas?** Hoy
+  NO puede (decisión deliberada en RLS, ver sección 5) y eso contradice la
+  tesis. Requiere decisión de negocio antes de tocar `roles.js` + RLS.
+- **Ocupación de agenda estimada**: no hay configuración de capacidad/horas por
+  profesional, así que el Dashboard **deriva** la ocupación (marcada con `*`).
+  Para tenerla real hay que modelar la capacidad de la agenda.
+- **Asistencia de citas (parcialmente resuelto)**: la tabla `appointments` ahora
+  admite `No asistida` y `Atendida` (migración `appointment_attendance_states`,
+  2026-10-18, al final de `db/supabase_schema.sql` — **recuerda aplicarla** en
+  Supabase). Con eso se corrigió el bug del botón "No asistió" del calendario, y
+  el Dashboard usa ausentismo y citas atendidas/no-show **reales** cuando existen
+  esos estados, cayendo a la estimación solo si aún no hay asistencia registrada.
+- **Configuración de WhatsApp**: el código está desplegado (Edge Functions +
+  Meta Cloud API); falta cargar los secrets en Supabase y registrar el webhook
+  en Meta (la página `/whatsapp-solicitudes` documenta los pasos). Ver
+  `supabase/functions/README.md`.
+- **Calidad de ingeniería**: ya hay CI (`.github/workflows/ci.yml`: lint + tests
+  + build en cada push/PR a main) y el `README.md` documenta el proyecto. Queda
+  como opcional migrar a TypeScript (hoy es JS puro).
 
 Al pedirle a Claude Code que implemente cualquiera de estos, pega el texto
 exacto del requerimiento funcional (RF-xx) tal como está en el documento de

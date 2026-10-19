@@ -157,6 +157,8 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       window.setTimeout(() => restoreOdontogramState(initialHistory.odontograma), 0);
     }
     fetchRadiographies(initialHistory.id);
+    // Se recarga al cambiar la historia seleccionada; fetchRadiographies es estable aquí.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialHistory]);
 
   useEffect(() => {
@@ -179,6 +181,8 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     if (!patient?.id) return;
     fetchHistories();
     fetchCityDepartments();
+    // Se recarga al cambiar de paciente; las funciones de carga son estables aquí.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patient?.id]);
 
   const fetchHistories = async () => {

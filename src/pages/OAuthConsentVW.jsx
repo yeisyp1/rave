@@ -26,7 +26,8 @@ export default function OAuthConsent() {
     };
 
     handleOAuth();
-
+    // Corre una sola vez al montar para resolver el callback de OAuth.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

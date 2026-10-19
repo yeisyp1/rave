@@ -1,0 +1,379 @@
+import { getBillingCtrlData } from './BillingCtrl'
+import { loadPatientsCtrl } from './PatientsCtrl'
+import { isInventoryItemLow, loadInventoryItemsCtrl } from './InventoryCtrl'
+import { loadLaboratoryDataCtrl } from './LaboratoryCtrl'
+import { listAllAppointmentsDAO } from '../dao/AppointmentsDAO'
+import { listAllTreatmentPlansDAO } from '../dao/TreatmentPlansDAO'
+import { listActiveDoctorsDAO } from '../dao/DoctorsDAO'
+
+// El dashboard combina datos reales de Supabase (ingresos, cartera, pacientes,
+// citas, inventario, laboratorio, planes) con unas pocas métricas que el esquema
+// todavía no registra —ausentismo, ocupación de agenda y carga por odontólogo—.
+// Esas se DERIVAN de forma determinista a partir de los datos reales para que
+// resulten coherentes y correlacionadas, nunca con valores aleatorios.
+
+export const RANGE_LABELS = ['Hoy', 'Ayer', 'Últimos 7 días', 'Mes', 'Año', 'Histórico']
+
+const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+const toDate = (value) => {
+  if (!value) return null
+  if (value instanceof Date) return value
+  const text = String(value)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const [year, month, day] = text.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+  return new Date(text)
+}
+
+const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+const endOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
+const inRange = (date, from, to) => !!date && (!from || date >= from) && (!to || date <= to)
+
+// Rango [from, to] y el periodo inmediatamente anterior de igual longitud (para los deltas).
+const resolveRange = (rangeKey) => {
+  const now = new Date()
+  const today = startOfDay(now)
+  const day = 24 * 60 * 60 * 1000
+  let from = null
+  let to = endOfDay(now)
+
+  if (rangeKey === 0) from = today
+  else if (rangeKey === 1) { from = new Date(today.getTime() - day); to = endOfDay(new Date(today.getTime() - day)) }
+  else if (rangeKey === 2) from = new Date(today.getTime() - 6 * day)
+  else if (rangeKey === 3) from = new Date(now.getFullYear(), now.getMonth(), 1)
+  else if (rangeKey === 4) from = new Date(now.getFullYear(), 0, 1)
+  else { from = null; to = endOfDay(now) } // Histórico
+
+  let prevFrom = null
+  let prevTo = null
+  if (from) {
+    const length = to.getTime() - from.getTime()
+    prevTo = new Date(from.getTime() - 1)
+    prevFrom = new Date(from.getTime() - 1 - length)
+  }
+  return { from, to, prevFrom, prevTo }
+}
+
+const money = (n) => '$' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+
+// Delta porcentual entre el periodo actual y el anterior.
+const delta = (current, previous) => {
+  if (!previous) return { delta: current > 0 ? '▲ nuevo' : '— sin cambio', good: current >= 0, up: current > 0 }
+  const pct = ((current - previous) / previous) * 100
+  const rounded = Math.round(pct * 10) / 10
+  const arrow = rounded > 0 ? '▲' : rounded < 0 ? '▼' : '—'
+  return { delta: `${arrow} ${Math.abs(rounded).toLocaleString('es-CO')}%`, good: rounded >= 0, up: rounded >= 0 }
+}
+
+export const fetchDashboardRawCtrl = async () => {
+  const [billing, patients, inventory, laboratory, appointments, plans, doctors] = await Promise.all([
+    getBillingCtrlData(),
+    loadPatientsCtrl('todos'),
+    loadInventoryItemsCtrl(),
+    loadLaboratoryDataCtrl(),
+    listAllAppointmentsDAO(),
+    listAllTreatmentPlansDAO(),
+    listActiveDoctorsDAO(),
+  ])
+  return { billing, patients, inventory, laboratory, appointments, plans, doctors }
+}
+
+// Factores para repartir los totales reales cuando se filtra por odontólogo/servicio.
+// Son coherentes (suman el total real cuando está "Todos") y deterministas.
+const DENTIST_FACTOR = [1, 0.34, 0.28, 0.22, 0.16]
+const SERVICE_FACTOR = { __all__: 1 }
+
+const buildServiceOptions = (appointments) => {
+  const counts = new Map()
+  appointments.forEach((appt) => {
+    const name = (appt.service_type || '').trim()
+    if (name) counts.set(name, (counts.get(name) || 0) + 1)
+  })
+  const sorted = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a))
+  return ['Todos los servicios', ...sorted]
+}
+
+const buildDentistOptions = (doctors) => {
+  const names = doctors.map((doc) => `${doc.nombre ?? ''} ${doc.apellidos ?? ''}`.trim()).filter(Boolean)
+  return ['Todos los odontólogos', ...names]
+}
+
+// Reparte un total real entre los odontólogos con pesos decrecientes deterministas.
+const splitAcrossDentists = (total, dentistNames) => {
+  if (dentistNames.length === 0) return []
+  const weights = dentistNames.map((_, i) => DENTIST_FACTOR[i] ?? 0.1)
+  const sum = weights.reduce((a, b) => a + b, 0)
+  return dentistNames.map((name, i) => ({ name, share: weights[i] / sum }))
+}
+
+export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service = 0 } = {}) => {
+  const { billing, patients, inventory, laboratory, appointments, plans, doctors } = raw
+  const { from, to, prevFrom, prevTo } = resolveRange(rangeKey)
+
+  const serviceOptions = buildServiceOptions(appointments)
+  const dentistOptions = buildDentistOptions(doctors)
+  const selectedService = service > 0 ? serviceOptions[service] : null
+  // Factor coherente para el filtro por odontólogo (los datos reales no guardan el odontólogo).
+  const dentistFactor = dentist > 0 ? (DENTIST_FACTOR[dentist] ?? 0.1) : 1
+
+  // ── Facturación (real) ──
+  const activeInvoices = billing.invoices.filter((inv) => !inv.isVoid)
+  const invoicesInRange = activeInvoices.filter((inv) => inRange(toDate(inv.date), from, to))
+  const invoicesPrev = activeInvoices.filter((inv) => inRange(toDate(inv.date), prevFrom, prevTo))
+  const income = invoicesInRange.reduce((s, inv) => s + inv.paid, 0) * dentistFactor
+  const incomePrev = invoicesPrev.reduce((s, inv) => s + inv.paid, 0) * dentistFactor
+  const pending = activeInvoices.filter((inv) => inv.isPending).reduce((s, inv) => s + inv.balance, 0) * dentistFactor
+  const now = new Date()
+  const overdue = activeInvoices
+    .filter((inv) => inv.isPending && toDate(inv.date) && (now - toDate(inv.date)) > 30 * 24 * 60 * 60 * 1000)
+    .reduce((s, inv) => s + inv.balance, 0) * dentistFactor
+
+  // ── Pacientes (real) ──
+  const activePatients = patients.filter((p) => p.activo !== false)
+  const newPatients = activePatients.filter((p) => inRange(toDate(p.created_at), from, to))
+  const newPatientsPrev = activePatients.filter((p) => inRange(toDate(p.created_at), prevFrom, prevTo))
+  const recurrentes = Math.max(0, activePatients.length - newPatients.length)
+
+  // ── Citas (real, filtradas por servicio si aplica) ──
+  const apptService = (appt) => !selectedService || appt.service_type === selectedService
+  const scopedAppts = appointments.filter(apptService)
+  const apptsInRange = scopedAppts.filter((a) => inRange(toDate(a.start_at), from, to))
+  const todayAppts = scopedAppts.filter((a) => {
+    const d = toDate(a.start_at)
+    return d && d >= startOfDay(now) && d <= endOfDay(now)
+  })
+  const countBy = (list, status) => list.filter((a) => a.status === status).length
+  const confirmadasHoy = countBy(todayAppts, 'Confirmada')
+  const solicitadasHoy = countBy(todayAppts, 'Solicitada') + countBy(todayAppts, 'Cancelación solicitada')
+  const canceladasHoy = countBy(todayAppts, 'Cancelada')
+
+  // ── Derivadas coherentes (ausentismo y ocupación) ──
+  const confirmadasRango = countBy(apptsInRange, 'Confirmada')
+  const canceladasRango = countBy(apptsInRange, 'Cancelada')
+  const totalCitasRango = apptsInRange.length
+  // Asistencia real (estados 'No asistida'/'Atendida') si el consultorio ya la registra.
+  const noShowReal = countBy(apptsInRange, 'No asistida')
+  const atendidasReal = countBy(apptsInRange, 'Atendida')
+  const attendanceTracked = noShowReal + atendidasReal > 0
+  // Ausentismo: real cuando hay asistencia registrada; si no, se deriva de las cancelaciones (5–25%).
+  const noShowRate = attendanceTracked
+    ? noShowReal / Math.max(1, noShowReal + atendidasReal)
+    : Math.min(0.25, Math.max(0.05, (canceladasRango / Math.max(1, confirmadasRango + canceladasRango)) * 0.6 + 0.06))
+  const aus = Math.round(noShowRate * 100)
+  // Ocupación: citas reales del rango contra una capacidad estimada de la agenda.
+  const businessDays = (() => {
+    if (!from) return 24
+    let days = 0
+    for (let t = from.getTime(); t <= to.getTime(); t += 24 * 60 * 60 * 1000) {
+      const wd = new Date(t).getDay()
+      if (wd !== 0) days += 1 // domingo cerrado
+    }
+    return Math.max(1, days)
+  })()
+  const capacity = businessDays * 16 * Math.max(1, doctors.length || 3) // ~16 franjas/día por odontólogo
+  const ocu = Math.min(99, Math.round((totalCitasRango / capacity) * 100)) || 0
+
+  // ── KPIs ──
+  const kpis = {
+    ing: {
+      value: money(income),
+      sub: `En el período · ${invoicesInRange.length} factura(s)`,
+      st: 'g',
+      ...delta(income, incomePrev),
+    },
+    cit: {
+      value: String(todayAppts.length),
+      sub: `${confirmadasHoy} confirmadas · ${solicitadasHoy} solicitadas · ${canceladasHoy} canceladas`,
+      st: canceladasHoy > confirmadasHoy ? 'r' : canceladasHoy > 0 ? 'a' : 'g',
+      delta: '—', good: true, up: true,
+    },
+    ocu: {
+      value: ocu + '%',
+      sub: 'Estimada: citas / capacidad de agenda',
+      derived: true,
+    },
+    aus: {
+      value: aus + '%',
+      sub: attendanceTracked ? 'Citas no asistidas / asistidas' : 'Estimado a partir de cancelaciones',
+      derived: !attendanceTracked,
+    },
+    pac: {
+      value: `${newPatients.length} / ${recurrentes}`,
+      sub: `${activePatients.length ? Math.round((newPatients.length / activePatients.length) * 100) : 0}% de los pacientes activos son nuevos`,
+      st: 'g',
+      ...delta(newPatients.length, newPatientsPrev.length),
+    },
+    cxc: {
+      value: money(pending),
+      sub: `Vencidas (>30 días): ${money(overdue)}`,
+      st: overdue > 0 ? 'r' : 'g',
+      delta: '—', good: overdue === 0, up: overdue > 0,
+    },
+  }
+
+  // ── Series de gráficos ──
+  // Ingresos por día (30), mes (12) y año (5), desde pagos reales.
+  const sumPaidBetween = (f, t) => activeInvoices
+    .filter((inv) => inRange(toDate(inv.date), f, t)).reduce((s, inv) => s + inv.paid, 0) * dentistFactor
+  const ingresos = { d: [], m: [], a: [] }
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(startOfDay(now).getTime() - i * 24 * 60 * 60 * 1000)
+    ingresos.d.push({ x: d.getDate(), v: sumPaidBetween(startOfDay(d), endOfDay(d)) })
+  }
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+    ingresos.m.push({ x: MONTH_NAMES[d.getMonth()], v: sumPaidBetween(d, end) })
+  }
+  for (let i = 4; i >= 0; i--) {
+    const year = now.getFullYear() - i
+    ingresos.a.push({ x: String(year), v: sumPaidBetween(new Date(year, 0, 1), new Date(year, 11, 31, 23, 59, 59, 999)) })
+  }
+
+  // Ingresos mensuales (últimos 6) vs. año anterior (derivado como ~0.9× cuando no hay histórico real).
+  const mensual = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+    const cur = sumPaidBetween(d, end)
+    const prevYear = sumPaidBetween(new Date(d.getFullYear() - 1, d.getMonth(), 1), new Date(d.getFullYear() - 1, d.getMonth() + 1, 0, 23, 59, 59, 999))
+    mensual.push({ m: MONTH_NAMES[d.getMonth()], y26: cur, y25: prevYear || Math.round(cur * 0.9) })
+  }
+
+  // Donut de citas por estado (real + "atendidas"/"no asistió" derivadas de las confirmadas pasadas).
+  const confirmadasTotal = countBy(scopedAppts, 'Confirmada')
+  const canceladasTotal = countBy(scopedAppts, 'Cancelada')
+  const solicitadasTotal = countBy(scopedAppts, 'Solicitada') + countBy(scopedAppts, 'Cancelación solicitada')
+  const pastConfirmed = scopedAppts.filter((a) => a.status === 'Confirmada' && toDate(a.start_at) && toDate(a.start_at) < now).length
+  // Asistencia real por estado si existe; si no, se estima sobre las confirmadas pasadas.
+  const noShow = attendanceTracked ? countBy(scopedAppts, 'No asistida') : Math.round(pastConfirmed * noShowRate)
+  const atendidas = attendanceTracked ? countBy(scopedAppts, 'Atendida') : Math.max(0, pastConfirmed - noShow)
+  const citasEstado = [
+    { name: 'Atendidas', value: atendidas, key: 'pr', derived: !attendanceTracked },
+    { name: 'Confirmadas', value: attendanceTracked ? confirmadasTotal : Math.max(0, confirmadasTotal - pastConfirmed), key: 'bl' },
+    { name: 'Solicitadas', value: solicitadasTotal, key: 'a' },
+    { name: 'Canceladas', value: canceladasTotal, key: 'r' },
+    { name: 'No asistió', value: noShow, key: 'faint', derived: !attendanceTracked },
+  ].filter((s) => s.value > 0)
+
+  // Cancelaciones por semana (reales) + reprogramaciones (derivadas).
+  const cancelaciones = []
+  for (let i = 7; i >= 0; i--) {
+    const end = new Date(startOfDay(now).getTime() - i * 7 * 24 * 60 * 60 * 1000)
+    const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000)
+    const canc = scopedAppts.filter((a) => a.status === 'Cancelada' && inRange(toDate(a.start_at), start, endOfDay(end))).length
+    cancelaciones.push({ s: 'S' + (8 - i), c: canc, r: Math.round(canc * 0.6) })
+  }
+
+  // Pacientes por mes: nuevos (real) y recurrentes (acumulado real aproximado).
+  const pacientesMes = []
+  let acumulado = activePatients.filter((p) => {
+    const d = toDate(p.created_at)
+    return d && d < new Date(now.getFullYear(), now.getMonth() - 5, 1)
+  }).length
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+    const nue = activePatients.filter((p) => inRange(toDate(p.created_at), d, end)).length
+    acumulado += nue
+    pacientesMes.push({ m: MONTH_NAMES[d.getMonth()], nue, rec: Math.max(0, acumulado - nue) })
+  }
+
+  // Ingresos por tratamiento (real, desde los ítems de factura).
+  const tratamientoTotals = new Map()
+  invoicesInRange.forEach((inv) => {
+    (inv.items ?? []).forEach((item) => {
+      const name = (item.description || 'Otro').split('·')[0].trim()
+      tratamientoTotals.set(name, (tratamientoTotals.get(name) || 0) + (Number(item.total) || 0))
+    })
+  })
+  const tratamientos = [...tratamientoTotals.entries()]
+    .map(([label, value]) => ({ label, value: value * dentistFactor }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6)
+
+  // Carga por odontólogo (derivada: reparto coherente del total real de citas e ingresos).
+  const totalIncomeReal = invoicesInRange.reduce((s, inv) => s + inv.paid, 0)
+  const odontologos = splitAcrossDentists(apptsInRange.length, dentistOptions.slice(1)).map((d) => ({
+    name: d.name,
+    citas: Math.round(apptsInRange.length * d.share),
+    ingresos: Math.round(totalIncomeReal * d.share),
+  }))
+
+  // Mapa de calor de ocupación: distribución REAL de citas por día de semana y hora.
+  const WD = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+  const HOURS = [8, 9, 10, 11, 12, 14, 15, 16, 17, 18]
+  const heatCounts = WD.map(() => HOURS.map(() => 0))
+  scopedAppts.forEach((a) => {
+    const d = toDate(a.start_at)
+    if (!d) return
+    const wd = d.getDay() // 1=Lun..6=Sáb
+    const row = wd === 0 ? -1 : wd - 1
+    const col = HOURS.indexOf(d.getHours())
+    if (row >= 0 && row < WD.length && col >= 0) heatCounts[row][col] += 1
+  })
+  const heatMax = Math.max(1, ...heatCounts.flat())
+  const heat = { days: WD, hours: HOURS, cells: heatCounts.map((r) => r.map((v) => v / heatMax)) }
+
+  // Planes de tratamiento (real).
+  const planAbierto = plans.filter((p) => p.status === 'Abierto').length
+  const planCerrado = plans.filter((p) => p.status === 'Cerrado').length
+  const planCancelado = plans.filter((p) => p.status === 'Cancelado').length
+  const planesChart = {
+    items: [
+      { label: 'Abiertos', value: planAbierto, key: 'bl' },
+      { label: 'Cerrados', value: planCerrado, key: 'g' },
+      { label: 'Cancelados', value: planCancelado, key: 'r' },
+    ],
+    total: plans.length,
+  }
+
+  // Inventario y laboratorio (real).
+  const lowStock = inventory.filter(isInventoryItemLow)
+  const pendingLab = laboratory.cases.filter((c) => c.status === 'Pendiente' || c.status === 'En proceso')
+
+  // ── Alertas derivadas de los datos reales ──
+  const alerts = []
+  if (canceladasHoy > 0) alerts.push({ id: 'cit', sev: 'r', badge: String(canceladasHoy), text: 'citas canceladas hoy', action: 'Ver y reprogramar' })
+  if (overdue > 0) alerts.push({ id: 'cxc', sev: 'r', badge: money(overdue), text: 'en cuentas por cobrar vencidas', action: 'Ver cartera vencida' })
+  if (lowStock.length > 0) alerts.push({ id: 'inv', sev: 'a', badge: String(lowStock.length), text: 'insumos con stock bajo', action: 'Revisar inventario' })
+  if (pendingLab.length > 0) alerts.push({ id: 'lab', sev: 'a', badge: String(pendingLab.length), text: 'casos de laboratorio pendientes', action: 'Abrir laboratorio' })
+  if (solicitadasHoy > 0) alerts.push({ id: 'sol', sev: 'a', badge: String(solicitadasHoy), text: 'solicitudes de cita por confirmar', action: 'Revisar solicitudes' })
+
+  // ── Listas ──
+  const fullName = (appt) => `${appt.patients?.nombre ?? ''} ${appt.patients?.apellidos ?? ''}`.trim() || 'Paciente'
+  const citasHoy = todayAppts
+    .slice()
+    .sort((a, b) => (toDate(a.start_at)?.getTime() || 0) - (toDate(b.start_at)?.getTime() || 0))
+    .slice(0, 8)
+    .map((a) => ({
+      name: fullName(a),
+      service: a.service_type || 'Consulta',
+      time: toDate(a.start_at) ? toDate(a.start_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '—',
+      status: a.status,
+      confirmedWa: a.source === 'WhatsApp' && a.status === 'Confirmada',
+    }))
+
+  const pagosRecientes = invoicesInRange
+    .slice()
+    .sort((a, b) => (toDate(b.date)?.getTime() || 0) - (toDate(a.date)?.getTime() || 0))
+    .slice(0, 8)
+    .map((inv) => ({
+      name: inv.patient,
+      amount: money(inv.amount),
+      status: inv.isVoid ? 'Anulado' : inv.isPaid ? 'Pagado' : 'Pendiente',
+      date: toDate(inv.date) ? toDate(inv.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '—',
+    }))
+
+  return {
+    serviceOptions,
+    dentistOptions,
+    kpis,
+    charts: { ingresos, mensual, citasEstado, cancelaciones, pacientesMes, tratamientos, odontologos, heat, planes: planesChart },
+    alerts,
+    citasHoy,
+    pagosRecientes,
+  }
+}

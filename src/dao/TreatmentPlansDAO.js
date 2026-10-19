@@ -11,6 +11,16 @@ export const listTreatmentPlansByPatientDAO = async (patientId) => {
   return data ?? [];
 };
 
+// Todos los planes (para los conteos por estado del dashboard).
+export const listAllTreatmentPlansDAO = async () => {
+  const { data, error } = await supabase
+    .from("treatment_plans")
+    .select("id, status, created_at");
+
+  if (error) throw error;
+  return data ?? [];
+};
+
 export const createTreatmentPlanDAO = async (payload) => {
   const { data, error } = await supabase
     .from("treatment_plans")

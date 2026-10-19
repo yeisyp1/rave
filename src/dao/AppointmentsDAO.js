@@ -31,6 +31,17 @@ export const markAppointmentNoShowByGoogleIdDAO = async (googleEventId) => {
   if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
 };
 
+// Todas las citas registradas en Supabase (para el dashboard).
+export const listAllAppointmentsDAO = async () => {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, patient_id, start_at, end_at, service_type, status, source, reminder_sent_at, patients(nombre, apellidos)")
+    .order("start_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+};
+
 export const listWhatsappAppointmentRequestsDAO = async () => {
   const { data, error } = await supabase
     .from("appointments")
