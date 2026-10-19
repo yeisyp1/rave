@@ -65,6 +65,8 @@ const CalendarVW = () => {
     }
       }
       init()
+    // Inicialización única al montar; syncEvents se invoca con el token recién obtenido.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
   /* ── Sincronizar con Google Calendar ── */

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { FiCalendar, FiCheck, FiPhone, FiXCircle } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { FiCalendar, FiCheck, FiMessageSquare, FiSettings, FiXCircle } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
   computeWhatsappRequestStatsCtrl,
@@ -10,6 +11,27 @@ import {
 } from '../controllers/WhatsappRequestsCtrl'
 import { showAlertModal } from '../app/store'
 import '../styles/AdminViewsVW.css'
+
+// La integración de WhatsApp corre en Edge Functions de Supabase + Meta Cloud API.
+// Los secrets se configuran en Supabase (Dashboard → Edge Functions → Secrets),
+// no en la app; esta tarjeta solo documenta qué hace falta y dónde.
+const WA_SECRETS = [
+  ['META_VERIFY_TOKEN', 'Texto que inventas; lo pegas también en Meta al registrar el webhook.'],
+  ['META_APP_SECRET', 'App Dashboard → Settings → Basic → App secret. Firma cada petición de Meta.'],
+  ['META_WA_TOKEN', 'Token de acceso (permanente de usuario del sistema, o temporal para pruebas).'],
+  ['META_WA_PHONE_NUMBER_ID', 'WhatsApp → API Setup → Phone number ID.'],
+  ['META_WA_TEMPLATE_NAME', 'Plantilla aprobada para recordatorios (cuerpo con {{1}} fecha y {{2}} hora).'],
+  ['META_WA_TEMPLATE_LANG', 'Opcional, por defecto "es".'],
+]
+
+const WA_COMMANDS = [
+  ['cita / agendar / turno', 'crea una solicitud de cita'],
+  ['cancelar', 'crea una solicitud de cancelación'],
+  ['BAJA / ALTA', 'el paciente se da de baja o se reactiva para recibir mensajes'],
+]
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const WEBHOOK_URL = SUPABASE_URL ? `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/whatsapp-webhook` : ''
 
 const WhatsappRequestsVW = () => {
   const dispatch = useDispatch()
@@ -113,8 +135,49 @@ const WhatsappRequestsVW = () => {
       </div>
 
       <div className="admin-card">
-        <h2 className="admin-card-title">Configuración pendiente</h2>
-       
+        <h2 className="admin-card-title">Configuración de la integración</h2>
+        <p className="admin-subtitle" style={{ marginTop: '-.5rem' }}>
+          Los recordatorios y respuestas automáticas corren en Edge Functions de Supabase sobre la Cloud API de Meta.
+          La configuración sensible vive fuera de la app: en Supabase (Dashboard → Edge Functions → Secrets) y en Meta.
+        </p>
+
+        <div className="wa-config">
+          <div className="wa-config-block">
+            <h3 className="wa-config-title">1. Webhook en Meta</h3>
+            <p className="wa-config-text">Regístralo en WhatsApp → Configuration → Webhook, suscrito al campo <code>messages</code>:</p>
+            <div className="wa-config-url">
+              <code>{WEBHOOK_URL || 'Configura VITE_SUPABASE_URL para ver la URL del webhook'}</code>
+            </div>
+            <p className="wa-config-text">El <em>Verify token</em> debe coincidir con el secret <code>META_VERIFY_TOKEN</code>.</p>
+          </div>
+
+          <div className="wa-config-block">
+            <h3 className="wa-config-title">2. Secrets requeridos en Supabase</h3>
+            <ul className="wa-config-list">
+              {WA_SECRETS.map(([name, desc]) => (
+                <li key={name}><code>{name}</code><span>{desc}</span></li>
+              ))}
+            </ul>
+            <p className="wa-config-text">Sin estos secrets, las funciones rechazan las peticiones (no hay valores de respaldo en el código).</p>
+          </div>
+
+          <div className="wa-config-block">
+            <h3 className="wa-config-title">3. Palabras clave del paciente</h3>
+            <ul className="wa-config-list">
+              {WA_COMMANDS.map(([cmd, desc]) => (
+                <li key={cmd}><code>{cmd}</code><span>{desc}</span></li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="wa-config-block">
+            <h3 className="wa-config-title">Gestión dentro de la app</h3>
+            <div className="wa-config-links">
+              <Link className="admin-btn" to="/plantillas"><FiMessageSquare /> Plantillas de mensajes</Link>
+              <Link className="admin-btn" to="/settings"><FiSettings /> Configuración general</Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

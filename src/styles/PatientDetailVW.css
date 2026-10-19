@@ -795,6 +795,35 @@
   gap: 0.35rem;
 }
 
+/* Modal para cerrar/cancelar un plan (reutiliza .am-overlay / .am-modal). */
+.pd-plan-action-modal {
+  max-width: 440px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-plan-action-modal .am-title {
+  text-align: left;
+}
+
+.pd-plan-action-modal .am-message {
+  text-align: left;
+}
+
+.pd-plan-action-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
 .pd-plan-form input,
 .pd-plan-form textarea,
 .pd-plan-form select,

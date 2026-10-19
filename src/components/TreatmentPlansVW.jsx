@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { FiPlus, FiX } from 'react-icons/fi';
+import { FiPlus, FiX, FiDownload } from 'react-icons/fi';
 import { showAlertModal } from '../app/store';
+import { generateConsentPdf } from '../utils/consentPdf';
 import {
   TREATMENT_STATUSES,
   addTreatmentCtrl,
@@ -38,7 +39,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString('es-CO
 
 // CU-10 (planes y tratamientos), CU-18 (consentimiento ligado al plan) y CU-11
 // (materiales de inventario que consume cada tratamiento).
-const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
+const TreatmentPlansVW = ({ patientId, patient = null, onConsentRegistered = () => {} }) => {
   const dispatch = useDispatch();
   const profile = useProfile();
   const canEdit = isClinicalStaff(profile);
@@ -54,6 +55,9 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
   const [materialTreatmentId, setMaterialTreatmentId] = useState(null);
   const [materialForm, setMaterialForm] = useState(EMPTY_MATERIAL_FORM);
   const [busy, setBusy] = useState(false);
+  // Modal para cerrar/cancelar un plan: { plan, mode: 'close' | 'cancel' }.
+  const [planAction, setPlanAction] = useState(null);
+  const [actionNote, setActionNote] = useState('');
 
   const load = async () => {
     try {
@@ -104,16 +108,19 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
     if (await run(() => updateTreatmentPlanCtrl(editingPlanId, editPlanForm))) setEditingPlanId(null);
   };
 
-  const closePlan = (plan) => {
-    const notes = window.prompt('Notas de cierre del plan (opcional):', '');
-    if (notes === null) return;
-    run(() => closeTreatmentPlanCtrl(plan, notes));
+  const openPlanAction = (plan, mode) => {
+    setActionNote('');
+    setPlanAction({ plan, mode });
   };
 
-  const cancelPlan = (plan) => {
-    const motivo = window.prompt('Motivo de cancelación del plan. Los tratamientos pendientes también se cancelarán:');
-    if (motivo === null) return;
-    run(() => cancelTreatmentPlanCtrl(plan, motivo));
+  const submitPlanAction = async (event) => {
+    event.preventDefault();
+    const { plan, mode } = planAction;
+    const action =
+      mode === 'close'
+        ? () => closeTreatmentPlanCtrl(plan, actionNote)
+        : () => cancelTreatmentPlanCtrl(plan, actionNote);
+    if (await run(action)) setPlanAction(null);
   };
 
   const getTreatmentForm = (planId) => treatmentForms[planId] ?? emptyTreatmentForm();
@@ -311,9 +318,18 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
               <span>Consentimiento informado:</span>
               <span className={`pd-pill ${CONSENT_PILL[plan.consentStatus]}`}>{plan.consentStatus}</span>
               {plan.consents[0] && (
-                <span className="pd-plan-meta">
-                  {plan.consents[0].patient_signature_name} · {new Date(plan.consents[0].signed_at).toLocaleString('es-CO')}
-                </span>
+                <>
+                  <span className="pd-plan-meta">
+                    {plan.consents[0].patient_signature_name} · {new Date(plan.consents[0].signed_at).toLocaleString('es-CO')}
+                  </span>
+                  <button
+                    type="button"
+                    className="pd-link-button"
+                    onClick={() => generateConsentPdf(plan.consents[0], patient, plan.title)}
+                  >
+                    <FiDownload size={12} /> PDF
+                  </button>
+                </>
               )}
               {canEdit && isOpen && consentPlanId !== plan.id && (
                 <button type="button" className="pd-link-button" onClick={() => { setConsentPlanId(plan.id); setConsentForm(EMPTY_CONSENT_FORM); }}>
@@ -371,8 +387,8 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
                 {isOpen ? (
                   <>
                     <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => startEditPlan(plan)}>Editar</button>
-                    <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => closePlan(plan)} disabled={busy}>Cerrar plan</button>
-                    <button type="button" className="pd-history-action pd-history-action-delete" onClick={() => cancelPlan(plan)} disabled={busy}>Cancelar plan</button>
+                    <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => openPlanAction(plan, 'close')} disabled={busy}>Cerrar plan</button>
+                    <button type="button" className="pd-history-action pd-history-action-delete" onClick={() => openPlanAction(plan, 'cancel')} disabled={busy}>Cancelar plan</button>
                   </>
                 ) : (
                   <button type="button" className="pd-history-action pd-history-action-edit" onClick={() => run(() => reopenTreatmentPlanCtrl(plan.id))} disabled={busy}>
@@ -391,6 +407,45 @@ const TreatmentPlansVW = ({ patientId, onConsentRegistered = () => {} }) => {
             <h4>Tratamientos sin plan</h4>
           </div>
           {renderTreatmentsTable(data.unplannedTreatments, canEdit)}
+        </div>
+      )}
+
+      {planAction && (
+        <div className="am-overlay" onClick={(event) => event.target === event.currentTarget && setPlanAction(null)}>
+          <form className="am-modal pd-plan-action-modal" onSubmit={submitPlanAction}>
+            <button type="button" className="am-close" onClick={() => setPlanAction(null)} aria-label="Cerrar">
+              <FiX size={18} />
+            </button>
+            <h3 className="am-title">
+              {planAction.mode === 'close' ? 'Cerrar plan de tratamiento' : 'Cancelar plan de tratamiento'}
+            </h3>
+            <p className="am-message" style={{ marginBottom: 12 }}>
+              {planAction.mode === 'close'
+                ? `"${planAction.plan.title}": el plan quedará cerrado. Puedes dejar una nota de cierre.`
+                : `"${planAction.plan.title}": los tratamientos pendientes o en proceso también se cancelarán. Indica el motivo.`}
+            </p>
+            <label className="pd-info-label" htmlFor="plan-action-note">
+              {planAction.mode === 'close' ? 'Notas de cierre (opcional)' : 'Motivo de cancelación'}
+            </label>
+            <textarea
+              id="plan-action-note"
+              rows={3}
+              value={actionNote}
+              onChange={(event) => setActionNote(event.target.value)}
+              autoFocus
+              placeholder={planAction.mode === 'close' ? 'Ej. Tratamiento completado satisfactoriamente.' : 'Ej. El paciente desiste del tratamiento.'}
+            />
+            <div className="pd-history-actions" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+              <button type="button" className="pd-btn-secondary" onClick={() => setPlanAction(null)}>Volver</button>
+              <button
+                type="submit"
+                className={planAction.mode === 'close' ? 'pd-btn-action-primary' : 'pd-history-action pd-history-action-delete'}
+                disabled={busy}
+              >
+                {planAction.mode === 'close' ? 'Cerrar plan' : 'Cancelar plan'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
