@@ -2209,3 +2209,18 @@ alter table public.appointments add constraint appointments_status_check
     'No asistida'::text,
     'Atendida'::text
   ]));
+
+
+----------------------
+
+-- Migracion assistant_read_clinical_history (2026-10-18).
+-- Decision de negocio: la asistente PUEDE LEER la historia clinica (y sus
+-- radiografias), pero NO crear/editar/anular. Se amplia solo el SELECT a
+-- 'assistant'; insert/update/delete siguen en admin/dentist (delete solo admin).
+drop policy if exists clinical_histories_select_clinical on public.clinical_histories;
+create policy clinical_histories_select_clinical on public.clinical_histories for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+
+drop policy if exists radiographies_select_clinical on public.radiographies;
+create policy radiographies_select_clinical on public.radiographies for select to authenticated
+  using ((select public.current_app_role()) in ('admin','dentist','assistant'));

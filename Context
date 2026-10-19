@@ -82,17 +82,19 @@ ya existen. `profiles.role` y `authorized_emails.role` aceptan `admin`,
 - `ClinicalRoute` (admin + dentist, vía `isClinicalStaff`): `/laboratory`,
   `/inventory`.
 
-OJO con la edición clínica: en los componentes (`PatientDetailVW`,
-`ModalHistoriaClinicaVW`, `TreatmentPlansVW`) `canEdit = isClinicalStaff(profile)`,
-y `isClinicalStaff` = admin + dentist **únicamente**. El Asistente NO puede
-editar historias clínicas ni planes. Esto es una **decisión deliberada** del
-código: la migración `role_based_policies_private_radiographies` (2026-10-01)
-en `db/supabase_schema.sql` restringe `clinical_histories`, `radiographies`,
-`informed_consents` y `patient_procedures` a `admin`/`dentist` con el comentario
-explícito "la asistente no accede". Esto **contradice** lo que la tesis pedía
-(Asistente habilitado para historias clínicas). Es un conflicto de decisión de
-negocio/legal (datos médicos, Ley 1581): NO cambiar a la ligera. Si se decide
-habilitar al Asistente hay que tocar tanto `roles.js` como esas políticas RLS.
+Edición vs. lectura clínica: en los componentes (`PatientDetailVW`,
+`ModalHistoriaClinicaVW`, `TreatmentPlansVW`) `canEdit = isClinicalStaff(profile)`
+= admin + dentist. El Asistente NO puede **crear/editar/anular** historias
+clínicas, radiografías ni planes.
+
+Lectura de historia clínica para el Asistente (decisión tomada 2026-10-18): el
+Asistente **sí puede LEER** la historia clínica. La migración
+`assistant_read_clinical_history` (final de `db/supabase_schema.sql`) amplía solo
+el SELECT de `clinical_histories` y `radiographies` a `assistant` (insert/update
+siguen en admin/dentist, delete solo admin). En la UI, `PatientDetailVW` muestra
+un botón "Ver" (en vez de "Editar/Anular") que abre el modal en modo lectura
+(`startInForm={canEdit}`). El resto de la info clínica —planes, procedimientos,
+consentimientos— sigue restringida a admin/dentist por RLS.
 
 ## 6. Módulos/páginas existentes
 
@@ -112,9 +114,10 @@ Actualizado 2026-10-18. Mucho de lo que este archivo daba por pendiente ya está
 codificado (planes/tratamientos, consentimiento informado con PDF, WhatsApp,
 solicitudes de datos, 3 roles). Lo que sigue pendiente de verdad:
 
-- **Decisión pendiente: ¿el Asistente debe gestionar historias clínicas?** Hoy
-  NO puede (decisión deliberada en RLS, ver sección 5) y eso contradice la
-  tesis. Requiere decisión de negocio antes de tocar `roles.js` + RLS.
+- **Asistente y historias clínicas (resuelto 2026-10-18)**: el Asistente puede
+  LEERLAS pero no editarlas (ver sección 5, migración `assistant_read_clinical_history`).
+  Si en el futuro se decide darle edición, habría que ampliar `isClinicalStaff`
+  y las políticas insert/update de RLS.
 - **Ocupación de agenda estimada**: no hay configuración de capacidad/horas por
   profesional, así que el Dashboard **deriva** la ocupación (marcada con `*`).
   Para tenerla real hay que modelar la capacidad de la agenda.

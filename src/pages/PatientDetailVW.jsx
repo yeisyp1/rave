@@ -445,7 +445,17 @@ const PatientDetailVW = () => {
                               Anular con nota
                             </button>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="pd-history-actions">
+                            <button
+                              type="button"
+                              className="pd-history-action pd-history-action-edit"
+                              onClick={() => openEditHistoryModal(history)}
+                            >
+                              Ver
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -719,7 +729,7 @@ const PatientDetailVW = () => {
             setHistoryModalOpen(false);
             setHistoryToEdit(null);
           }}
-          startInForm={true}
+          startInForm={canEdit}
           initialHistory={historyToEdit}
         />
       )}
