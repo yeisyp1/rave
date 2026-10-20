@@ -15,7 +15,7 @@
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(ellipse 55% 40% at 90% 10%, rgba(201,147,74,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 90% 10%, rgba(21,98,185,0.06) 0%, transparent 60%),
     radial-gradient(ellipse 40% 50% at 5% 85%,  rgba(26,58,92,0.50)  0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
@@ -38,18 +38,18 @@
 .bl-eyebrow {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .bl-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 38px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--bl-text);
-  line-height: 1;
+  line-height: 1.1;
   letter-spacing: -0.5px;
   margin: 0;
 }
@@ -67,7 +67,7 @@
 .bl-stat-card {
   background: var(--bl-card);
   border: 1px solid var(--bl-border);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -134,7 +134,7 @@
 .bl-card {
   background: var(--bl-card);
   border: 1px solid var(--bl-border);
-  border-radius: 16px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px var(--card-shadow, rgba(0,0,0,0.06));
   transition: background 0.3s ease;
@@ -236,7 +236,7 @@
   font-weight: 700;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(201, 147, 74, 0.30);
+  box-shadow: 0 2px 8px rgba(21, 98, 185, 0.30);
 }
 
 .bl-patient-name {

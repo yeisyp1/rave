@@ -77,7 +77,7 @@
 .hc-search:focus {
   outline: none;
   border-color: var(--gold, var(--gold));
-  box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(21, 98, 185, 0.1);
 }
 
 .hc-stat {
@@ -212,7 +212,7 @@
 }
 
 .hc-btn-action:hover {
-  background: rgba(201, 147, 74, 0.1);
+  background: rgba(21, 98, 185, 0.1);
   transform: scale(1.1);
 }
 

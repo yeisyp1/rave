@@ -45,12 +45,14 @@
   --blue-soft: #A2CDFF;
   --primary-color: var(--blue);
   --accent-color: var(--blue-vivid);
-  --gold: #c9934a;
-  --gold-lt: #dba96a;
-  --gold-deep: #a97a3d;
-  --gold-pale: rgba(201, 147, 74, 0.12);
-  --gold-pale-soft: rgba(201, 147, 74, 0.05);
-  --gold-border: rgba(201, 147, 74, 0.20);
+  /* Acento unificado al azul de marca (antes dorado). Se conservan los nombres
+     --gold* porque muchos módulos los referencian; hoy todos resuelven a azul. */
+  --gold: #1562b9;
+  --gold-lt: #3f86c8;
+  --gold-deep: #123679;
+  --gold-pale: rgba(21, 98, 185, 0.12);
+  --gold-pale-soft: rgba(21, 98, 185, 0.05);
+  --gold-border: rgba(21, 98, 185, 0.20);
   --white: #ffffff;
   --black: #000000;
   --transparent: transparent;
@@ -80,10 +82,10 @@
   --surface-card-shadow: rgba(0, 0, 0, 0.07);
   --overlay: rgba(15, 23, 42, 0.65);
   --overlay-strong: rgba(8, 18, 32, 0.72);
-  --field-focus: rgba(201, 147, 74, 0.08);
-  --field-focus-border: rgba(201, 147, 74, 0.65);
-  --field-focus-ring: rgba(201, 147, 74, 0.09);
-  --icon-brand-bg: rgba(201, 147, 74, 0.10);
+  --field-focus: rgba(21, 98, 185, 0.08);
+  --field-focus-border: rgba(21, 98, 185, 0.65);
+  --field-focus-ring: rgba(21, 98, 185, 0.09);
+  --icon-brand-bg: rgba(21, 98, 185, 0.10);
   --chart-bg: rgba(0, 0, 0, 0.02);
   --google-blue: #4285F4;
   --google-blue-dark: #8ab4f8;
@@ -137,7 +139,7 @@
   --cl-input-bg: var(--bg-primary);
   --cl-rbc-bg: var(--bg-secondary);
   --cl-rbc-off: var(--surface-soft);
-  --cl-rbc-now: rgba(201, 147, 74, 0.06);
+  --cl-rbc-now: rgba(21, 98, 185, 0.06);
   --cl-rbc-head: rgba(0, 0, 0, 0.03);
   --cl-success: var(--success);
   --cl-danger: var(--danger);
@@ -202,9 +204,17 @@
   --surface-hover: rgba(255, 255, 255, 0.025);
   --surface-soft: rgba(255, 255, 255, 0.02);
   --overlay: rgba(8, 18, 32, 0.80);
-  --field-focus: rgba(201, 147, 74, 0.07);
-  --icon-brand-bg: rgba(201, 147, 74, 0.12);
+  --field-focus: rgba(162, 205, 255, 0.08);
+  --icon-brand-bg: rgba(162, 205, 255, 0.12);
   --chart-bg: rgba(255, 255, 255, 0.02);
+
+  /* Acento azul claro en oscuro (antes dorado). */
+  --gold: #A2CDFF;
+  --gold-lt: #c7e0ff;
+  --gold-deep: #6fa8e3;
+  --gold-pale: rgba(162, 205, 255, 0.14);
+  --gold-pale-soft: rgba(162, 205, 255, 0.06);
+  --gold-border: rgba(162, 205, 255, 0.22);
 
   --pt-bg: #0f2236;
   --pt-card: #162d47;
@@ -212,13 +222,13 @@
   --pt-text-soft: rgba(255, 255, 255, 0.55);
   --pt-border: rgba(255, 255, 255, 0.08);
   --pt-input-bg: rgba(255, 255, 255, 0.05);
-  --pt-input-focus: rgba(201, 147, 74, 0.07);
+  --pt-input-focus: rgba(21, 98, 185, 0.07);
   --pt-row-hover: rgba(255, 255, 255, 0.025);
   --pt-overlay: rgba(8, 18, 32, 0.80);
   --pt-select-opt: #0f2236;
   --pt-muted: rgba(255, 255, 255, 0.28);
   --pt-badge-text: var(--gold-lt);
-  --pt-badge-bg: rgba(201, 147, 74, 0.15);
+  --pt-badge-bg: rgba(21, 98, 185, 0.15);
   --pt-ghost-color: rgba(255, 255, 255, 0.55);
 
   --db-bg: #0f2236;
@@ -228,8 +238,8 @@
   --db-border: rgba(255, 255, 255, 0.08);
   --db-muted: rgba(255, 255, 255, 0.28);
   --db-hover: rgba(255, 255, 255, 0.025);
-  --db-icon-bg: rgba(201, 147, 74, 0.12);
-  --db-bar-bg: rgba(201, 147, 74, 0.15);
+  --db-icon-bg: rgba(21, 98, 185, 0.12);
+  --db-bar-bg: rgba(21, 98, 185, 0.15);
   --db-chart-bg: rgba(255, 255, 255, 0.02);
 
   --cl-bg: #0f2236;
@@ -242,7 +252,7 @@
   --cl-input-bg: rgba(255, 255, 255, 0.05);
   --cl-rbc-bg: #162d47;
   --cl-rbc-off: rgba(255, 255, 255, 0.015);
-  --cl-rbc-now: rgba(201, 147, 74, 0.08);
+  --cl-rbc-now: rgba(21, 98, 185, 0.08);
   --cl-rbc-head: rgba(255, 255, 255, 0.02);
 
   --bl-bg: #0f2236;

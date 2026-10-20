@@ -154,7 +154,7 @@
 }
 
 .mhc-logo-wrap:focus {
-  outline: 2px solid rgba(201, 147, 74, 0.35);
+  outline: 2px solid rgba(21, 98, 185, 0.35);
   border-radius: 6px;
 }
 
@@ -429,7 +429,7 @@
 .mhc-input:focus {
   outline: none;
   border-color: var(--gold, var(--gold));
-  box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(21, 98, 185, 0.1);
 }
 
 .mhc-textarea {
@@ -445,7 +445,7 @@
 .mhc-textarea:focus {
   outline: none;
   border-color: var(--gold, var(--gold));
-  box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(21, 98, 185, 0.1);
 }
 
 /* ── FORM ACTIONS ── */
@@ -590,7 +590,7 @@
 
 .mhc-btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(201, 147, 74, 0.3);
+  box-shadow: 0 8px 20px rgba(21, 98, 185, 0.3);
 }
 
 .mhc-btn-primary:active:not(:disabled) {
@@ -634,7 +634,7 @@
 
 .mhc-btn-new:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(201, 147, 74, 0.3);
+  box-shadow: 0 4px 12px rgba(21, 98, 185, 0.3);
 }
 
 /* ── RESPONSIVE ── */
@@ -728,7 +728,7 @@
 }
 
 [data-theme="dark"] .mhc-select-icon {
-  color: rgba(201, 147, 74, 0.6);
+  color: rgba(21, 98, 185, 0.6);
 }
 
 [data-theme="dark"] .mhc-input,
@@ -758,7 +758,7 @@
 
 [data-theme="dark"] .mhc-history-card:hover {
   border-color: var(--gold);
-  background: rgba(201, 147, 74, 0.10);
+  background: rgba(21, 98, 185, 0.10);
 }
 
 [data-theme="dark"] .mhc-history-date {
