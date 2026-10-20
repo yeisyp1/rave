@@ -1,6 +1,6 @@
 .admin-page {
   min-height: 100vh;
-  padding: 28px 32px;
+  padding: 24px 32px 44px;
   background: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -16,14 +16,16 @@
 
 .admin-title {
   margin: 0;
-  font-size: 32px;
-  line-height: 1;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .admin-subtitle {
-  margin-top: 8px;
+  margin-top: 4px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .admin-grid {
@@ -40,18 +42,17 @@
 .admin-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 18px;
-  box-shadow: 0 2px 10px var(--card-shadow);
+  box-shadow: 0 1px 2px var(--card-shadow);
 }
 
 .admin-card-title {
   margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 
 .admin-stat {
@@ -74,7 +75,7 @@
 .admin-icon {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -114,7 +115,7 @@
 .admin-textarea {
   min-height: 42px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg-primary);
   color: var(--text-primary);
   padding: 0 12px;
@@ -156,11 +157,12 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
 }
 
@@ -231,10 +233,10 @@
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  padding: 0 9px;
+  padding: 0 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   background: rgba(21, 98, 185, 0.12);
   color: var(--button-primary);
 }

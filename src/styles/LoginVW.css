@@ -23,7 +23,7 @@
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(201, 147, 74, 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(21, 98, 185, 0.07) 0%, transparent 60%),
     radial-gradient(ellipse 50% 60% at 10% 80%, rgba(26, 58, 92, 0.6) 0%, transparent 70%);
   pointer-events: none;
 }
@@ -54,7 +54,7 @@
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(201, 147, 74, 0.14) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(21, 98, 185, 0.14) 0%, transparent 70%);
   top: -100px;
   right: -80px;
   pointer-events: none;
@@ -66,7 +66,7 @@
   width: 360px;
   height: 360px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(201, 147, 74, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(21, 98, 185, 0.08) 0%, transparent 70%);
   bottom: -60px;
   left: -40px;
   pointer-events: none;
@@ -105,18 +105,18 @@
 .p-tooth {
   width: 44px;
   height: 44px;
-  filter: drop-shadow(0 4px 14px rgba(201, 147, 74, 0.5));
+  filter: drop-shadow(0 4px 14px rgba(21, 98, 185, 0.5));
   animation: breathe 4s ease-in-out infinite;
 }
 
 @keyframes breathe {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 4px 14px rgba(201, 147, 74, 0.5));
+    filter: drop-shadow(0 4px 14px rgba(21, 98, 185, 0.5));
   }
   50% {
     transform: scale(1.04);
-    filter: drop-shadow(0 6px 20px rgba(201, 147, 74, 0.7));
+    filter: drop-shadow(0 6px 20px rgba(21, 98, 185, 0.7));
   }
 }
 
@@ -145,7 +145,7 @@
   position: absolute;
   inset: -30px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(201, 147, 74, 0.22) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(21, 98, 185, 0.22) 0%, transparent 65%);
   animation: glowPulse 3s ease-in-out infinite;
 }
 
@@ -334,8 +334,8 @@
 }
 
 .field-wrap.is-on {
-  border-color: rgba(201, 147, 74, 0.65);
-  background: rgba(201, 147, 74, 0.07);
+  border-color: rgba(21, 98, 185, 0.65);
+  background: rgba(21, 98, 185, 0.07);
   box-shadow: 0 0 0 3px var(--icon-brand-bg);
 }
 
@@ -544,7 +544,7 @@
 }
 
 .google-btn:hover {
-  border-color: rgba(201, 147, 74, 0.45);
+  border-color: rgba(21, 98, 185, 0.45);
   background: var(--gold-pale-soft);
   color: var(--white);
 }

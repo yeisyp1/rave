@@ -17,7 +17,7 @@
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(ellipse 55% 40% at 90% 10%, rgba(201, 147, 74, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 90% 10%, rgba(21, 98, 185, 0.06) 0%, transparent 60%),
     radial-gradient(ellipse 40% 50% at 5%  85%, rgba(26, 58, 92, 0.50)  0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
@@ -37,19 +37,19 @@
 .pt-title-eyebrow {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .pt-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 38px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--pt-text);
-  line-height: 1;
-  letter-spacing: -0.5px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 /* TOOLBAR */
@@ -94,18 +94,18 @@
 .pt-search::placeholder { color: var(--pt-muted); }
 
 .pt-search:focus {
-  border-color: rgba(201, 147, 74, 0.55);
-  background: var(--pt-input-focus);
-  box-shadow: 0 0 0 3px rgba(201, 147, 74, 0.08);
+  border-color: rgba(21, 98, 185, 0.55);
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px rgba(162, 205, 255, 0.22);
 }
 
 .pt-stat {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  background: var(--gold-pale);
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
+  background: rgba(21, 98, 185, 0.10);
+  border: 1px solid rgba(21, 98, 185, 0.22);
+  border-radius: 999px;
   padding: 8px 16px;
 }
 
@@ -113,7 +113,7 @@
   font-family: 'Nunito', sans-serif;
   font-size: 15px;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--button-primary);
   line-height: 1;
 }
 
@@ -126,9 +126,9 @@
 .pt-card {
   background: var(--pt-card);
   border: 1px solid var(--pt-border);
-  border-radius: 16px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 12px var(--card-shadow, var(--surface-card-shadow));
+  box-shadow: 0 1px 2px var(--card-shadow, var(--surface-card-shadow));
   transition: background 0.3s ease;
 }
 
@@ -194,7 +194,7 @@
   font-weight: 700;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(201, 147, 74, 0.30);
+  box-shadow: 0 2px 8px rgba(21, 98, 185, 0.25);
 }
 
 .pt-name {
@@ -215,9 +215,9 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: var(--pt-badge-bg);
-  color: var(--pt-badge-text);
-  border: 1px solid var(--gold-border);
+  background: rgba(21, 98, 185, 0.10);
+  color: var(--button-primary);
+  border: 1px solid rgba(21, 98, 185, 0.20);
   border-radius: 4px;
   padding: 2px 6px;
   margin-right: 7px;
@@ -256,7 +256,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid var(--pt-border);
-  border-top-color: var(--gold);
+  border-top-color: var(--button-primary);
   border-radius: 50%;
   animation: ptSpin 0.7s linear infinite;
 }
@@ -270,7 +270,7 @@
   gap: 8px;
   height: 44px;
   padding: 0 20px;
-  background: linear-gradient(135deg, var(--gold) 0%, #a06828 100%);
+  background: var(--button-primary);
   color: #fff;
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
@@ -278,20 +278,20 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 18px rgba(201, 147, 74, 0.28);
+  box-shadow: 0 4px 18px rgba(21, 98, 185, 0.25);
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
   white-space: nowrap;
 }
 
-.pt-btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201, 147, 74, 0.40); }
+.pt-btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(21, 98, 185, 0.38); }
 .pt-btn-primary:active { transform: translateY(0); }
 .pt-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
 
 .pt-btn-ghost:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: var(--gold-pale);
+  border-color: var(--button-primary);
+  color: var(--button-primary);
+  background: rgba(21, 98, 185, 0.10);
 }
 
 .pt-btn-ghost {
@@ -310,9 +310,9 @@
 }
 
 .pt-btn-ghost:hover {
-  background: var(--gold-pale);
-  border-color: var(--gold-border);
-  color: var(--gold);
+  background: rgba(21, 98, 185, 0.10);
+  border-color: rgba(21, 98, 185, 0.22);
+  color: var(--button-primary);
 }
 
 
@@ -365,9 +365,9 @@
   transition: all 0.2s ease;
 }
 .pt-btn-action:hover {
-  background: var(--gold-pale);
-  border-color: var(--gold-border);
-  color: var(--gold);
+  background: rgba(21, 98, 185, 0.10);
+  border-color: rgba(21, 98, 185, 0.22);
+  color: var(--button-primary);
 }
 
 .pt-btn-action-danger {

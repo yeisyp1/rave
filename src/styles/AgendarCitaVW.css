@@ -325,7 +325,7 @@
 .rbc-event:focus { outline: none; }
 .rbc-event-label { font-size: 11px; opacity: 0.85; }
 
-.rbc-selected { box-shadow: 0 0 0 2px rgba(201,147,74,0.6) !important; }
+.rbc-selected { box-shadow: 0 0 0 2px rgba(21,98,185,0.6) !important; }
 
 /* Current time line */
 .rbc-current-time-indicator {
@@ -526,9 +526,9 @@
 .cl-input::placeholder { color: var(--cl-muted); }
 
 .cl-input:focus {
-  border-color: rgba(201,147,74,0.65);
+  border-color: rgba(21,98,185,0.65);
   background: var(--gold-pale-soft);
-  box-shadow: 0 0 0 3px rgba(201,147,74,0.09);
+  box-shadow: 0 0 0 3px rgba(21,98,185,0.09);
 }
 
 .cl-input[type="time"] { color-scheme: light; }

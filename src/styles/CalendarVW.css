@@ -38,18 +38,18 @@
 .cl-eyebrow {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .cl-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 34px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--cl-text);
-  line-height: 1;
+  line-height: 1.1;
   letter-spacing: -0.5px;
   margin: 0;
 }
@@ -201,7 +201,7 @@
 .cl-calendar-wrap {
   background: var(--cl-card);
   border: 1px solid var(--cl-border);
-  border-radius: 16px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 12px var(--card-shadow, var(--surface-card-shadow));
   transition: background 0.3s;
@@ -325,7 +325,7 @@
 .rbc-event:focus { outline: none; }
 .rbc-event-label { font-size: 11px; opacity: 0.85; }
 
-.rbc-selected { box-shadow: 0 0 0 2px rgba(201,147,74,0.6) !important; }
+.rbc-selected { box-shadow: 0 0 0 2px rgba(21,98,185,0.6) !important; }
 
 /* Current time line */
 .rbc-current-time-indicator {
@@ -419,7 +419,7 @@
   max-width: 460px;
   background: var(--cl-card);
   border: 1px solid var(--cl-border);
-  border-radius: 20px;
+  border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 28px 70px rgba(0,0,0,0.22);
   animation: clSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -526,9 +526,9 @@
 .cl-input::placeholder { color: var(--cl-muted); }
 
 .cl-input:focus {
-  border-color: rgba(201,147,74,0.65);
+  border-color: rgba(21,98,185,0.65);
   background: var(--gold-pale-soft);
-  box-shadow: 0 0 0 3px rgba(201,147,74,0.09);
+  box-shadow: 0 0 0 3px rgba(21,98,185,0.09);
 }
 
 .cl-input[type="time"] { color-scheme: light; }
