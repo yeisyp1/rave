@@ -238,7 +238,7 @@ const AgendarCitaVW = () => {
             <input className="admin-input" value={form.service} onChange={(event) => setForm({ ...form, service: event.target.value })} required />
           </div>
           <div className="admin-field span-2">
-            <label>Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+            <label>Odontólogo {doctorOptions.length > 0 && <span className="admin-req">*</span>}</label>
             <select className="admin-input" value={form.doctorId} onChange={(event) => setForm({ ...form, doctorId: event.target.value })}>
               <option value="">Selecciona un odontólogo...</option>
               {doctorOptions.map((doctor) => (
