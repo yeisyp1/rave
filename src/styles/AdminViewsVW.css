@@ -114,6 +114,11 @@
   font-weight: 700;
 }
 
+.admin-req {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
 .admin-chip-group {
   display: flex;
   flex-wrap: wrap;
