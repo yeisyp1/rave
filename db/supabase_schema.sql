@@ -2224,3 +2224,48 @@ create policy clinical_histories_select_clinical on public.clinical_histories fo
 drop policy if exists radiographies_select_clinical on public.radiographies;
 create policy radiographies_select_clinical on public.radiographies for select to authenticated
   using ((select public.current_app_role()) in ('admin','dentist','assistant'));
+
+
+----------------------
+
+-- Migracion appointments_doctor_id (2026-10-20).
+-- El dashboard filtraba "por odontólogo" repartiendo los totales reales con pesos
+-- inventados (DENTIST_FACTOR), porque appointments no registraba quién atendía la
+-- cita. Se agrega doctor_id para que ese filtro (y la carga por odontólogo) se
+-- calculen con datos reales en vez de simulados. Columna nullable: las citas ya
+-- existentes y las agendadas por WhatsApp (CU-21) no tienen odontólogo asignado.
+alter table public.appointments add column if not exists doctor_id bigint null;
+alter table public.appointments
+  add constraint appointments_doctor_id_fkey foreign key (doctor_id) references public.doctors (id) on delete set null;
+
+create index IF not exists idx_appointments_doctor_id on public.appointments using btree (doctor_id) TABLESPACE pg_default;
+
+
+----------------------
+
+-- Migracion check_authorized_email_rpc (2026-10-25).
+-- La pagina /crear-contrasena (AccessActionVW mode="create") necesita verificar
+-- si un correo fue autorizado por el administrador ANTES de que exista sesion
+-- (el usuario aun no se ha registrado, llega como anon). El RLS de
+-- authorized_emails solo permite leer a un admin o al propio usuario ya
+-- autenticado (polroles={authenticated}), asi que para un visitante anonimo
+-- la consulta siempre devolvia 0 filas y el flujo de autoregistro de CU-04
+-- fallaba con "correo no autorizado" aunque si estuviera autorizado.
+-- Esta funcion SECURITY DEFINER expone solo un booleano (nunca la lista de
+-- correos/roles) y puede ser llamada por anon para esa verificacion puntual.
+create or replace function public.check_authorized_email(p_email text)
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select exists (
+    select 1
+    from public.authorized_emails
+    where email = p_email and active = true
+  );
+$$;
+
+revoke all on function public.check_authorized_email(text) from public;
+grant execute on function public.check_authorized_email(text) to anon, authenticated;

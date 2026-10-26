@@ -5,6 +5,7 @@ import {
   connectGoogleCalendarCtrl,
   createGoogleEventCtrl,
   getGoogleTokenCtrl,
+  listAppointmentDoctorsCtrl,
   listAppointmentPatientsCtrl,
   ScheduleConflictError,
 } from '../controllers/CalendarCtrl'
@@ -18,6 +19,7 @@ const AgendarCitaVW = () => {
   const navigate = useNavigate()
   const patient = location.state?.patient
   const [patients, setPatients] = useState([])
+  const [doctorOptions, setDoctorOptions] = useState([])
   const [googleToken, setGoogleToken] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -27,6 +29,7 @@ const AgendarCitaVW = () => {
     patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
     document: patient?.numero_documento ?? '',
     service: 'Valoracion odontologica',
+    doctorId: '',
     date: formatInputDate(new Date()),
     startTime: '09:00',
     endTime: '09:30',
@@ -51,6 +54,19 @@ const AgendarCitaVW = () => {
     }
 
     loadPatients()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    listAppointmentDoctorsCtrl()
+      .then((data) => { if (mounted) setDoctorOptions(data ?? []) })
+      .catch((error) => {
+        console.error('No se pudieron cargar los odontólogos para agendar cita:', error)
+        if (mounted) setDoctorOptions([])
+      })
     return () => {
       mounted = false
     }
@@ -121,6 +137,11 @@ const AgendarCitaVW = () => {
       return
     }
 
+    if (doctorOptions.length > 0 && !form.doctorId) {
+      setMessage('Selecciona el odontólogo que atiende la cita.')
+      return
+    }
+
     setSaving(true)
     setMessage('')
 
@@ -143,6 +164,8 @@ const AgendarCitaVW = () => {
         return
       }
 
+      const doctor = doctorOptions.find((item) => String(item.id) === String(form.doctorId))
+
       await createGoogleEventCtrl(googleToken, {
         title: `${form.patientName} - ${form.service}`,
         description: form.notes.trim(),
@@ -152,6 +175,8 @@ const AgendarCitaVW = () => {
         patientId: patientExists.id,
         service: form.service,
         patientName: form.patientName,
+        doctorId: doctor?.id,
+        doctorName: doctor ? `${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim() : undefined,
       })
       setMessage('')
       setShowSuccessNotice(true)
@@ -211,6 +236,15 @@ const AgendarCitaVW = () => {
           <div className="admin-field span-2">
             <label>Servicio</label>
             <input className="admin-input" value={form.service} onChange={(event) => setForm({ ...form, service: event.target.value })} required />
+          </div>
+          <div className="admin-field span-2">
+            <label>Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+            <select className="admin-input" value={form.doctorId} onChange={(event) => setForm({ ...form, doctorId: event.target.value })}>
+              <option value="">Selecciona un odontólogo...</option>
+              {doctorOptions.map((doctor) => (
+                <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
+              ))}
+            </select>
           </div>
           <div className="admin-field">
             <label>Fecha</label>
