@@ -3,6 +3,7 @@ import {
   createOutboundWhatsappMessageDAO,
   getActiveWhatsappTemplateDAO,
   getPatientContactDAO,
+  markAppointmentAttendedByGoogleIdDAO,
   markAppointmentNoShowByGoogleIdDAO,
   upsertAppointmentByGoogleIdDAO,
 } from "../dao/AppointmentsDAO";
@@ -16,7 +17,7 @@ export const renderMessageTemplateCtrl = (body, vars) =>
     body
   );
 
-export const mirrorAppointmentCtrl = async ({ googleEventId, patientId, start, end, serviceType }) => {
+export const mirrorAppointmentCtrl = async ({ googleEventId, patientId, doctorId, start, end, serviceType }) => {
   const row = {
     google_event_id: googleEventId,
     start_at: start.toISOString(),
@@ -24,10 +25,11 @@ export const mirrorAppointmentCtrl = async ({ googleEventId, patientId, start, e
     status: "Confirmada",
     source: "App",
   };
-  // omit patient_id/service_type when not provided so an upsert on conflict
+  // omit patient_id/doctor_id/service_type when not provided so an upsert on conflict
   // (e.g. reprogramming from the calendar edit form) doesn't wipe the link
   // captured when the appointment was first created.
   if (patientId !== undefined) row.patient_id = patientId;
+  if (doctorId !== undefined) row.doctor_id = doctorId;
   if (serviceType !== undefined) row.service_type = serviceType;
   return upsertAppointmentByGoogleIdDAO(row);
 };
@@ -35,6 +37,8 @@ export const mirrorAppointmentCtrl = async ({ googleEventId, patientId, start, e
 export const cancelAppointmentMirrorCtrl = (googleEventId) => cancelAppointmentByGoogleIdDAO(googleEventId);
 
 export const markAppointmentNoShowCtrl = (googleEventId) => markAppointmentNoShowByGoogleIdDAO(googleEventId);
+
+export const markAppointmentAttendedCtrl = (googleEventId) => markAppointmentAttendedByGoogleIdDAO(googleEventId);
 
 export const queueAppointmentConfirmationCtrl = async ({ appointmentId, patientId, start, serviceType }) => {
   const patient = await getPatientContactDAO(patientId);

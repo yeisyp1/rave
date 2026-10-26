@@ -26,6 +26,8 @@ export class CalendarEventModel {
       resource: {
         patient,
         patientId: stored.patientId ?? null,
+        doctorId: stored.doctorId ?? null,
+        doctorName: stored.doctorName ?? null,
         service,
         status: event.status === "confirmed" ? "confirmed" : "pending",
         googleId: event.id,

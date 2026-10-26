@@ -9,7 +9,6 @@ import {
 } from "../controllers/PatientsCtrl";
 import { usePatientModal } from "../hooks/usePatientModal";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
-import ModalViewPatientsVW from "../modals/ModalViewPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
 import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2, FiRotateCcw } from 'react-icons/fi'
@@ -21,7 +20,6 @@ const PatientsVW = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [viewPatient, setViewPatient] = useState(null);
   const [statusFilter, setStatusFilter] = useState("activos");
 
   const patientModal = usePatientModal(() => getPatients());
@@ -41,8 +39,10 @@ const PatientsVW = () => {
   useEffect(() => { getPatients(); }, [statusFilter]);
 
   /* ── Handlers ── */
+  // Lleva a la pestaña "Historial médico" del detalle del paciente (antes abría
+  // un resumen que no era la historia clínica real).
   const viewHistory = (patient) => {
-    setViewPatient(patient);
+    navigate(`/pacientes/${patient.id}`, { state: { tab: 'history' } });
   };
 
   const scheduleAppointment = (patient) => {
@@ -232,14 +232,6 @@ const PatientsVW = () => {
         canNext={patientModal.canNext}
         isEditing={!!patientModal.editingId}
       />
-
-      {/* ── MODAL HISTORIA CLÍNICA (PORTAL) ── */}
-      <ModalViewPatientsVW
-        show={!!viewPatient}
-        patient={viewPatient}
-        onClose={() => setViewPatient(null)}
-      />
-
 
     </div>
   );

@@ -7,7 +7,7 @@ import { showAlertModal } from '../app/store'
 import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
 
 /* MODAL VER CITA */
-const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoShow, onClose, deleting }) => {
+const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEdit, onDelete, onNoShow, onAttended, onClose, deleting }) => {
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const today = moment().format('YYYY-MM-DD')
@@ -27,6 +27,7 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
     startTime:   moment(event?.start).format('HH:mm'),
     endTime:     moment(event?.end).format('HH:mm'),
     date:        moment(event?.start).format('YYYY-MM-DD'),
+    doctorId:    event?.resource?.doctorId || '',
   })
 
   const handlePatientChange = (e) => {
@@ -43,6 +44,8 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
     if (!patient) return dispatch(showAlertModal({ message: 'Selecciona un paciente registrado en la base de datos', variant: 'error' }))
     if (form.date < today && form.date !== originalDate) return dispatch(showAlertModal({ message: 'No puedes elegir una fecha anterior a hoy', variant: 'error' }))
     if (!form.service.trim()) return dispatch(showAlertModal({ message: 'El servicio es obligatorio', variant: 'error' }))
+    if (doctorOptions.length > 0 && !form.doctorId) return dispatch(showAlertModal({ message: 'Selecciona el odontólogo que atiende la cita', variant: 'error' }))
+    const doctor = doctorOptions.find((item) => String(item.id) === String(form.doctorId))
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -58,7 +61,17 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
     
     const patientName = getPatientFullName(patient)
     const service = form.service.trim()
-    onEdit({ ...form, patientId: patient.id, patientName, service, title: `${patientName} - ${service}`, start, end })
+    onEdit({
+      ...form,
+      patientId: patient.id,
+      patientName,
+      service,
+      doctorId: doctor?.id,
+      doctorName: doctor ? `${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim() : undefined,
+      title: `${patientName} - ${service}`,
+      start,
+      end,
+    })
     setIsEditing(false)
   }
 
@@ -71,7 +84,12 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
     if (window.confirm(`¿Marcar la cita "${event.title}" como no asistida?`)) onNoShow()
   }
 
+  const handleAttended = () => {
+    if (window.confirm(`¿Marcar la cita "${event.title}" como atendida?`)) onAttended()
+  }
+
   const canMarkNoShow = onNoShow && !event?.allDay && new Date(event?.start) <= new Date()
+  const canMarkAttended = onAttended && !event?.allDay && new Date(event?.start) <= new Date()
 
   return (
     <div className="cl-overlay" onClick={(e) => e.target === e.currentTarget && !isEditing && onClose()}>
@@ -105,6 +123,16 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
               <div className="cl-field">
                 <label className="cl-label">Servicio <span className="cl-req">*</span></label>
                 <input name="service" value={form.service} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
+              </div>
+
+              <div className="cl-field">
+                <label className="cl-label">Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+                <select name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
+                  <option value="">Selecciona un odontólogo...</option>
+                  {doctorOptions.map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="cl-field">
@@ -143,6 +171,11 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
               <div className="cl-view-field">
                 <label className="cl-label">Servicio</label>
                 <p className="cl-view-value">{event?.resource?.service || '-'}</p>
+              </div>
+
+              <div className="cl-view-field">
+                <label className="cl-label">Odontólogo</label>
+                <p className="cl-view-value">{event?.resource?.doctorName || '-'}</p>
               </div>
 
               <div className="cl-view-field">
@@ -199,6 +232,9 @@ const ModalViewEventVW = ({ event, patientOptions = [], onEdit, onDelete, onNoSh
                   </>
                 )}
               </button>
+              {canMarkAttended && (
+                <button className="cl-btn-ghost" onClick={handleAttended}>Marcar atendida</button>
+              )}
               {canMarkNoShow && (
                 <button className="cl-btn-ghost" onClick={handleNoShow}>No asistió</button>
               )}

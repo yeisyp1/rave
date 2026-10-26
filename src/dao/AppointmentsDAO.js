@@ -31,11 +31,22 @@ export const markAppointmentNoShowByGoogleIdDAO = async (googleEventId) => {
   if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
 };
 
+export const markAppointmentAttendedByGoogleIdDAO = async (googleEventId) => {
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ status: "Atendida" })
+    .eq("google_event_id", googleEventId)
+    .select("id");
+
+  if (error) throw error;
+  if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
+};
+
 // Todas las citas registradas en Supabase (para el dashboard).
 export const listAllAppointmentsDAO = async () => {
   const { data, error } = await supabase
     .from("appointments")
-    .select("id, patient_id, start_at, end_at, service_type, status, source, reminder_sent_at, patients(nombre, apellidos)")
+    .select("id, patient_id, doctor_id, start_at, end_at, service_type, status, source, reminder_sent_at, patients(nombre, apellidos)")
     .order("start_at", { ascending: false });
 
   if (error) throw error;

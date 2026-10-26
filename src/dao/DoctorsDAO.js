@@ -18,6 +18,53 @@ export const listActiveDoctorsDAO = async () => {
   return data ?? [];
 };
 
+// Catálogo completo de odontólogos (activos e inactivos) para su gestión (RF-06).
+export const listAllDoctorsDAO = async () => {
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("*")
+    .order("nombre", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+};
+
+export const createDoctorDAO = async (payload) => {
+  const { data, error } = await supabase
+    .from("doctors")
+    .insert([payload])
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateDoctorDAO = async (id, payload) => {
+  const { data, error } = await supabase
+    .from("doctors")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// No se elimina (consistente con el resto del sistema): solo se activa/desactiva.
+export const setDoctorActiveDAO = async (id, active) => {
+  const { data, error } = await supabase
+    .from("doctors")
+    .update({ activo: active })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
 export const upsertAuthorizedUserDAO = (payload) =>
   supabase.from("authorized_emails").upsert(payload, { onConflict: "email" });
 

@@ -9,9 +9,11 @@ import {
   updateGoogleEventDAO,
 } from "../dao/CalendarDAO";
 import { checkAppointmentAvailabilityDAO } from "../dao/AppointmentsDAO";
+import { listActiveDoctorsDAO } from "../dao/DoctorsDAO";
 import { CalendarEventModel } from "../models/CalendarEventModel";
 import {
   cancelAppointmentMirrorCtrl,
+  markAppointmentAttendedCtrl,
   markAppointmentNoShowCtrl,
   mirrorAppointmentCtrl,
   queueAppointmentConfirmationCtrl,
@@ -83,6 +85,7 @@ export const createGoogleEventCtrl = async (token, payload) => {
   const mirrored = await mirrorAppointmentAfterGoogleWrite({
     googleEventId: event.id,
     patientId: payload.patientId,
+    doctorId: payload.doctorId,
     start: payload.start,
     end: payload.end,
     serviceType: payload.service,
@@ -107,6 +110,7 @@ export const updateGoogleEventCtrl = async (token, googleId, payload) => {
   await mirrorAppointmentAfterGoogleWrite({
     googleEventId: googleId,
     patientId: payload.patientId,
+    doctorId: payload.doctorId,
     start: payload.start,
     end: payload.end,
     serviceType: payload.service,
@@ -125,8 +129,9 @@ export const deleteGoogleEventCtrl = async (token, googleId) => {
   }
 };
 
-export { markAppointmentNoShowCtrl };
+export { markAppointmentAttendedCtrl, markAppointmentNoShowCtrl };
 
 export const connectGoogleCalendarCtrl = signInGoogleCalendarDAO;
 export const listAppointmentPatientsCtrl = listAppointmentPatientsDAO;
 export const listAppointmentServiceTypesCtrl = listAppointmentServiceTypesDAO;
+export const listAppointmentDoctorsCtrl = listActiveDoctorsDAO;

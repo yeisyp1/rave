@@ -30,13 +30,12 @@ export const signUpDAO = (email, password, emailRedirectTo) =>
 export const resetPasswordForEmailDAO = (email, redirectTo) =>
   supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
+// Antes de iniciar sesión no hay JWT, así que RLS bloquea la lectura directa de
+// authorized_emails (solo admins o el propio usuario ya autenticado pueden verla).
+// Esta función RPC (security definer) expone únicamente un booleano para que un
+// visitante anónimo pueda verificar su propia autorización en /crear-contrasena.
 export const checkAuthorizedEmailDAO = async (email) => {
-  const { data, error } = await supabase
-    .from("authorized_emails")
-    .select("email")
-    .eq("email", email)
-    .eq("active", true)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("check_authorized_email", { p_email: email });
 
   if (error) throw error;
   return data;

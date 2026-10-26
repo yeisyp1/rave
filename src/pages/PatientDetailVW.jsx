@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showAlertModal } from '../app/store';
 import { annulPatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/HistoriaClinicaCtrl';
@@ -35,12 +35,14 @@ import '../styles/PatientDetailVW.css';
 const PatientDetailVW = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const profile = useProfile();
   const canEdit = isClinicalStaff(profile);
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('personal');
+  // Permite abrir directamente en una pestaña (ej. "Ver historia clínica" desde la lista de pacientes).
+  const [activeTab, setActiveTab] = useState(location.state?.tab ?? 'personal');
   const [procedures, setProcedures] = useState([]);
   const [clinicalHistories, setClinicalHistories] = useState([]);
   const [numberingSystem, setNumberingSystem] = useState('FDI');

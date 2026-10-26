@@ -13,6 +13,7 @@ const NewEventModal = ({
   saving,
   patientOptions = [],
   serviceOptions = [],
+  doctorOptions = [],
 }) => {
   const dispatch = useDispatch()
   const today = moment().format('YYYY-MM-DD')
@@ -25,6 +26,7 @@ const NewEventModal = ({
     endTime: moment(slot?.end).format('HH:mm'),
     date: moment(slot?.start).format('YYYY-MM-DD'),
     serviceType: '',
+    doctorId: '',
   })
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -54,6 +56,8 @@ const NewEventModal = ({
     if (!patient) return dispatch(showAlertModal({ message: 'Selecciona un paciente registrado en la base de datos', variant: 'error' }))
     if (form.date < today) return dispatch(showAlertModal({ message: 'No puedes elegir una fecha anterior a hoy', variant: 'error' }))
     if (!form.serviceType.trim()) return dispatch(showAlertModal({ message: 'El tipo de servicio es obligatorio', variant: 'error' }))
+    if (doctorOptions.length > 0 && !form.doctorId) return dispatch(showAlertModal({ message: 'Selecciona el odontólogo que atiende la cita', variant: 'error' }))
+    const doctor = doctorOptions.find((item) => String(item.id) === String(form.doctorId))
 
     // Build start/end from selected date + times
     const [year, month, day] = form.date.split('-').map(Number)
@@ -73,6 +77,8 @@ const NewEventModal = ({
       description: form.description,
       patientName: getPatientFullName(patient),
       patientId: patient.id,
+      doctorId: doctor?.id,
+      doctorName: doctor ? `${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim() : undefined,
       start,
       end,
     })
@@ -126,6 +132,16 @@ const NewEventModal = ({
                 <option key={service} value={service} />
               ))}
             </datalist>
+          </div>
+
+          <div className="cl-field">
+            <label className="cl-label">Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+            <select name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
+              <option value="">Selecciona un odontólogo...</option>
+              {doctorOptions.map((doctor) => (
+                <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
+              ))}
+            </select>
           </div>
 
           <div className="cl-field">
