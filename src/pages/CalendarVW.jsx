@@ -12,8 +12,10 @@ import {
   createGoogleEventCtrl,
   deleteGoogleEventCtrl,
   getGoogleTokenCtrl,
+  listAppointmentDoctorsCtrl,
   listAppointmentPatientsCtrl,
   listAppointmentServiceTypesCtrl,
+  markAppointmentAttendedCtrl,
   markAppointmentNoShowCtrl,
   ScheduleConflictError,
   syncGoogleEventsCtrl,
@@ -43,21 +45,24 @@ const CalendarVW = () => {
   const [deleting,      setDeleting]      = useState(false)
   const [patientOptions, setPatientOptions] = useState([])
   const [serviceOptions, setServiceOptions] = useState([])
+  const [doctorOptions, setDoctorOptions] = useState([])
   const [patientValidationError, setPatientValidationError] = useState(null)
 
   /* ── Al montar: obtener token y cargar eventos ── */
   useEffect(() => {
     const init = async () => {
       try {
-        const [token, patients, services] = await Promise.all([
+        const [token, patients, services, doctors] = await Promise.all([
           getGoogleTokenCtrl(),
           listAppointmentPatientsCtrl(),
           listAppointmentServiceTypesCtrl(),
+          listAppointmentDoctorsCtrl(),
         ])
 
         setGoogleToken(token)
         setPatientOptions(patients)
         setServiceOptions(services)
+        setDoctorOptions(doctors)
 
         if (token) await syncEvents(token)
       } catch (err) {
@@ -100,6 +105,8 @@ const CalendarVW = () => {
     end,
     patientName,
     patientId,
+    doctorId,
+    doctorName,
     serviceType
   }) => {
 
@@ -117,6 +124,8 @@ const CalendarVW = () => {
           location,
           patientId,
           patientName,
+          doctorId,
+          doctorName,
           service: serviceType
         }
       )
@@ -193,6 +202,19 @@ const CalendarVW = () => {
     } catch (err) {
       console.error(err)
       dispatch(showAlertModal({ message: 'No se pudo marcar la cita como no asistida', variant: 'error' }))
+    }
+  }
+
+  /* ── Marcar cita como atendida (asistencia real para el dashboard) ── */
+  const handleAttendedEvent = async () => {
+    if (!selectedEvent) return
+    try {
+      await markAppointmentAttendedCtrl(selectedEvent.resource.googleId)
+      setSelectedEvent(null)
+      dispatch(showAlertModal({ message: 'La cita quedó registrada como atendida', variant: 'success' }))
+    } catch (err) {
+      console.error(err)
+      dispatch(showAlertModal({ message: 'No se pudo marcar la cita como atendida', variant: 'error' }))
     }
   }
 
@@ -333,6 +355,7 @@ const CalendarVW = () => {
           saving={saving}
           patientOptions={patientOptions}
           serviceOptions={serviceOptions}
+          doctorOptions={doctorOptions}
         />
       )}
 
@@ -341,9 +364,11 @@ const CalendarVW = () => {
          <ModalViewEventVW
            event={selectedEvent}
            patientOptions={patientOptions}
+           doctorOptions={doctorOptions}
            onEdit={handleEditEvent}
            onDelete={handleDeleteEvent}
            onNoShow={handleNoShowEvent}
+           onAttended={handleAttendedEvent}
            onClose={() => setSelectedEvent(null)}
            deleting={deleting}
          />

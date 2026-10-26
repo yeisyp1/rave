@@ -9,12 +9,14 @@ export const getGoogleTokenDAO = async () => {
   return session?.provider_token ?? null;
 };
 
-// Guarda paciente y servicio por separado para poder editarlos sin parsear el título.
-const buildExtendedProperties = ({ patientName, service, patientId }) => {
+// Guarda paciente, odontólogo y servicio por separado para poder editarlos sin parsear el título.
+const buildExtendedProperties = ({ patientName, service, patientId, doctorId, doctorName }) => {
   const priv = {};
   if (patientId) priv.patientId = String(patientId);
   if (patientName !== undefined) priv.patientName = patientName;
   if (service !== undefined) priv.service = service;
+  if (doctorId) priv.doctorId = String(doctorId);
+  if (doctorName !== undefined) priv.doctorName = doctorName;
   return Object.keys(priv).length ? { extendedProperties: { private: priv } } : {};
 };
 
@@ -41,7 +43,7 @@ export const fetchGoogleEventsDAO = async (token) => {
 
 export const createGoogleEventDAO = async (
   token,
-  { title, start, end, description = "", location = "", patientName, service, patientId },
+  { title, start, end, description = "", location = "", patientName, service, patientId, doctorId, doctorName },
 ) => {
   const response = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
     method: "POST",
@@ -53,7 +55,7 @@ export const createGoogleEventDAO = async (
       summary: title,
       description,
       location,
-      ...buildExtendedProperties({ patientName, service, patientId }),
+      ...buildExtendedProperties({ patientName, service, patientId, doctorId, doctorName }),
       start: {
         dateTime: start.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -86,7 +88,7 @@ export const deleteGoogleEventDAO = async (token, googleId) => {
 export const updateGoogleEventDAO = async (
   token,
   googleId,
-  { title, start, end, description = "", location = "", patientName, service, patientId },
+  { title, start, end, description = "", location = "", patientName, service, patientId, doctorId, doctorName },
 ) => {
   const response = await fetch(
     `${CALENDAR_API}/calendars/primary/events/${googleId}`,
@@ -100,7 +102,7 @@ export const updateGoogleEventDAO = async (
         summary: title,
         description,
         location,
-        ...buildExtendedProperties({ patientName, service, patientId }),
+        ...buildExtendedProperties({ patientName, service, patientId, doctorId, doctorName }),
         start: {
           dateTime: start.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

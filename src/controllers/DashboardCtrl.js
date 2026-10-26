@@ -32,19 +32,27 @@ const endOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.ge
 const inRange = (date, from, to) => !!date && (!from || date >= from) && (!to || date <= to)
 
 // Rango [from, to] y el periodo inmediatamente anterior de igual longitud (para los deltas).
-const resolveRange = (rangeKey) => {
+// `rangeSel` admite un índice de preset (compatibilidad) o { mode: 'custom', from, to }
+// para el rango elegido libremente en el desplegable de calendario.
+export const resolveRange = (rangeSel) => {
   const now = new Date()
   const today = startOfDay(now)
   const day = 24 * 60 * 60 * 1000
   let from = null
   let to = endOfDay(now)
 
-  if (rangeKey === 0) from = today
-  else if (rangeKey === 1) { from = new Date(today.getTime() - day); to = endOfDay(new Date(today.getTime() - day)) }
-  else if (rangeKey === 2) from = new Date(today.getTime() - 6 * day)
-  else if (rangeKey === 3) from = new Date(now.getFullYear(), now.getMonth(), 1)
-  else if (rangeKey === 4) from = new Date(now.getFullYear(), 0, 1)
-  else { from = null; to = endOfDay(now) } // Histórico
+  if (rangeSel && typeof rangeSel === 'object' && rangeSel.mode === 'custom' && rangeSel.from) {
+    from = startOfDay(toDate(rangeSel.from))
+    to = rangeSel.to ? endOfDay(toDate(rangeSel.to)) : endOfDay(now)
+  } else {
+    const rangeKey = typeof rangeSel === 'object' ? rangeSel?.preset : rangeSel
+    if (rangeKey === 0) from = today
+    else if (rangeKey === 1) { from = new Date(today.getTime() - day); to = endOfDay(new Date(today.getTime() - day)) }
+    else if (rangeKey === 2) from = new Date(today.getTime() - 6 * day)
+    else if (rangeKey === 3) from = new Date(now.getFullYear(), now.getMonth(), 1)
+    else if (rangeKey === 4) from = new Date(now.getFullYear(), 0, 1)
+    else { from = null; to = endOfDay(now) } // Histórico
+  }
 
   let prevFrom = null
   let prevTo = null
@@ -54,6 +62,23 @@ const resolveRange = (rangeKey) => {
     prevFrom = new Date(from.getTime() - 1 - length)
   }
   return { from, to, prevFrom, prevTo }
+}
+
+// Texto a mostrar en el desplegable de rango ("Mes · 1 oct – 20 oct 2026" o, para un
+// rango personalizado, solo las fechas).
+export const describeRangeCtrl = (rangeSel) => {
+  const { from, to } = resolveRange(rangeSel)
+  const fmt = (date, withYear) =>
+    date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: withYear ? 'numeric' : undefined }).replace('.', '')
+  const toLabel = to ? fmt(to, true) : ''
+  const sameYear = from && to && from.getFullYear() === to.getFullYear()
+  const fromLabel = from ? fmt(from, !sameYear) : 'Inicio'
+  const span = `${fromLabel} – ${toLabel}`
+
+  const isCustom = rangeSel && typeof rangeSel === 'object' && rangeSel.mode === 'custom'
+  if (isCustom) return span
+  const presetIndex = typeof rangeSel === 'object' ? rangeSel?.preset : rangeSel
+  return `${RANGE_LABELS[presetIndex] ?? RANGE_LABELS[3]} · ${span}`
 }
 
 const money = (n) => '$' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
@@ -80,11 +105,6 @@ export const fetchDashboardRawCtrl = async () => {
   return { billing, patients, inventory, laboratory, appointments, plans, doctors }
 }
 
-// Factores para repartir los totales reales cuando se filtra por odontólogo/servicio.
-// Son coherentes (suman el total real cuando está "Todos") y deterministas.
-const DENTIST_FACTOR = [1, 0.34, 0.28, 0.22, 0.16]
-const SERVICE_FACTOR = { __all__: 1 }
-
 const buildServiceOptions = (appointments) => {
   const counts = new Map()
   appointments.forEach((appt) => {
@@ -95,40 +115,39 @@ const buildServiceOptions = (appointments) => {
   return ['Todos los servicios', ...sorted]
 }
 
+// dentistOptions es la lista para el <select> (solo nombres, para no romper su
+// contrato); dentistIds es el id real de doctors en el mismo orden ('' para
+// "Todos los odontólogos"), usado para filtrar appointments.doctor_id de verdad.
 const buildDentistOptions = (doctors) => {
-  const names = doctors.map((doc) => `${doc.nombre ?? ''} ${doc.apellidos ?? ''}`.trim()).filter(Boolean)
-  return ['Todos los odontólogos', ...names]
+  const named = doctors.filter((doc) => `${doc.nombre ?? ''} ${doc.apellidos ?? ''}`.trim())
+  const dentistOptions = ['Todos los odontólogos', ...named.map((doc) => `${doc.nombre ?? ''} ${doc.apellidos ?? ''}`.trim())]
+  const dentistIds = ['', ...named.map((doc) => doc.id)]
+  return { dentistOptions, dentistIds }
 }
 
-// Reparte un total real entre los odontólogos con pesos decrecientes deterministas.
-const splitAcrossDentists = (total, dentistNames) => {
-  if (dentistNames.length === 0) return []
-  const weights = dentistNames.map((_, i) => DENTIST_FACTOR[i] ?? 0.1)
-  const sum = weights.reduce((a, b) => a + b, 0)
-  return dentistNames.map((name, i) => ({ name, share: weights[i] / sum }))
-}
-
-export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service = 0 } = {}) => {
+export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 }, dentist = 0, service = 0 } = {}) => {
   const { billing, patients, inventory, laboratory, appointments, plans, doctors } = raw
-  const { from, to, prevFrom, prevTo } = resolveRange(rangeKey)
+  const { from, to, prevFrom, prevTo } = resolveRange(range)
 
   const serviceOptions = buildServiceOptions(appointments)
-  const dentistOptions = buildDentistOptions(doctors)
+  const { dentistOptions, dentistIds } = buildDentistOptions(doctors)
   const selectedService = service > 0 ? serviceOptions[service] : null
-  // Factor coherente para el filtro por odontólogo (los datos reales no guardan el odontólogo).
-  const dentistFactor = dentist > 0 ? (DENTIST_FACTOR[dentist] ?? 0.1) : 1
+  // doctor_id real de appointments (migración appointments_doctor_id): ya no se reparte
+  // el total con un peso inventado, se filtran las citas del odontólogo elegido.
+  const selectedDoctorId = dentist > 0 ? dentistIds[dentist] : null
 
-  // ── Facturación (real) ──
+  // ── Facturación (real, no se filtra por odontólogo: las facturas son por
+  // paciente y no registran quién atendió, a diferencia de las citas) ──
   const activeInvoices = billing.invoices.filter((inv) => !inv.isVoid)
   const invoicesInRange = activeInvoices.filter((inv) => inRange(toDate(inv.date), from, to))
   const invoicesPrev = activeInvoices.filter((inv) => inRange(toDate(inv.date), prevFrom, prevTo))
-  const income = invoicesInRange.reduce((s, inv) => s + inv.paid, 0) * dentistFactor
-  const incomePrev = invoicesPrev.reduce((s, inv) => s + inv.paid, 0) * dentistFactor
-  const pending = activeInvoices.filter((inv) => inv.isPending).reduce((s, inv) => s + inv.balance, 0) * dentistFactor
+  const income = invoicesInRange.reduce((s, inv) => s + inv.paid, 0)
+  const incomePrev = invoicesPrev.reduce((s, inv) => s + inv.paid, 0)
+  const pending = activeInvoices.filter((inv) => inv.isPending).reduce((s, inv) => s + inv.balance, 0)
   const now = new Date()
   const overdue = activeInvoices
     .filter((inv) => inv.isPending && toDate(inv.date) && (now - toDate(inv.date)) > 30 * 24 * 60 * 60 * 1000)
-    .reduce((s, inv) => s + inv.balance, 0) * dentistFactor
+    .reduce((s, inv) => s + inv.balance, 0)
 
   // ── Pacientes (real) ──
   const activePatients = patients.filter((p) => p.activo !== false)
@@ -136,8 +155,10 @@ export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service =
   const newPatientsPrev = activePatients.filter((p) => inRange(toDate(p.created_at), prevFrom, prevTo))
   const recurrentes = Math.max(0, activePatients.length - newPatients.length)
 
-  // ── Citas (real, filtradas por servicio si aplica) ──
-  const apptService = (appt) => !selectedService || appt.service_type === selectedService
+  // ── Citas (real, filtradas por servicio y/o odontólogo si aplica) ──
+  const apptService = (appt) =>
+    (!selectedService || appt.service_type === selectedService) &&
+    (!selectedDoctorId || String(appt.doctor_id) === String(selectedDoctorId))
   const scopedAppts = appointments.filter(apptService)
   const apptsInRange = scopedAppts.filter((a) => inRange(toDate(a.start_at), from, to))
   const todayAppts = scopedAppts.filter((a) => {
@@ -172,14 +193,15 @@ export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service =
     }
     return Math.max(1, days)
   })()
-  const capacity = businessDays * 16 * Math.max(1, doctors.length || 3) // ~16 franjas/día por odontólogo
+  const capacityDoctors = selectedDoctorId ? 1 : Math.max(1, doctors.length || 3)
+  const capacity = businessDays * 16 * capacityDoctors // ~16 franjas/día por odontólogo
   const ocu = Math.min(99, Math.round((totalCitasRango / capacity) * 100)) || 0
 
   // ── KPIs ──
   const kpis = {
     ing: {
       value: money(income),
-      sub: `En el período · ${invoicesInRange.length} factura(s)`,
+      sub: `En el período · ${invoicesInRange.length} factura(s)${selectedDoctorId ? ' · todos los odontólogos' : ''}`,
       st: 'g',
       ...delta(income, incomePrev),
     },
@@ -207,7 +229,7 @@ export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service =
     },
     cxc: {
       value: money(pending),
-      sub: `Vencidas (>30 días): ${money(overdue)}`,
+      sub: `Vencidas (>30 días): ${money(overdue)}${selectedDoctorId ? ' · todos los odontólogos' : ''}`,
       st: overdue > 0 ? 'r' : 'g',
       delta: '—', good: overdue === 0, up: overdue > 0,
     },
@@ -216,7 +238,7 @@ export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service =
   // ── Series de gráficos ──
   // Ingresos por día (30), mes (12) y año (5), desde pagos reales.
   const sumPaidBetween = (f, t) => activeInvoices
-    .filter((inv) => inRange(toDate(inv.date), f, t)).reduce((s, inv) => s + inv.paid, 0) * dentistFactor
+    .filter((inv) => inRange(toDate(inv.date), f, t)).reduce((s, inv) => s + inv.paid, 0)
   const ingresos = { d: [], m: [], a: [] }
   for (let i = 29; i >= 0; i--) {
     const d = new Date(startOfDay(now).getTime() - i * 24 * 60 * 60 * 1000)
@@ -290,17 +312,25 @@ export const computeDashboardCtrl = (raw, { rangeKey = 3, dentist = 0, service =
     })
   })
   const tratamientos = [...tratamientoTotals.entries()]
-    .map(([label, value]) => ({ label, value: value * dentistFactor }))
+    .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)
 
-  // Carga por odontólogo (derivada: reparto coherente del total real de citas e ingresos).
-  const totalIncomeReal = invoicesInRange.reduce((s, inv) => s + inv.paid, 0)
-  const odontologos = splitAcrossDentists(apptsInRange.length, dentistOptions.slice(1)).map((d) => ({
-    name: d.name,
-    citas: Math.round(apptsInRange.length * d.share),
-    ingresos: Math.round(totalIncomeReal * d.share),
-  }))
+  // Carga por odontólogo: conteo real de citas del período por doctor_id
+  // (migración appointments_doctor_id). Las citas sin odontólogo asignado
+  // (agendadas antes de la migración, o por WhatsApp) se agrupan aparte.
+  const doctorNameById = new Map(doctors.map((doc) => [String(doc.id), `${doc.nombre ?? ''} ${doc.apellidos ?? ''}`.trim()]))
+  const citasPorOdontologo = new Map()
+  apptsInRange.forEach((appt) => {
+    const key = appt.doctor_id != null ? String(appt.doctor_id) : '__sin_asignar__'
+    citasPorOdontologo.set(key, (citasPorOdontologo.get(key) || 0) + 1)
+  })
+  const odontologos = [...citasPorOdontologo.entries()]
+    .map(([key, citas]) => ({
+      name: key === '__sin_asignar__' ? 'Sin asignar' : (doctorNameById.get(key) || 'Odontólogo'),
+      citas,
+    }))
+    .sort((a, b) => b.citas - a.citas)
 
   // Mapa de calor de ocupación: distribución REAL de citas por día de semana y hora.
   const WD = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
