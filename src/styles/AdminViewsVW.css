@@ -104,10 +104,51 @@
   grid-column: span 2;
 }
 
+.admin-field.span-4 {
+  grid-column: span 4;
+}
+
 .admin-field label {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
+}
+
+.admin-req {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.admin-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-chip:hover {
+  border-color: var(--button-primary);
+}
+
+.admin-chip.active {
+  color: var(--white);
+  background: var(--button-primary);
+  border-color: var(--button-primary);
 }
 
 .admin-input,
