@@ -2269,3 +2269,13 @@ $$;
 
 revoke all on function public.check_authorized_email(text) from public;
 grant execute on function public.check_authorized_email(text) to anon, authenticated;
+
+
+----------------------
+
+-- Migracion patients_updated_at (2026-10-26).
+-- El trigger set_updated_at() en patients (definido mas arriba junto a la tabla)
+-- escribe NEW.updated_at, pero la tabla nunca tuvo esa columna: cualquier UPDATE
+-- sobre patients (edicion desde la app, baja/alta de WhatsApp, etc.) fallaba con
+-- "record \"new\" has no field \"updated_at\"". Se agrega la columna faltante.
+alter table public.patients add column if not exists updated_at timestamp with time zone not null default now();

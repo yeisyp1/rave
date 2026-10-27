@@ -127,10 +127,19 @@ solicitudes de datos, 3 roles). Lo que sigue pendiente de verdad:
   Supabase). Con eso se corrigió el bug del botón "No asistió" del calendario, y
   el Dashboard usa ausentismo y citas atendidas/no-show **reales** cuando existen
   esos estados, cayendo a la estimación solo si aún no hay asistencia registrada.
-- **Configuración de WhatsApp**: el código está desplegado (Edge Functions +
-  Meta Cloud API); falta cargar los secrets en Supabase y registrar el webhook
-  en Meta (la página `/whatsapp-solicitudes` documenta los pasos). Ver
-  `supabase/functions/README.md`.
+- **Configuración de WhatsApp (resuelto 2026-10-26)**: secrets cargados, webhook
+  registrado y suscrito al campo `messages`, token permanente (usuario del
+  sistema en Meta Business) generado y probado de punta a punta: envío de
+  recordatorio con plantilla aprobada (entregado) y comando entrante "cita"
+  (crea solicitud en `/whatsapp-solicitudes` y responde automático). La app de
+  Meta sigue en modo desarrollo/pruebas: mientras no se verifique el negocio y
+  se agregue el número real de la clínica, solo funciona con destinatarios de
+  prueba agregados en Meta (ver `supabase/functions/README.md`, sección
+  "Para producción").
+- **Bug de schema corregido (2026-10-26)**: `patients` tenía el trigger
+  `set_updated_at` pero le faltaba la columna `updated_at` — cualquier UPDATE
+  a un paciente fallaba. Migración `patients_updated_at` al final de
+  `db/supabase_schema.sql` agrega la columna.
 - **Calidad de ingeniería**: ya hay CI (`.github/workflows/ci.yml`: lint + tests
   + build en cada push/PR a main) y el `README.md` documenta el proyecto. Queda
   como opcional migrar a TypeScript (hoy es JS puro).
