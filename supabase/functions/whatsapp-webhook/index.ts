@@ -44,7 +44,10 @@ const verifySignature = async (rawBody: string, header: string | null) => {
 };
 
 // Responde dentro de la ventana de 24 h abierta por el mensaje del paciente.
-const sendText = async (phoneNumberId: string, to: string, body: string) => {
+// Devuelve el id del mensaje de Meta (o null si falló) para poder dejar registro
+// en whatsapp_messages: la tabla es el historial de enviados Y recibidos, y antes
+// solo quedaban los recibidos del paciente.
+const sendText = async (phoneNumberId: string, to: string, body: string): Promise<string | null> => {
   const response = await fetch(
     `https://graph.facebook.com/${META_API_VERSION}/${phoneNumberId}/messages`,
     {
@@ -53,9 +56,12 @@ const sendText = async (phoneNumberId: string, to: string, body: string) => {
       body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body } }),
     },
   );
+  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    console.error("No se pudo responder por WhatsApp:", response.status, await response.text());
+    console.error("No se pudo responder por WhatsApp:", response.status, JSON.stringify(data));
+    return null;
   }
+  return data?.messages?.[0]?.id ?? null;
 };
 
 // Logica del asistente: recibe el mensaje del paciente y devuelve el texto de respuesta.
@@ -196,7 +202,16 @@ Deno.serve(async (req: Request) => {
           const reply = await handleIncoming(phoneDigits, body);
           // Se responde desde el mismo numero al que escribio el paciente (viene en el evento).
           const senderId = String(change?.value?.metadata?.phone_number_id || META_WA_PHONE_NUMBER_ID);
-          await sendText(senderId, phoneDigits, reply);
+          const providerMessageId = await sendText(senderId, phoneDigits, reply);
+          await supabaseAdmin.from("whatsapp_messages").insert([
+            {
+              direction: "outbound",
+              phone: phoneDigits,
+              body: reply,
+              status: providerMessageId ? "sent" : "failed",
+              provider_message_id: providerMessageId,
+            },
+          ]);
         } catch (err) {
           console.error("Error procesando mensaje entrante:", err);
         }

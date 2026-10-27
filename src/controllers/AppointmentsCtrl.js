@@ -8,8 +8,10 @@ import {
   upsertAppointmentByGoogleIdDAO,
 } from "../dao/AppointmentsDAO";
 
+// Nota: {{hora}} ya viene con punto final ("12:00 a. m.") por el formato es-CO,
+// así que la plantilla no debe agregar otro punto después (quedaría "a. m..").
 const FALLBACK_CONFIRMATION_BODY =
-  "Hola {{nombre}}, confirmamos tu cita en Clínica RAVE para el {{fecha}} a las {{hora}}.";
+  "Hola {{nombre}}, confirmamos tu cita en Clínica RAVE para el {{fecha}} a las {{hora}}";
 
 export const renderMessageTemplateCtrl = (body, vars) =>
   Object.entries(vars).reduce(
@@ -47,10 +49,13 @@ export const queueAppointmentConfirmationCtrl = async ({ appointmentId, patientI
 
   const template = await getActiveWhatsappTemplateDAO();
 
+  const fecha = start.toLocaleDateString("es-CO");
+  const hora = start.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+
   const body = renderMessageTemplateCtrl(template?.body || FALLBACK_CONFIRMATION_BODY, {
     nombre: patient?.nombre,
-    fecha: start.toLocaleDateString("es-CO"),
-    hora: start.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" }),
+    fecha,
+    hora,
     servicio: serviceType,
   });
 
@@ -61,6 +66,10 @@ export const queueAppointmentConfirmationCtrl = async ({ appointmentId, patientI
     appointment_id: appointmentId,
     template_id: template?.id ?? null,
     body,
+    // Sin esto, process-whatsapp-queue manda el mensaje como texto libre en vez
+    // de la plantilla aprobada de Meta (META_WA_TEMPLATE_NAME), y WhatsApp lo
+    // rechaza si el paciente no escribió en las últimas 24h.
+    template_variables: { "1": fecha, "2": hora },
     status: "pending",
   });
 };
