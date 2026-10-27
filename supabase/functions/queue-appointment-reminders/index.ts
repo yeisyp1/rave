@@ -41,8 +41,9 @@ Deno.serve(async (_req: Request) => {
     .limit(1)
     .maybeSingle();
 
+  // {{hora}} ya trae punto final ("12:00 a. m.") por el formato es-CO; no agregar otro.
   const fallbackBody =
-    "Hola {{nombre}}, te recordamos tu cita en Clínica RAVE el {{fecha}} a las {{hora}}.";
+    "Hola {{nombre}}, te recordamos tu cita en Clínica RAVE el {{fecha}} a las {{hora}}";
 
   let queued = 0;
 
