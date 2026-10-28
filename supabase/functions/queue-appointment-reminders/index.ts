@@ -73,7 +73,7 @@ Deno.serve(async (_req: Request) => {
         appointment_id: appointment.id,
         template_id: template?.id ?? null,
         body,
-        template_variables: { "1": fecha, "2": hora },
+        template_variables: { "1": patient?.nombre || "paciente", "2": fecha, "3": hora, _plantilla: "recordatorio" },
         status: "pending",
       },
     ]);
