@@ -6,10 +6,17 @@ const supabaseAdmin = createClient(
 );
 
 // WhatsApp Business Cloud API (Meta). Secrets: META_WA_TOKEN, META_WA_PHONE_NUMBER_ID y,
-// para recordatorios fuera de la ventana de 24 h, META_WA_TEMPLATE_NAME (plantilla aprobada).
+// para mensajes fuera de la ventana de 24 h, el nombre de cada plantilla aprobada:
+//   META_WA_TEMPLATE_CONFIRMATION  confirmación al agendar (CU-22)
+//   META_WA_TEMPLATE_REMINDER      recordatorio del día anterior (CU-17)
+//   META_WA_TEMPLATE_NAME          respaldo si no se configura alguna de las dos anteriores
 const META_WA_TOKEN = Deno.env.get("META_WA_TOKEN");
 const META_WA_PHONE_NUMBER_ID = Deno.env.get("META_WA_PHONE_NUMBER_ID");
 const META_WA_TEMPLATE_NAME = Deno.env.get("META_WA_TEMPLATE_NAME");
+const TEMPLATE_BY_KIND: Record<string, string | undefined> = {
+  confirmacion: Deno.env.get("META_WA_TEMPLATE_CONFIRMATION") ?? META_WA_TEMPLATE_NAME,
+  recordatorio: Deno.env.get("META_WA_TEMPLATE_REMINDER") ?? META_WA_TEMPLATE_NAME,
+};
 const META_WA_TEMPLATE_LANG = Deno.env.get("META_WA_TEMPLATE_LANG") ?? "es";
 const META_API_VERSION = Deno.env.get("META_API_VERSION") ?? "v21.0";
 
@@ -23,20 +30,27 @@ const sendViaMeta = async (
   const to = phone.replace(/\D/g, "");
 
   // Fuera de la ventana de 24 h WhatsApp solo permite plantillas aprobadas.
-  const payload = META_WA_TEMPLATE_NAME && variables
+  // La clave "_plantilla" indica qué plantilla usar; las claves numéricas son
+  // los parámetros {{1}}, {{2}}... en orden.
+  const kind = variables?._plantilla;
+  const templateName = variables
+    ? (kind ? TEMPLATE_BY_KIND[kind] : META_WA_TEMPLATE_NAME)
+    : undefined;
+  const params = variables
+    ? Object.keys(variables)
+      .filter((key) => /^\d+$/.test(key))
+      .sort((x, y) => Number(x) - Number(y))
+      .map((key) => ({ type: "text", text: String(variables[key]) }))
+    : [];
+  const payload = templateName
     ? {
       messaging_product: "whatsapp",
       to,
       type: "template",
       template: {
-        name: META_WA_TEMPLATE_NAME,
+        name: templateName,
         language: { code: META_WA_TEMPLATE_LANG },
-        components: [{
-          type: "body",
-          parameters: Object.keys(variables)
-            .sort((x, y) => Number(x) - Number(y))
-            .map((key) => ({ type: "text", text: String(variables[key]) })),
-        }],
+        components: [{ type: "body", parameters: params }],
       },
     }
     : { messaging_product: "whatsapp", to, type: "text", text: { body } };

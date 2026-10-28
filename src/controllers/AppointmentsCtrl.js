@@ -67,9 +67,10 @@ export const queueAppointmentConfirmationCtrl = async ({ appointmentId, patientI
     template_id: template?.id ?? null,
     body,
     // Sin esto, process-whatsapp-queue manda el mensaje como texto libre en vez
-    // de la plantilla aprobada de Meta (META_WA_TEMPLATE_NAME), y WhatsApp lo
-    // rechaza si el paciente no escribió en las últimas 24h.
-    template_variables: { "1": fecha, "2": hora },
+    // de la plantilla aprobada de Meta, y WhatsApp lo rechaza si el paciente no
+    // escribió en las últimas 24h. "_plantilla" elige la plantilla de confirmación
+    // (META_WA_TEMPLATE_CONFIRMATION) y no la del recordatorio.
+    template_variables: { "1": patient?.nombre || "paciente", "2": fecha, "3": hora, _plantilla: "confirmacion" },
     status: "pending",
   });
 };
