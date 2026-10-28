@@ -118,6 +118,20 @@ describe('queueAppointmentConfirmationCtrl (RF-34: confirmación por WhatsApp)',
     )
   })
 
+  it('pide la plantilla de confirmación de Meta con nombre, fecha y hora como parámetros', async () => {
+    getPatientContactDAO.mockResolvedValue({ nombre: 'Ana', celular: '3001234567' })
+    getActiveWhatsappTemplateDAO.mockResolvedValue(null)
+    createOutboundWhatsappMessageDAO.mockResolvedValue(undefined)
+
+    await queueAppointmentConfirmationCtrl({ appointmentId: 3, patientId: 'p-3', start, serviceType: 'Control' })
+
+    const vars = createOutboundWhatsappMessageDAO.mock.calls[0][0].template_variables
+    expect(vars._plantilla).toBe('confirmacion')
+    expect(vars['1']).toBe('Ana')
+    expect(vars['2']).toBe(start.toLocaleDateString('es-CO'))
+    expect(vars['3']).toBe(start.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' }))
+  })
+
   it('usa un texto de respaldo cuando no hay plantilla activa', async () => {
     getPatientContactDAO.mockResolvedValue({ nombre: 'Ana', telefono: '3009876543' })
     getActiveWhatsappTemplateDAO.mockResolvedValue(null)
