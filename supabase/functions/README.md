@@ -18,7 +18,9 @@ Proyecto Supabase: `czfuquhkjuhbwnkbgkze` (Rave). Proveedor: **WhatsApp Business
 | `META_APP_SECRET` | App Dashboard → Settings → Basic → App secret. Firma cada petición de Meta. |
 | `META_WA_TOKEN` | Token de acceso permanente (usuario del sistema) o temporal para pruebas. |
 | `META_WA_PHONE_NUMBER_ID` | WhatsApp → API Setup → Phone number ID. |
-| `META_WA_TEMPLATE_NAME` | Nombre de la plantilla aprobada para recordatorios (cuerpo con `{{1}}` fecha y `{{2}}` hora). |
+| `META_WA_TEMPLATE_CONFIRMATION` | Nombre de la plantilla aprobada de confirmación (`rave_confirmacion_cita`): `{{1}}` nombre, `{{2}}` fecha, `{{3}}` hora. |
+| `META_WA_TEMPLATE_REMINDER` | Nombre de la plantilla aprobada de recordatorio (`rave_recordatorio_cita`), con los mismos tres parámetros. |
+| `META_WA_TEMPLATE_NAME` | Opcional: respaldo si falta alguna de las dos anteriores. |
 | `META_WA_TEMPLATE_LANG` | Opcional, por defecto `es`. |
 
 Ninguno tiene valor de respaldo en el código: sin ellos la función rechaza las peticiones.
