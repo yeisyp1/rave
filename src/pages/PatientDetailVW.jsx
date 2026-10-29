@@ -534,55 +534,62 @@ const PatientDetailVW = () => {
         {activeTab === 'compliance' && (
           <div className="pd-tab-content">
             <div className="pd-section">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '1rem' }}>
                 <FiShield size={16} />
                 <h3 className="pd-section-title" style={{ margin: 0 }}>Autorización de datos personales</h3>
               </div>
-              <div className="pd-info-row">
-                <span className="pd-info-label">Estado:</span>
-                <span className="pd-info-value">
-                  {patient.autorizacion_datos ? 'Autorizado' : 'No autorizado'}
-                  {patient.autorizacion_datos_fecha
-                    ? ` — ${new Date(patient.autorizacion_datos_fecha).toLocaleString('es-CO')}`
-                    : ''}
-                </span>
-              </div>
-              <div className="pd-info-row" style={{ marginTop: '1rem' }}>
-                <span className="pd-info-label">Medio de autorización:</span>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
-                  <select
-                    value={authorizationMedium}
-                    onChange={(e) => setAuthorizationMedium(e.target.value)}
-                    style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="presencial">Presencial</option>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">Email</option>
-                    <option value="telefono">Teléfono</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                  <button
-                    className="pd-btn-action-primary"
-                    onClick={handleSaveAuthorizationMedium}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <FiSave size={14} />
-                    Guardar
-                  </button>
+              <div className="pd-info-grid">
+                <div className="pd-info-card">
+                  <h3>Estado de autorización</h3>
+                  <div className="pd-info-row">
+                    <span className="pd-info-label">Estado:</span>
+                    <span className="pd-info-value">
+                      {patient.autorizacion_datos ? 'Autorizado' : 'No autorizado'}
+                      {patient.autorizacion_datos_fecha
+                        ? ` — ${new Date(patient.autorizacion_datos_fecha).toLocaleString('es-CO')}`
+                        : ''}
+                    </span>
+                  </div>
+                  <div className="pd-info-row pd-info-row-stack">
+                    <span className="pd-info-label">Medio de autorización:</span>
+                    <div className="pd-inline-control">
+                      <select
+                        value={authorizationMedium}
+                        onChange={(e) => setAuthorizationMedium(e.target.value)}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="presencial">Presencial</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Email</option>
+                        <option value="telefono">Teléfono</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                      <button
+                        className="pd-btn-action-primary"
+                        onClick={handleSaveAuthorizationMedium}
+                      >
+                        <FiSave size={14} />
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="pd-info-row" style={{ marginTop: '1rem' }}>
-                <span className="pd-info-label">Mensajes por WhatsApp:</span>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
-                  <span className="pd-info-value" style={{ flex: 1 }}>
-                    {patient.whatsapp_baja
-                      ? `Dado de baja${patient.whatsapp_baja_at ? ` el ${new Date(patient.whatsapp_baja_at).toLocaleDateString('es-CO')}` : ''}`
-                      : 'Recibe recordatorios'}
-                  </span>
-                  <button className="pd-btn-action-primary" onClick={handleToggleWhatsappBaja} style={{ whiteSpace: 'nowrap' }}>
-                    {patient.whatsapp_baja ? 'Reactivar' : 'Dar de baja'}
-                  </button>
+
+                <div className="pd-info-card">
+                  <h3>Mensajes por WhatsApp</h3>
+                  <div className="pd-info-row pd-info-row-stack">
+                    <span className="pd-info-label">Estado:</span>
+                    <div className="pd-inline-control">
+                      <span className="pd-info-value" style={{ textAlign: 'left', margin: 0, flex: 1 }}>
+                        {patient.whatsapp_baja
+                          ? `Dado de baja${patient.whatsapp_baja_at ? ` el ${new Date(patient.whatsapp_baja_at).toLocaleDateString('es-CO')}` : ''}`
+                          : 'Recibe recordatorios'}
+                      </span>
+                      <button className="pd-btn-action-primary" onClick={handleToggleWhatsappBaja}>
+                        {patient.whatsapp_baja ? 'Reactivar' : 'Dar de baja'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -590,8 +597,8 @@ const PatientDetailVW = () => {
             <div className="pd-section">
               <h3 className="pd-section-title">Consentimiento informado (Ley 527 de 1999)</h3>
               {canEdit && (
-              <form className="pd-info-grid" onSubmit={submitConsent} style={{ marginBottom: '1rem' }}>
-                <div className="pd-info-card" style={{ gridColumn: '1 / -1' }}>
+              <form onSubmit={submitConsent} style={{ marginBottom: '1rem' }}>
+                <div className="pd-info-card pd-form-card">
                   <label className="pd-info-label" htmlFor="consent-content">Contenido del consentimiento</label>
                   <textarea
                     id="consent-content"
@@ -643,14 +650,14 @@ const PatientDetailVW = () => {
                   ))}
                 </div>
               ) : (
-                <p className="pd-info-value">No hay consentimientos registrados.</p>
+                <p className="pd-empty-message">No hay consentimientos registrados.</p>
               )}
             </div>
 
             <div className="pd-section">
               <h3 className="pd-section-title">Solicitudes sobre datos personales (Ley 1581 de 2012)</h3>
-              <form className="pd-info-grid" onSubmit={submitDataRequest} style={{ marginBottom: '1rem' }}>
-                <div className="pd-info-card" style={{ gridColumn: '1 / -1' }}>
+              <form onSubmit={submitDataRequest} style={{ marginBottom: '1rem' }}>
+                <div className="pd-info-card pd-form-card">
                   <label className="pd-info-label" htmlFor="request-type">Tipo de solicitud</label>
                   <select
                     id="request-type"
@@ -703,7 +710,7 @@ const PatientDetailVW = () => {
                   </table>
                 </div>
               ) : (
-                <p className="pd-info-value">No hay solicitudes registradas.</p>
+                <p className="pd-empty-message">No hay solicitudes registradas.</p>
               )}
             </div>
           </div>

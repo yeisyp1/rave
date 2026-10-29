@@ -257,6 +257,10 @@
   padding: 1.5rem;
 }
 
+.pd-form-card {
+  max-width: 640px;
+}
+
 .pd-info-card h3 {
   margin: 0 0 1rem 0;
   font-size: 1rem;
@@ -289,6 +293,32 @@
   text-align: right;
   flex: 1;
   margin-left: 1rem;
+}
+
+.pd-info-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.pd-inline-control {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pd-inline-control select {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.pd-inline-control .pd-btn-action-primary {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── SECTION ── */
