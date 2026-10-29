@@ -11,6 +11,7 @@ import {
 } from '../controllers/CalendarCtrl'
 import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
 import '../styles/AdminViewsVW.css'
+import '../styles/CitaModalVW.css'
 
 const formatInputDate = (date) => date.toISOString().slice(0, 10)
 
