@@ -409,6 +409,9 @@
   justify-content: center;
   z-index: 200;
   padding: 24px;
+  /* Si aun con el tope de altura el modal no cabe, la capa se desplaza en vez
+     de recortarlo. */
+  overflow-y: auto;
   animation: clFadeIn 0.2s ease;
 }
 
@@ -421,6 +424,13 @@
   border: 1px solid var(--cl-border);
   border-radius: 14px;
   overflow: hidden;
+  /* Sin tope de altura el modal crecia mas que la pantalla y, al estar
+     centrado, se salia por arriba y por abajo: se perdian el titulo y los
+     botones. Ahora se limita al alto visible y el cuerpo se desplaza. */
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 28px 70px rgba(0,0,0,0.22);
   animation: clSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -437,6 +447,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 22px 24px 0;
+  flex-shrink: 0;
 }
 
 .cl-modal-eyebrow {
@@ -486,6 +497,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* Solo el cuerpo se desplaza: cabecera y botones quedan siempre a la vista. */
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .cl-field {
@@ -554,6 +568,11 @@
   justify-content: space-between;
   padding: 16px 24px;
   border-top: 1px solid var(--cl-border);
+  flex-shrink: 0;
+  /* Con varios botones (Eliminar, Marcar atendida, No asistio, Cerrar, Editar)
+     la fila no cabe en una linea en pantallas angostas. */
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* ─────────────────────────────

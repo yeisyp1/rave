@@ -880,7 +880,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                               className="mhc-btn-danger"
                               onClick={() => handleOpenAnnulModal(history)}
                             >
-                              Anular con nota
+                              Anular
                             </button>
                           </div>
                         ) : null}
