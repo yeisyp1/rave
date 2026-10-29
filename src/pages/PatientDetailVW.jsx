@@ -444,7 +444,7 @@ const PatientDetailVW = () => {
                               className="pd-history-action pd-history-action-delete"
                               onClick={() => handleAnnulHistory(history)}
                             >
-                              Anular con nota
+                              Anular
                             </button>
                           </div>
                         ) : (
@@ -513,7 +513,6 @@ const PatientDetailVW = () => {
                       className="pd-btn-action-primary"
                       onClick={handleSaveOdontogram}
                       disabled={savingOdontogram}
-                      style={{ marginTop: '1rem', width: '100%' }}
                     >
                       <FiSave size={14} />
                       {savingOdontogram ? 'Guardando...' : 'Guardar odontograma'}

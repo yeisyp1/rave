@@ -174,6 +174,9 @@
 
 .pd-btn-action-primary:hover {
     background: var(--primary-color);
+    /* Sin esto el texto conserva el color primario, que pasa a ser el del
+       fondo, y la etiqueta del boton queda invisible al pasar el raton. */
+    color: #fff;
     opacity: 0.9;
 }
 
@@ -451,6 +454,10 @@
 
 .pd-odontogram-container {
   display: flex;
+  /* En fila, el odontograma y el boton de guardar se repartian el ancho a la
+     mitad: el odontograma quedaba comprimido y el boton se estiraba como un
+     bloque vacio al costado. Van apilados. */
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   padding: 0;
@@ -458,9 +465,22 @@
 }
 
 .pd-odontogram-container > * {
-  width: 100%;
   min-height: 0;
+}
+
+/* Solo el odontograma ocupa el ancho y el alto disponibles. */
+.pd-odontogram-container > :first-child {
   flex: 1;
+  width: 100%;
+}
+
+/* El boton de guardar conserva su tamano natural y se alinea a la derecha,
+   igual que el de .pd-media-actions. */
+.pd-odontogram-container > .pd-btn-action-primary {
+  flex: 0 0 auto;
+  width: auto;
+  align-self: flex-end;
+  margin-top: 1rem;
 }
 
 .pd-media-grid {
