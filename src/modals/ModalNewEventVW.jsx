@@ -4,6 +4,7 @@ import { FiX } from 'react-icons/fi'
 import moment from 'moment'
 import { showAlertModal } from '../app/store'
 import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
+import '../styles/CitaModalVW.css'
 
 /* MODAL NUEVA CITA */
 const NewEventModal = ({

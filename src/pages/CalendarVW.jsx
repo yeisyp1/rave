@@ -5,6 +5,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/es'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import '../styles/CitaModalVW.css'
 import '../styles/CalendarVW.css'
 import { FiRefreshCw, FiPlus, FiAlertCircle, FiX } from 'react-icons/fi'
 import {

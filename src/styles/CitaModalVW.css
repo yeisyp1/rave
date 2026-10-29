@@ -1,0 +1,267 @@
+/* ─────────────────────────────
+   MODAL DE CITA — hoja compartida
+
+   Estas clases (.cl-overlay, .cl-modal, .cl-field, .cl-btn-*, .cl-spinner)
+   las usan el calendario, la pagina Agendar Cita y los dos modales de cita.
+   Estaban duplicadas en CalendarVW.css y en AgendarCitaVW.css, y AgendarCitaVW
+   y ModalNewEventVW las usaban sin importar ninguna hoja: funcionaban solo
+   porque el router cargaba el CSS del calendario. Viven aqui y cada consumidor
+   importa este archivo.
+───────────────────────────── */
+
+/* ─────────────────────────────
+   BOTONES
+───────────────────────────── */
+.cl-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 18px;
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px #bcc4d4;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.cl-btn-primary:active { transform: translateY(0); }
+.cl-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.cl-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--cl-soft);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  font-size: 13.5px;
+  border: 1px solid var(--cl-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.cl-btn-ghost:hover:not(:disabled) {
+  border-color: var(--gold-border);
+  color: var(--gold);
+  background: var(--gold-pale);
+}
+
+.cl-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─────────────────────────────
+   MODAL
+───────────────────────────── */
+.cl-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 18, 32, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+  /* Si aun con el tope de altura el modal no cabe, la capa se desplaza en vez
+     de recortarlo. */
+  overflow-y: auto;
+  animation: clFadeIn 0.2s ease;
+}
+
+@keyframes clFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.cl-modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--cl-card);
+  border: 1px solid var(--cl-border);
+  border-radius: 14px;
+  overflow: hidden;
+  /* Sin tope de altura el modal crecia mas que la pantalla y, al estar
+     centrado, se salia por arriba y por abajo: se perdian el titulo y los
+     botones. Ahora se limita al alto visible y el cuerpo se desplaza. */
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.22);
+  animation: clSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] .cl-modal { box-shadow: 0 28px 70px rgba(0,0,0,0.50); }
+
+@keyframes clSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cl-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 22px 24px 0;
+  flex-shrink: 0;
+}
+
+.cl-modal-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+
+.cl-modal-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cl-text);
+  margin: 0;
+}
+
+.cl-modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--cl-border);
+  color: var(--cl-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .cl-modal-close { background: rgba(255,255,255,0.06); }
+.cl-modal-close:hover { background: var(--gold-pale); color: var(--gold); border-color: var(--gold-border); }
+
+.cl-modal-accent {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-lt) 60%, transparent);
+  margin: 16px 24px 0;
+  opacity: 0.6;
+}
+
+.cl-modal-body {
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Solo el cuerpo se desplaza: cabecera y botones quedan siempre a la vista. */
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.cl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cl-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cl-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--cl-soft);
+}
+
+.cl-req { color: var(--gold); margin-left: 2px; }
+
+.cl-input {
+  height: 42px;
+  background: var(--cl-input-bg);
+  border: 1px solid var(--cl-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: var(--cl-text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.cl-input::placeholder { color: var(--cl-muted); }
+
+.cl-input:focus {
+  border-color: rgba(21,98,185,0.65);
+  background: var(--gold-pale-soft);
+  box-shadow: 0 0 0 3px rgba(21,98,185,0.09);
+}
+
+.cl-input[type="time"] { color-scheme: light; }
+[data-theme="dark"] .cl-input[type="time"] { color-scheme: dark; }
+
+.cl-date-display {
+  height: 42px;
+  background: var(--gold-pale);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: capitalize;
+}
+
+.cl-modal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--cl-border);
+  flex-shrink: 0;
+  /* Con varios botones (Eliminar, Marcar atendida, No asistio, Cerrar, Editar)
+     la fila no cabe en una linea en pantallas angostas. */
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+
+/* ─────────────────────────────
+   SPINNERS & ANIMATIONS
+───────────────────────────── */
+@keyframes cl-spin { to { transform: rotate(360deg); } }
+
+.cl-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  display: inline-block;
+  animation: cl-spin 0.7s linear infinite;
+}
+
+.cl-spinner-sm {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--gold-border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  display: inline-block;
+  animation: cl-spin 0.7s linear infinite;
+}
+
