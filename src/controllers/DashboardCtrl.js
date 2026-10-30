@@ -140,9 +140,11 @@ export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 
   // paciente y no registran quién atendió, a diferencia de las citas) ──
   const activeInvoices = billing.invoices.filter((inv) => !inv.isVoid)
   const invoicesInRange = activeInvoices.filter((inv) => inRange(toDate(inv.date), from, to))
-  const invoicesPrev = activeInvoices.filter((inv) => inRange(toDate(inv.date), prevFrom, prevTo))
-  const income = invoicesInRange.reduce((s, inv) => s + inv.paid, 0)
-  const incomePrev = invoicesPrev.reduce((s, inv) => s + inv.paid, 0)
+  // Ingresos = pagos recibidos (por fecha de pago, no por fecha de factura) de facturas vigentes.
+  const sumPaidBetween = (f, t) => activeInvoices.reduce((s, inv) => s + inv.paidInRange(f, t), 0)
+  const income = sumPaidBetween(from, to)
+  const incomePrev = from ? sumPaidBetween(prevFrom, prevTo) : 0
+  const paymentsInRangeCount = activeInvoices.reduce((s, inv) => s + inv.paymentsInRange(from, to).length, 0)
   const pending = activeInvoices.filter((inv) => inv.isPending).reduce((s, inv) => s + inv.balance, 0)
   const now = new Date()
   const overdue = activeInvoices
@@ -197,11 +199,56 @@ export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 
   const capacity = businessDays * 16 * capacityDoctors // ~16 franjas/día por odontólogo
   const ocu = Math.min(99, Math.round((totalCitasRango / capacity) * 100)) || 0
 
+  // ── Tendencia de cada KPI (sparkline) ──
+  // 14 cortes consecutivos del rango seleccionado (mínimo los últimos 14 días, para que
+  // "Hoy" o "Ayer" también muestren una tendencia), calculados con los mismos datos reales.
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const TREND_POINTS = 14
+  const trendBuckets = (() => {
+    const end = to ?? endOfDay(now)
+    let start = from
+    if (!start) {
+      const times = [
+        ...activeInvoices.map((inv) => toDate(inv.date)),
+        ...scopedAppts.map((a) => toDate(a.start_at)),
+        ...activePatients.map((p) => toDate(p.created_at)),
+      ].filter(Boolean).map((date) => date.getTime())
+      start = times.length ? startOfDay(new Date(times.reduce((min, t) => Math.min(min, t), Infinity))) : null
+    }
+    const minStart = startOfDay(new Date(end.getTime() - (TREND_POINTS - 1) * DAY_MS))
+    if (!start || start > minStart) start = minStart
+    const step = (end.getTime() - start.getTime() + 1) / TREND_POINTS
+    return Array.from({ length: TREND_POINTS }, (_, i) => ({
+      start: new Date(start.getTime() + i * step),
+      end: new Date(start.getTime() + (i + 1) * step - 1),
+      days: step / DAY_MS,
+    }))
+  })()
+  const bucketize = (items, getDate, getValue = () => 1) =>
+    trendBuckets.map((b) => items.reduce((sum, item) => (inRange(toDate(getDate(item)), b.start, b.end) ? sum + getValue(item) : sum), 0))
+  const apptsByStatus = (statuses) => bucketize(scopedAppts.filter((a) => statuses.includes(a.status)), (a) => a.start_at)
+  const apptsPerBucket = bucketize(scopedAppts, (a) => a.start_at)
+  const noShowPerBucket = apptsByStatus(['No asistida'])
+  const attendedPerBucket = apptsByStatus(['Atendida'])
+  const cancelledPerBucket = apptsByStatus(['Cancelada'])
+  const ratio = (num, den) => (den > 0 ? (num / den) * 100 : 0)
+  const trends = {
+    ing: trendBuckets.map((b) => sumPaidBetween(b.start, b.end)),
+    cit: apptsPerBucket,
+    // Misma fórmula del KPI (citas / capacidad), pero por corte. Los domingos no cuentan.
+    ocu: apptsPerBucket.map((count, i) => ratio(count, Math.max(1, trendBuckets[i].days * (6 / 7)) * 16 * capacityDoctors)),
+    aus: apptsPerBucket.map((count, i) => (attendanceTracked
+      ? ratio(noShowPerBucket[i], noShowPerBucket[i] + attendedPerBucket[i])
+      : ratio(cancelledPerBucket[i], count))),
+    pac: bucketize(activePatients, (p) => p.created_at),
+    cxc: bucketize(activeInvoices.filter((inv) => inv.isPending), (inv) => inv.date, (inv) => inv.balance),
+  }
+
   // ── KPIs ──
   const kpis = {
     ing: {
       value: money(income),
-      sub: `En el período · ${invoicesInRange.length} factura(s)${selectedDoctorId ? ' · todos los odontólogos' : ''}`,
+      sub: `En el período · ${paymentsInRangeCount} pago(s) recibido(s)${selectedDoctorId ? ' · todos los odontólogos' : ''}`,
       st: 'g',
       ...delta(income, incomePrev),
     },
@@ -234,11 +281,10 @@ export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 
       delta: '—', good: overdue === 0, up: overdue > 0,
     },
   }
+  Object.keys(kpis).forEach((id) => { kpis[id].trend = trends[id] })
 
   // ── Series de gráficos ──
   // Ingresos por día (30), mes (12) y año (5), desde pagos reales.
-  const sumPaidBetween = (f, t) => activeInvoices
-    .filter((inv) => inRange(toDate(inv.date), f, t)).reduce((s, inv) => s + inv.paid, 0)
   const ingresos = { d: [], m: [], a: [] }
   for (let i = 29; i >= 0; i--) {
     const d = new Date(startOfDay(now).getTime() - i * 24 * 60 * 60 * 1000)
@@ -254,14 +300,14 @@ export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 
     ingresos.a.push({ x: String(year), v: sumPaidBetween(new Date(year, 0, 1), new Date(year, 11, 31, 23, 59, 59, 999)) })
   }
 
-  // Ingresos mensuales (últimos 6) vs. año anterior (derivado como ~0.9× cuando no hay histórico real).
+  // Ingresos mensuales (últimos 6) vs. mismo mes del año anterior (real; 0 si no hubo pagos).
   const mensual = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
     const cur = sumPaidBetween(d, end)
     const prevYear = sumPaidBetween(new Date(d.getFullYear() - 1, d.getMonth(), 1), new Date(d.getFullYear() - 1, d.getMonth() + 1, 0, 23, 59, 59, 999))
-    mensual.push({ m: MONTH_NAMES[d.getMonth()], y26: cur, y25: prevYear || Math.round(cur * 0.9) })
+    mensual.push({ m: MONTH_NAMES[d.getMonth()], y26: cur, y25: prevYear })
   }
 
   // Donut de citas por estado (real + "atendidas"/"no asistió" derivadas de las confirmadas pasadas).
