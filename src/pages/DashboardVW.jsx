@@ -58,12 +58,12 @@ const KPI_ICONS = { ing: FiDollarSign, cit: FiCalendar, ocu: FiPercent, aus: FiU
 
 // Etiquetas y definiciones fijas de cada KPI; el valor/estado llega del controlador.
 const KPI_META = [
-  { id: 'ing', label: 'Ingresos del período', seed: 1, def: 'Suma de los pagos recibidos en el período seleccionado.' },
-  { id: 'cit', label: 'Citas del día', seed: 2, def: 'Citas agendadas para hoy, desglosadas por estado.' },
-  { id: 'ocu', label: 'Ocupación de la agenda', seed: 3, def: 'Estimación: citas del período / capacidad de la agenda (franjas disponibles).' },
-  { id: 'aus', label: 'Ausentismo (no-show)', seed: 4, def: 'Estimación derivada de la proporción de citas canceladas.' },
-  { id: 'pac', label: 'Pacientes nuevos / recurrentes', seed: 5, def: 'Nuevos = registrados en el período. Recurrentes = resto de pacientes activos.' },
-  { id: 'cxc', label: 'Cuentas por cobrar', seed: 6, def: 'Saldo pendiente de facturas vigentes; vencidas = emitidas hace más de 30 días.' },
+  { id: 'ing', label: 'Ingresos del período', def: 'Suma de los pagos recibidos en el período seleccionado.' },
+  { id: 'cit', label: 'Citas del día', def: 'Citas agendadas para hoy, desglosadas por estado.' },
+  { id: 'ocu', label: 'Ocupación de la agenda', def: 'Estimación: citas del período / capacidad de la agenda (franjas disponibles).' },
+  { id: 'aus', label: 'Ausentismo (no-show)', def: 'Estimación derivada de la proporción de citas canceladas.' },
+  { id: 'pac', label: 'Pacientes nuevos / recurrentes', def: 'Nuevos = registrados en el período. Recurrentes = resto de pacientes activos.' },
+  { id: 'cxc', label: 'Cuentas por cobrar', def: 'Saldo pendiente de facturas vigentes; vencidas = emitidas hace más de 30 días.' },
 ]
 
 const STATUS_LABEL = { g: 'En meta', a: 'Atención', r: 'Crítico' }
@@ -73,8 +73,10 @@ const STATUS_LABEL = { g: 'En meta', a: 'Atención', r: 'Crítico' }
 const axis = (c) => ({ tick: { fontSize: 10, fill: c.mut }, axisLine: false, tickLine: false })
 const tip = (c) => ({ contentStyle: { background: c.ink, color: c.surface, border: 0, borderRadius: 6, fontSize: 11, padding: '5px 8px' }, itemStyle: { color: c.surface }, labelStyle: { color: c.surface } })
 
-const Spark = ({ color, seed, up }) => {
-  const data = useMemo(() => [...Array(14)].map((_, i) => ({ i, v: 10 + (up ? i * 0.5 : -i * 0.5) + 2.2 * Math.sin(i * 1.3 + seed) + 1.2 * Math.sin(i * 2.7 + seed * 2) })), [seed, up])
+// Tendencia real del KPI: `trend` son los valores por corte que calcula DashboardCtrl.
+const Spark = ({ color, trend }) => {
+  const data = useMemo(() => (trend ?? []).map((v, i) => ({ i, v })), [trend])
+  if (data.length === 0) return <div style={{ height: 30 }} />
   return (
     <ResponsiveContainer width="100%" height={30}>
       <LineChart data={data} margin={{ top: 3, right: 4, bottom: 3, left: 4 }}>
@@ -407,7 +409,7 @@ const Dashboard = () => {
       id: meta.id,
       label: meta.label,
       def: meta.def,
-      seed: meta.seed,
+      trend: data.trend,
       value: data.value,
       sub,
       st,
@@ -773,7 +775,7 @@ const Dashboard = () => {
                       <div className={`rv-kpi-delta ${k.good ? 'good' : 'bad'}`}>{k.delta} <span>vs período anterior</span></div>
                     </>
                   )}
-                  <Spark color={stColor[k.st]} seed={k.seed} up={k.up} />
+                  <Spark color={stColor[k.st]} trend={k.trend} />
                   <div className="rv-kpi-sub">{k.sub}</div>
                   {tipId === k.id && <div className="rv-tooltip">{k.def}</div>}
                 </div>

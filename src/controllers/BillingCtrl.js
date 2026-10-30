@@ -26,6 +26,7 @@ export const getBillingCtrlData = async () => {
     status: invoice.status || 'Pendiente',
     // Datos de respaldo sin tabla de pagos: una factura 'Pagado' cuenta como pagada completa.
     paid: invoice.payments ? sumActivePayments(invoice.payments) : invoice.status === 'Pagado' ? Number(invoice.amount) || 0 : 0,
+    payments: (invoice.payments ?? []).filter((payment) => !payment.anulado).map((payment) => ({ amount: Number(payment.amount) || 0, paid_at: payment.paid_at })),
     items: invoice.invoice_items ?? [],
     raw: invoice,
   }));

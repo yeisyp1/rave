@@ -29,11 +29,15 @@ const BillingVW = () => {
     let mounted = true
     const run = async () => {
       if (!mounted) return
-      await load()
+      try {
+        await load()
+      } catch (error) {
+        if (mounted) dispatch(showAlertModal({ message: `No se pudieron cargar las facturas: ${error.message}`, variant: 'error' }))
+      }
     }
     run()
     return () => { mounted = false }
-  }, [])
+  }, [dispatch])
 
   const [showNewInvoiceModal, setShowNewInvoiceModal] = useState(false)
   const [annullingId, setAnnullingId] = useState(null)

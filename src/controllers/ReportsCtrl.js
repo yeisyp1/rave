@@ -42,7 +42,8 @@ export const fetchReportCtrlData = async ({ from, to } = {}) => {
 
   const pendingLabCases = laboratory.cases.filter((item) => item.status === 'Pendiente' || item.status === 'En proceso')
 
-  const totalIncome = invoicesInRange.reduce((sum, invoice) => sum + (invoice.isVoid ? 0 : invoice.paid), 0)
+  // Ingresos = pagos recibidos en el periodo (por fecha de pago), igual que el dashboard.
+  const totalIncome = billing.invoices.reduce((sum, invoice) => sum + invoice.paidInRange(fromDate, toDateEnd), 0)
   const totalPending = pendingInvoices.reduce((sum, invoice) => sum + invoice.balance, 0)
 
   return {
