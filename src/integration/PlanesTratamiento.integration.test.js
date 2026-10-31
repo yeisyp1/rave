@@ -17,13 +17,11 @@ vi.mock('../dao/TreatmentPlansDAO', () => ({
 
 const listPatientTreatmentsDAO = vi.fn()
 const listProcedureCatalogWithPricesDAO = vi.fn()
-const listLegacyProceduresDAO = vi.fn()
 const listPatientProceduresDAO = vi.fn()
 
 vi.mock('../dao/ProceduresDAO', () => ({
   listPatientTreatmentsDAO: (...args) => listPatientTreatmentsDAO(...args),
   listProcedureCatalogWithPricesDAO: (...args) => listProcedureCatalogWithPricesDAO(...args),
-  listLegacyProceduresDAO: (...args) => listLegacyProceduresDAO(...args),
   listPatientProceduresDAO: (...args) => listPatientProceduresDAO(...args),
   addTreatmentMaterialDAO: vi.fn(),
   createPatientProcedureDAO: vi.fn(),
@@ -169,7 +167,6 @@ describe('loadTreatmentPlansCtrl excluye del historial las atenciones anuladas (
 describe('CU-05/CU-09/CU-19: el detalle del paciente reúne datos de varios módulos', () => {
   it('loadPatientDetailCtrl combina paciente, procedimientos, historias, consentimientos, solicitudes de datos y radiografías', async () => {
     getPatientByIdDAO.mockResolvedValue({ id: 'p-1', nombre: 'Ana', apellidos: 'García' })
-    listLegacyProceduresDAO.mockResolvedValue([{ id: 'legacy-1', fecha: '2025-01-01', cost: 20000 }])
     listPatientProceduresDAO.mockResolvedValue([
       { id: 'new-1', procedure_date: '2026-10-01', procedure_catalog: { name: 'Endodoncia' }, total_price: 150000 },
     ])
@@ -181,9 +178,8 @@ describe('CU-05/CU-09/CU-19: el detalle del paciente reúne datos de varios mód
     const detail = await loadPatientDetailCtrl('p-1')
 
     expect(detail.patient.nombre).toBe('Ana')
-    // Los procedimientos nuevos se normalizan con los mismos campos que los legados.
+    // Los procedimientos se normalizan a fecha / procedure_name / cost.
     expect(detail.procedures).toEqual([
-      { id: 'legacy-1', fecha: '2025-01-01', cost: 20000 },
       expect.objectContaining({ id: 'new-1', fecha: '2026-10-01', procedure_name: 'Endodoncia', cost: 150000 }),
     ])
     expect(detail.clinicalHistories).toHaveLength(1)
@@ -203,7 +199,6 @@ describe('CU-05/CU-09/CU-19: el detalle del paciente reúne datos de varios mód
     expect(submitted.ok).toBe(true)
 
     getPatientByIdDAO.mockResolvedValue({ id: 'p-1' })
-    listLegacyProceduresDAO.mockResolvedValue([])
     listPatientProceduresDAO.mockResolvedValue([])
     listDataRequestsByPatientDAO.mockResolvedValue([])
     listPatientRadiographiesDAO.mockResolvedValue([])

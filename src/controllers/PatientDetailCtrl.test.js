@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const getPatientByIdDAO = vi.fn()
-const listLegacyProceduresDAO = vi.fn()
 const listPatientProceduresDAO = vi.fn()
 const listPatientRadiographiesDAO = vi.fn()
 const loadPatientHistoriesCtrl = vi.fn()
@@ -13,7 +12,6 @@ const getCurrentUserIdDAO = vi.fn()
 
 vi.mock('../dao/PatientsDAO', () => ({ getPatientByIdDAO: (...args) => getPatientByIdDAO(...args) }))
 vi.mock('../dao/ProceduresDAO', () => ({
-  listLegacyProceduresDAO: (...args) => listLegacyProceduresDAO(...args),
   listPatientProceduresDAO: (...args) => listPatientProceduresDAO(...args),
 }))
 vi.mock('../dao/RadiographiesDAO', () => ({

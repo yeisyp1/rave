@@ -286,32 +286,10 @@ execute FUNCTION set_updated_at ();
 ---------------------
 
 
-create table public.procedures (
-  id uuid not null default gen_random_uuid (),
-  patient_id uuid not null,
-  procedure_name text not null,
-  tooth_number text null,
-  cost numeric(10, 2) not null default 0,
-  fecha date null default CURRENT_DATE,
-  notes text null,
-  created_at timestamp with time zone not null default now(),
-  updated_at timestamp with time zone not null default now(),
-  constraint procedures_pkey primary key (id),
-  constraint procedures_patient_id_fkey foreign KEY (patient_id) references patients (id) on delete CASCADE,
-  constraint procedures_cost_check check ((cost >= (0)::numeric))
-) TABLESPACE pg_default;
-
-create index IF not exists idx_procedures_patient_id on public.procedures using btree (patient_id) TABLESPACE pg_default;
-
-create index IF not exists idx_procedures_created_at on public.procedures using btree (created_at desc) TABLESPACE pg_default;
-
-create index IF not exists idx_procedures_name on public.procedures using btree (procedure_name) TABLESPACE pg_default;
-
-create index IF not exists procedures_patient_idx on public.procedures using btree (patient_id) TABLESPACE pg_default;
-
-create trigger trg_procedures_updated_at BEFORE
-update on procedures for EACH row
-execute FUNCTION set_updated_at ();
+-- La tabla legada `procedures` se elimino: quedo reemplazada por
+-- `patient_procedures`, que vincula cada procedimiento a un plan de tratamiento
+-- y al catalogo. Era ademas el unico ON DELETE CASCADE hacia `patients`, lo que
+-- contradecia el RNF-17 (no eliminar informacion clinica).
 
 
 ----------------------
@@ -882,7 +860,6 @@ alter policy "insert_own_profile" on public.profiles
 -- Indices duplicados (mismo par de columnas que otro indice existente).
 drop index if exists public.clinical_histories_patient_idx;
 drop index if exists public.laboratory_cases_patient_idx;
-drop index if exists public.procedures_patient_idx;
 drop index if exists public.profiles_email_idx;
 
 -- Foreign keys sin indice de cobertura (impacta joins/deletes en cascada).
@@ -1548,20 +1525,6 @@ create policy patient_procedures_update_clinical on public.patient_procedures fo
   using ((select public.current_app_role()) in ('admin','dentist'))
   with check ((select public.current_app_role()) in ('admin','dentist'));
 create policy patient_procedures_delete_admin on public.patient_procedures for delete to authenticated
-  using ((select public.current_app_role()) = 'admin');
-
-drop policy procedures_select_authenticated on public.procedures;
-drop policy procedures_insert_authenticated on public.procedures;
-drop policy procedures_update_authenticated on public.procedures;
-drop policy procedures_delete_authenticated on public.procedures;
-create policy procedures_select_clinical on public.procedures for select to authenticated
-  using ((select public.current_app_role()) in ('admin','dentist'));
-create policy procedures_insert_clinical on public.procedures for insert to authenticated
-  with check ((select public.current_app_role()) in ('admin','dentist'));
-create policy procedures_update_clinical on public.procedures for update to authenticated
-  using ((select public.current_app_role()) in ('admin','dentist'))
-  with check ((select public.current_app_role()) in ('admin','dentist'));
-create policy procedures_delete_admin on public.procedures for delete to authenticated
   using ((select public.current_app_role()) = 'admin');
 
 drop policy treatment_plans_select_authenticated on public.treatment_plans;
@@ -2279,3 +2242,57 @@ grant execute on function public.check_authorized_email(text) to anon, authentic
 -- sobre patients (edicion desde la app, baja/alta de WhatsApp, etc.) fallaba con
 -- "record \"new\" has no field \"updated_at\"". Se agrega la columna faltante.
 alter table public.patients add column if not exists updated_at timestamp with time zone not null default now();
+
+
+----------------------
+
+-- Seguridad a nivel de fila (RLS): activacion sobre las 24 tablas del esquema.
+--
+-- En PostgreSQL una politica RLS no surte ningun efecto si la tabla no tiene RLS
+-- activada: las politicas quedan definidas pero inertes y cualquier usuario
+-- autenticado obtiene acceso completo. Hasta esta migracion el archivo solo
+-- activaba RLS en 13 de las 24 tablas, de modo que reconstruir la base de datos
+-- desde este esquema producia politicas sin efecto en las tablas mas sensibles
+-- (patients, clinical_histories, radiographies, entre otras), aunque la base de
+-- datos en operacion si las tuviera activadas.
+--
+-- Este bloque las declara todas en un solo lugar, para que el esquema sea
+-- reproducible y auditable: activar RLS en una tabla que ya la tiene es una
+-- operacion sin efecto, asi que repetir aqui las 13 anteriores no causa problema
+-- y deja una sola fuente de verdad. Requisitos RNF-02 y RNF-04.
+
+-- Seguridad y configuracion
+alter table public.profiles enable row level security;
+alter table public.authorized_emails enable row level security;
+alter table public.system_settings enable row level security;
+alter table public.audit_log enable row level security;
+alter table public.legal_documents enable row level security;
+alter table public.data_controller enable row level security;
+
+-- Pacientes
+alter table public.patients enable row level security;
+alter table public.data_rectification_requests enable row level security;
+
+-- Historia clinica
+alter table public.clinical_histories enable row level security;
+alter table public.radiographies enable row level security;
+alter table public.treatment_plans enable row level security;
+alter table public.informed_consents enable row level security;
+
+-- Tratamientos, inventario y laboratorio
+alter table public.doctors enable row level security;
+alter table public.procedure_catalog enable row level security;
+alter table public.patient_procedures enable row level security;
+alter table public.inventory_items enable row level security;
+alter table public.treatment_inventory_items enable row level security;
+alter table public.laboratory_cases enable row level security;
+
+-- Agenda y comunicaciones
+alter table public.appointments enable row level security;
+alter table public.message_templates enable row level security;
+alter table public.whatsapp_messages enable row level security;
+
+-- Facturacion
+alter table public.billing_invoices enable row level security;
+alter table public.invoice_items enable row level security;
+alter table public.payments enable row level security;

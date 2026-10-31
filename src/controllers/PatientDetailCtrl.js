@@ -1,27 +1,24 @@
 import { getPatientByIdDAO } from "../dao/PatientsDAO";
-import { listLegacyProceduresDAO, listPatientProceduresDAO } from "../dao/ProceduresDAO";
+import { listPatientProceduresDAO } from "../dao/ProceduresDAO";
 import { listPatientRadiographiesDAO } from "../dao/RadiographiesDAO";
 import { loadPatientHistoriesCtrl } from "./HistoriaClinicaCtrl";
 import { createInformedConsentDAO, listInformedConsentsByPatientDAO } from "../dao/InformedConsentDAO";
 import { createDataRequestDAO, listDataRequestsByPatientDAO } from "../dao/DataRequestsDAO";
 import { getCurrentUserIdDAO } from "../dao/SupabaseDAO";
 
-const normalizeProcedures = (legacyProcedures, patientProcedures) => [
-  ...legacyProcedures,
-  ...patientProcedures.map((procedure) => ({
+const normalizeProcedures = (patientProcedures) =>
+  patientProcedures.map((procedure) => ({
     ...procedure,
     fecha: procedure.procedure_date,
     procedure_name: procedure.procedure_catalog?.name,
     cost: procedure.total_price ?? procedure.unit_price ?? 0,
-  })),
-];
+  }));
 
 export const loadPatientDetailCtrl = async (patientId) => {
   const patient = await getPatientByIdDAO(patientId);
 
-  const [legacyProcedures, patientProcedures, clinicalHistories, consents, dataRequests, radiographies] =
+  const [patientProcedures, clinicalHistories, consents, dataRequests, radiographies] =
     await Promise.all([
-      listLegacyProceduresDAO(patientId),
       listPatientProceduresDAO(patientId),
       loadPatientHistoriesCtrl(patientId),
       listInformedConsentsByPatientDAO(patientId),
@@ -31,7 +28,7 @@ export const loadPatientDetailCtrl = async (patientId) => {
 
   return {
     patient,
-    procedures: normalizeProcedures(legacyProcedures, patientProcedures),
+    procedures: normalizeProcedures(patientProcedures),
     clinicalHistories,
     consents,
     dataRequests,
