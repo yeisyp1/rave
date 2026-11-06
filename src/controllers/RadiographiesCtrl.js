@@ -1,9 +1,9 @@
 import {
   createRadiographiesDAO,
-  getRadiographyPublicUrlDAO,
   getRadiographySignedUrlDAO,
   listHistoryRadiographiesDAO,
   uploadRadiographyFileDAO,
+  removeRadiographyFilesDAO,
   annulRadiographyDAO,
 } from "../dao/RadiographiesDAO";
 import { getCurrentUserIdDAO } from "../dao/SupabaseDAO";
@@ -20,7 +20,8 @@ const resolveRadiographyUrl = async (row) => {
   const signedUrl = await getRadiographySignedUrlDAO(row.file_path);
   if (signedUrl) return { ...row, image_url: signedUrl };
 
-  return { ...row, image_url: getRadiographyPublicUrlDAO(row.file_path) };
+  // El bucket es privado: no hay fallback a URL pública (sería una imagen rota).
+  return { ...row, image_url: null, image_error: "No se pudo generar el enlace seguro de la radiografía" };
 };
 
 export const loadHistoryRadiographiesCtrl = async (patientId, historyId) => {
@@ -42,24 +43,34 @@ export const annulRadiographyCtrl = async (radiographyId, motivo) => {
 export const uploadRadiographiesCtrl = async ({ patientId, historyId, files, note }) => {
   const uploads = [];
 
-  for (const file of files) {
-    const filePath = buildStoragePath(patientId, file);
-    await uploadRadiographyFileDAO(filePath, file);
+  try {
+    for (const file of files) {
+      const filePath = buildStoragePath(patientId, file);
+      await uploadRadiographyFileDAO(filePath, file);
 
-    uploads.push({
-      patient_id: patientId,
-      clinical_history_id: historyId,
-      file_path: filePath,
-      file_name: file.name,
-      description: note || null,
-      metadata: {
-        size: file.size,
-        type: file.type,
-      },
-    });
-  }
+      uploads.push({
+        patient_id: patientId,
+        clinical_history_id: historyId,
+        file_path: filePath,
+        file_name: file.name,
+        description: note || null,
+        metadata: {
+          size: file.size,
+          type: file.type,
+        },
+      });
+    }
 
-  if (uploads.length > 0) {
-    await createRadiographiesDAO(uploads);
+    if (uploads.length > 0) {
+      await createRadiographiesDAO(uploads);
+    }
+  } catch (error) {
+    // Todo o nada: si falla una subida o el registro, se borran los archivos ya subidos.
+    try {
+      await removeRadiographyFilesDAO(uploads.map((row) => row.file_path));
+    } catch {
+      // la limpieza es de mejor esfuerzo; se reporta el error original
+    }
+    throw error;
   }
 };

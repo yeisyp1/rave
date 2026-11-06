@@ -1,32 +1,34 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayoutVW from '../layouts/AppLayoutVW'
 
-import DashboardVW from '../pages/DashboardVW'
-import PatientsVW from '../pages/PatientsVW'
-import PatientDetailVW from '../pages/PatientDetailVW'
-import HistoriaClinicaVW from '../pages/HistoriaClinicaVW'
-import CalendarVW from '../pages/CalendarVW'
-import BillingVW from '../pages/BillingVW'
-import DocumentationVW from '../pages/DocumentationVW'
-import LoginVW from '../pages/LoginVW'
-import LaboratoryVW from '../pages/LaboratoryVW'
-import InventoryVW from '../pages/InventoryVW'
-import OdontologosVW from '../pages/OdontologosVW'
-import MessageTemplatesVW from '../pages/MessageTemplatesVW'
-import DataRequestsVW from '../pages/DataRequestsVW'
-import WhatsappRequestsVW from '../pages/WhatsappRequestsVW'
-import HistoriesVW from '../pages/HistoriesVW'
-import DoctorsVW from '../pages/DoctorsVW'
-import SettingsVW from '../pages/SettingsVW'
-import AgendarCitaVW from '../pages/AgendarCitaVW'
-import OdontogramaVW from '../pages/OdontogramaVW'
-import ModalViewPatientsVW from '../modals/ModalViewPatientsVW'
-import NewEventModalVW from '../modals/ModalNewEventVW'
-import OAuthConsentVW from '../pages/OAuthConsentVW'
-import PublicHomeVW from '../pages/PublicHomeVW'
-import PrivacyPolicyVW from '../pages/PrivacyPolicyVW'
-import AccessActionVW from '../pages/AccessActionVW'
 import { hasRole, ROLES } from '../utils/roles'
+
+const DashboardVW = lazy(() => import('../pages/DashboardVW'))
+const PatientsVW = lazy(() => import('../pages/PatientsVW'))
+const PatientDetailVW = lazy(() => import('../pages/PatientDetailVW'))
+const HistoriaClinicaVW = lazy(() => import('../pages/HistoriaClinicaVW'))
+const CalendarVW = lazy(() => import('../pages/CalendarVW'))
+const BillingVW = lazy(() => import('../pages/BillingVW'))
+const DocumentationVW = lazy(() => import('../pages/DocumentationVW'))
+const LoginVW = lazy(() => import('../pages/LoginVW'))
+const LaboratoryVW = lazy(() => import('../pages/LaboratoryVW'))
+const InventoryVW = lazy(() => import('../pages/InventoryVW'))
+const OdontologosVW = lazy(() => import('../pages/OdontologosVW'))
+const MessageTemplatesVW = lazy(() => import('../pages/MessageTemplatesVW'))
+const DataRequestsVW = lazy(() => import('../pages/DataRequestsVW'))
+const WhatsappRequestsVW = lazy(() => import('../pages/WhatsappRequestsVW'))
+const HistoriesVW = lazy(() => import('../pages/HistoriesVW'))
+const DoctorsVW = lazy(() => import('../pages/DoctorsVW'))
+const SettingsVW = lazy(() => import('../pages/SettingsVW'))
+const AgendarCitaVW = lazy(() => import('../pages/AgendarCitaVW'))
+const OdontogramaVW = lazy(() => import('../pages/OdontogramaVW'))
+const ModalViewPatientsVW = lazy(() => import('../modals/ModalViewPatientsVW'))
+const NewEventModalVW = lazy(() => import('../modals/ModalNewEventVW'))
+const OAuthConsentVW = lazy(() => import('../pages/OAuthConsentVW'))
+const PublicHomeVW = lazy(() => import('../pages/PublicHomeVW'))
+const PrivacyPolicyVW = lazy(() => import('../pages/PrivacyPolicyVW'))
+const AccessActionVW = lazy(() => import('../pages/AccessActionVW'))
 
 const AdminRoute = ({ profile, children }) => {
   return hasRole(profile, [ROLES.ADMIN]) ? children : <Navigate to="/dashboard" replace />
@@ -39,6 +41,7 @@ const ClinicalRoute = ({ profile, children }) => {
 const AppRouter = ({ user, profile }) => {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div style={{ padding: 24 }}>Cargando…</div>}>
       <Routes>
         <Route path="/" element={<PublicHomeVW />} />
         <Route path="/politica-privacidad" element={<PrivacyPolicyVW />} />
@@ -74,6 +77,7 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/oauth/consent" element={<OAuthConsentVW />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

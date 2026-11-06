@@ -66,18 +66,11 @@ const sendText = async (phoneNumberId: string, to: string, body: string): Promis
 
 // Logica del asistente: recibe el mensaje del paciente y devuelve el texto de respuesta.
 const handleIncoming = async (phoneDigits: string, body: string): Promise<string> => {
-  const { data: patients } = await supabaseAdmin
-    .from("patients")
-    .select("id, nombre, apellidos, celular, telefono");
-
-  const patient = (patients || []).find((row) => {
-    const celular = normalizeDigits(row.celular || "");
-    const telefono = normalizeDigits(row.telefono || "");
-    return (
-      (celular && phoneDigits.endsWith(celular)) ||
-      (telefono && phoneDigits.endsWith(telefono))
-    );
+  const { data: found, error: lookupError } = await supabaseAdmin.rpc("find_patient_by_phone", {
+    p_digits: phoneDigits,
   });
+  if (lookupError) throw lookupError;
+  const patient = (found as { id: string }[] | null)?.[0];
 
   const text = stripAccents(body.toLowerCase());
   const command = text.trim().replace(/[^a-z ]/g, "").trim();
@@ -85,16 +78,18 @@ const handleIncoming = async (phoneDigits: string, body: string): Promise<string
   // Baja / alta del canal de WhatsApp (Ley 1581: el titular puede dejar de recibir mensajes).
   if (["baja", "stop", "parar", "detener", "no mas mensajes"].includes(command)) {
     if (patient) {
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("patients")
         .update({ whatsapp_baja: true, whatsapp_baja_motivo: "Solicitada por el paciente por WhatsApp" })
         .eq("id", patient.id);
+      if (error) throw error;
     }
     return "Listo, no te enviaremos más mensajes por WhatsApp. Si cambias de opinión, escribe 'alta'. Tu atención en la clínica no se ve afectada.";
   }
   if (command === "alta") {
     if (patient) {
-      await supabaseAdmin.from("patients").update({ whatsapp_baja: false }).eq("id", patient.id);
+      const { error } = await supabaseAdmin.from("patients").update({ whatsapp_baja: false }).eq("id", patient.id);
+      if (error) throw error;
     }
     return "Listo, volverás a recibir recordatorios de tus citas por WhatsApp.";
   }
@@ -118,16 +113,17 @@ const handleIncoming = async (phoneDigits: string, body: string): Promise<string
       return "No encontramos una próxima cita para cancelar.";
     }
 
-    await supabaseAdmin
+    const { error: cancelError } = await supabaseAdmin
       .from("appointments")
       .update({ status: "Cancelación solicitada" })
       .eq("id", upcoming.id);
+    if (cancelError) throw cancelError;
 
     return "Recibimos tu solicitud de cancelación. La clínica la confirmará en breve.";
   }
 
   if (text.includes("cita") || text.includes("agendar") || text.includes("turno")) {
-    await supabaseAdmin.from("appointments").insert([
+    const { error: requestError } = await supabaseAdmin.from("appointments").insert([
       {
         patient_id: patient?.id ?? null,
         status: "Solicitada",
@@ -136,6 +132,7 @@ const handleIncoming = async (phoneDigits: string, body: string): Promise<string
         notes: body,
       },
     ]);
+    if (requestError) throw requestError;
 
     return "Recibimos tu solicitud de cita. La clínica se pondrá en contacto contigo para confirmar fecha y hora.";
   }
@@ -171,25 +168,21 @@ Deno.serve(async (req: Request) => {
     return new Response("Bad request", { status: 400 });
   }
 
-  // Siempre se responde 200 al final: si no, Meta reintenta el mismo mensaje.
+  // Si falla el procesamiento de algún mensaje se responde 500 para que Meta reintente;
+  // los mensajes ya procesados se ignoran por el índice único.
+  let hadFailure = false;
   for (const entry of payload?.entry ?? []) {
     for (const change of entry?.changes ?? []) {
       for (const message of change?.value?.messages ?? []) {
+        let inboundId: string | null = null;
         try {
           const phoneDigits = normalizeDigits(String(message.from || ""));
           if (!phoneDigits || message.type !== "text") continue;
 
-          // Meta reintenta entregas: no se procesa dos veces el mismo mensaje.
-          const { data: seen } = await supabaseAdmin
-            .from("whatsapp_messages")
-            .select("id")
-            .eq("direction", "inbound")
-            .eq("provider_message_id", message.id)
-            .maybeSingle();
-          if (seen) continue;
-
+          // Meta reintenta entregas: el índice único (direction, provider_message_id)
+          // garantiza que solo un intento inserte el mensaje y lo procese.
           const body = String(message.text?.body || "");
-          await supabaseAdmin.from("whatsapp_messages").insert([
+          const { error: insertError } = await supabaseAdmin.from("whatsapp_messages").insert([
             {
               direction: "inbound",
               phone: phoneDigits,
@@ -198,6 +191,21 @@ Deno.serve(async (req: Request) => {
               provider_message_id: message.id,
             },
           ]);
+          if (insertError?.code === "23505") {
+            // Duplicado: solo se reprocesa si el intento anterior quedó en 'failed'
+            // (el UPDATE condicional lo reclama de forma atómica).
+            const { data: retried } = await supabaseAdmin
+              .from("whatsapp_messages")
+              .update({ status: "received", error: null })
+              .eq("direction", "inbound")
+              .eq("provider_message_id", message.id)
+              .eq("status", "failed")
+              .select("id");
+            if (!retried || retried.length === 0) continue;
+          } else if (insertError) {
+            throw insertError;
+          }
+          inboundId = message.id;
 
           const reply = await handleIncoming(phoneDigits, body);
           // Se responde desde el mismo numero al que escribio el paciente (viene en el evento).
@@ -214,10 +222,19 @@ Deno.serve(async (req: Request) => {
           ]);
         } catch (err) {
           console.error("Error procesando mensaje entrante:", err);
+          hadFailure = true;
+          if (inboundId) {
+            // Queda marcado para reintento: el próximo envío de Meta lo reprocesa.
+            await supabaseAdmin
+              .from("whatsapp_messages")
+              .update({ status: "failed", error: String(err instanceof Error ? err.message : err) })
+              .eq("direction", "inbound")
+              .eq("provider_message_id", inboundId);
+          }
         }
       }
     }
   }
 
-  return new Response("ok", { status: 200 });
+  return new Response(hadFailure ? "retry" : "ok", { status: hadFailure ? 500 : 200 });
 });
