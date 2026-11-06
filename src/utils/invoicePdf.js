@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf'
 import logoLight from '../assets/logo1.png'
 
 export const parseLocalInvoiceDate = (dateStr) => {
@@ -27,6 +26,7 @@ const loadImage = (src) => new Promise((resolve, reject) => {
 })
 
 export const generateInvoicePdf = async (inv) => {
+  const { jsPDF } = await import('jspdf')
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()

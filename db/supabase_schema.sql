@@ -2279,3 +2279,167 @@ grant execute on function public.check_authorized_email(text) to anon, authentic
 -- sobre patients (edicion desde la app, baja/alta de WhatsApp, etc.) fallaba con
 -- "record \"new\" has no field \"updated_at\"". Se agrega la columna faltante.
 alter table public.patients add column if not exists updated_at timestamp with time zone not null default now();
+
+
+----------------------
+
+-- Migracion whatsapp_concurrency (2026-11-05).
+-- Revision tecnica: (1) la cola se leia con SELECT y se enviaba sin reclamar los
+-- mensajes, de modo que dos ejecuciones simultaneas podian enviar el mismo mensaje;
+-- (2) el webhook comprobaba duplicados con SELECT + INSERT, sin garantia bajo concurrencia.
+-- Si el indice unico falla por duplicados previos, depurar whatsapp_messages y repetir.
+alter table public.whatsapp_messages drop constraint if exists whatsapp_messages_status_check;
+alter table public.whatsapp_messages add constraint whatsapp_messages_status_check
+  check (status = any (array['pending'::text,'processing'::text,'sent'::text,'failed'::text,'received'::text,'no_provider'::text,'skipped'::text]));
+
+create unique index if not exists uq_whatsapp_messages_direction_provider_id
+  on public.whatsapp_messages (direction, provider_message_id)
+  where provider_message_id is not null;
+
+-- Reclama de forma atomica hasta p_limit mensajes pendientes (pending -> processing).
+-- FOR UPDATE SKIP LOCKED evita que dos ejecuciones tomen el mismo mensaje.
+create or replace function public.claim_whatsapp_messages(p_limit integer default 25)
+returns setof public.whatsapp_messages
+language sql
+security definer
+set search_path = public
+as $$
+  update public.whatsapp_messages m
+  set status = 'processing'
+  where m.id in (
+    select id
+    from public.whatsapp_messages
+    where direction = 'outbound' and status = 'pending'
+    order by created_at
+    limit greatest(p_limit, 1)
+    for update skip locked
+  )
+  returning m.*;
+$$;
+
+revoke all on function public.claim_whatsapp_messages(integer) from public, anon, authenticated;
+grant execute on function public.claim_whatsapp_messages(integer) to service_role;
+
+
+----------------------
+
+-- Migracion whatsapp_patient_lookup (2026-11-05).
+-- El webhook cargaba todos los pacientes y comparaba telefonos en memoria (con endsWith,
+-- que podia asociar numeros parecidos). Esta funcion busca en la base por los ultimos 10
+-- digitos y devuelve el paciente solo si la coincidencia es unica (si no, null).
+-- Auditoria RLS (2026-11-05): en la base real todas las tablas de public tienen RLS y las
+-- unicas politicas abiertas son data_controller_select_public y legal_documents_select_public (intencionales).
+create or replace function public.find_patient_by_phone(p_digits text)
+returns table (id uuid, nombre text, apellidos text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with target as (select right(regexp_replace(coalesce(p_digits, ''), '\D', '', 'g'), 10) as d),
+  matches as (
+    select p.id, p.nombre, p.apellidos
+    from public.patients p, target t
+    where length(t.d) = 10
+      and (right(regexp_replace(coalesce(p.celular, ''), '\D', '', 'g'), 10) = t.d
+        or right(regexp_replace(coalesce(p.telefono, ''), '\D', '', 'g'), 10) = t.d)
+  )
+  select * from matches where (select count(*) from matches) = 1;
+$$;
+
+revoke all on function public.find_patient_by_phone(text) from public, anon, authenticated;
+grant execute on function public.find_patient_by_phone(text) to service_role;
+
+
+----------------------
+
+-- Migracion whatsapp_hardening (2026-11-06).
+-- (1) Las funciones SECURITY DEFINER usan search_path = '' y objetos calificados con public.
+-- (2) processing_started_at: un mensaje atascado en 'processing' (la Edge Function cayo tras
+--     reclamarlo) se vuelve a reclamar pasados 10 minutos. Riesgo aceptado: si la funcion cayo
+--     justo despues de enviar a Meta pero antes de marcar 'sent', ese mensaje podria reenviarse.
+-- (3) list_orphan_radiography_files: archivos de Storage sin fila en radiographies (los usa la
+--     Edge Function cleanup-orphan-radiographies).
+alter table public.whatsapp_messages add column if not exists processing_started_at timestamptz null;
+
+create or replace function public.claim_whatsapp_messages(p_limit integer default 25)
+returns setof public.whatsapp_messages
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.whatsapp_messages m
+  set status = 'processing', processing_started_at = now()
+  where m.id in (
+    select w.id
+    from public.whatsapp_messages w
+    where w.direction = 'outbound'
+      and (
+        w.status = 'pending'
+        or (w.status = 'processing'
+            and coalesce(w.processing_started_at, w.created_at) < now() - interval '10 minutes')
+      )
+    order by w.created_at
+    limit greatest(p_limit, 1)
+    for update skip locked
+  )
+  returning m.*;
+$$;
+
+create or replace function public.find_patient_by_phone(p_digits text)
+returns table (id uuid, nombre text, apellidos text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with target as (select right(regexp_replace(coalesce(p_digits, ''), '\D', '', 'g'), 10) as d),
+  matches as (
+    select p.id, p.nombre, p.apellidos
+    from public.patients p, target t
+    where length(t.d) = 10
+      and (right(regexp_replace(coalesce(p.celular, ''), '\D', '', 'g'), 10) = t.d
+        or right(regexp_replace(coalesce(p.telefono, ''), '\D', '', 'g'), 10) = t.d)
+  )
+  select * from matches where (select count(*) from matches) = 1;
+$$;
+
+create or replace function public.list_orphan_radiography_files(
+  p_older_than interval default interval '1 day',
+  p_limit integer default 200
+)
+returns table (name text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select o.name
+  from storage.objects o
+  where o.bucket_id = 'radiographies'
+    and o.created_at < now() - p_older_than
+    and not exists (select 1 from public.radiographies r where r.file_path = o.name)
+  order by o.created_at
+  limit greatest(p_limit, 1);
+$$;
+
+revoke all on function public.claim_whatsapp_messages(integer) from public, anon, authenticated;
+grant execute on function public.claim_whatsapp_messages(integer) to service_role;
+revoke all on function public.find_patient_by_phone(text) from public, anon, authenticated;
+grant execute on function public.find_patient_by_phone(text) to service_role;
+revoke all on function public.list_orphan_radiography_files(interval, integer) from public, anon, authenticated;
+grant execute on function public.list_orphan_radiography_files(interval, integer) to service_role;
+
+-- Limpieza diaria (03:00 UTC) de radiografias huerfanas en Storage. Reemplazar <anon key>
+-- por la anon key del proyecto (igual que los otros cron jobs de este archivo).
+select cron.schedule(
+  'cleanup-orphan-radiographies',
+  '0 3 * * *',
+  $$
+  select net.http_post(
+    url := 'https://czfuquhkjuhbwnkbgkze.supabase.co/functions/v1/cleanup-orphan-radiographies',
+    headers := '{"Authorization": "Bearer <anon key>", "Content-Type": "application/json"}'::jsonb,
+    body := '{}'::jsonb
+  );
+  $$
+);

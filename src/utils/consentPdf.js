@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf'
 import logoLight from '../assets/logo1.png'
 
 const loadImage = (src) => new Promise((resolve, reject) => {
@@ -30,6 +29,7 @@ const patientFullName = (patient) => {
 export const generateConsentPdf = async (consent, patient, planTitle) => {
   if (!consent) return
 
+  const { jsPDF } = await import('jspdf')
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()

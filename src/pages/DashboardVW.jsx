@@ -60,8 +60,8 @@ const KPI_ICONS = { ing: FiDollarSign, cit: FiCalendar, ocu: FiPercent, aus: FiU
 const KPI_META = [
   { id: 'ing', label: 'Ingresos del período', def: 'Suma de los pagos recibidos en el período seleccionado.' },
   { id: 'cit', label: 'Citas del día', def: 'Citas agendadas para hoy, desglosadas por estado.' },
-  { id: 'ocu', label: 'Ocupación de la agenda', def: 'Estimación: citas del período / capacidad de la agenda (franjas disponibles).' },
-  { id: 'aus', label: 'Ausentismo (no-show)', def: 'Estimación derivada de la proporción de citas canceladas.' },
+  { id: 'ocu', label: 'Ocupación de la agenda (estimado)', def: 'Estimación: citas del período / capacidad de la agenda (franjas disponibles).' },
+  { id: 'aus', label: 'Ausentismo (no-show, estimado si no hay asistencia)', def: 'Estimación derivada de la proporción de citas canceladas.' },
   { id: 'pac', label: 'Pacientes nuevos / recurrentes', def: 'Nuevos = registrados en el período. Recurrentes = resto de pacientes activos.' },
   { id: 'cxc', label: 'Cuentas por cobrar', def: 'Saldo pendiente de facturas vigentes; vencidas = emitidas hace más de 30 días.' },
 ]
