@@ -27,13 +27,20 @@ supabase/.branches/
 *.njsproj
 *.sln
 *.sw?
-Tesis/Anexo G - prueba con servicios reales/G1 WhatsApp - confirmacion, recordatorio y cancelacion.png
-Tesis/Anexo G - prueba con servicios reales/G2 Agenda de citas de la prueba.png
-Tesis/Claude outputs/eval_p62-062.png
-Tesis/Claude outputs/eval_p71-071.png
-Tesis/Claude outputs/verif_p87-087.png
-Tesis/Claude outputs/verif_p88-088.png
-Tesis/Claude outputs/verif_p134-134.png
-Tesis/Claude outputs/verif_p135-135.png
-Tesis/Claude outputs/verif_p136-136.png
-Tesis/Claude outputs/verif_p137-137.png
+
+# Archivos temporales de LibreOffice / Word
+.~lock.*#
+~$*
+
+# Documento de trabajo de grado: documentos, figuras y anexos.
+# Se conservan en el equipo, fuera del repositorio de codigo.
+Tesis/
+
+# Configuracion y archivos de asistentes de codigo
+.claude/
+.impeccable/
+.cursor/
+Context
+CLAUDE.md
+AGENTS.md
+.mcp.json
