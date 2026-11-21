@@ -3,9 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayoutVW from '../layouts/AppLayoutVW'
 import LoaderVW from '../components/LoaderVW'
 
-import LoginVW from '../pages/LoginVW'
-import PublicHomeVW from '../pages/PublicHomeVW'
-import AccessActionVW from '../pages/AccessActionVW'
+import { hasRole, ROLES } from '../utils/roles'
 
 const DashboardVW = lazy(() => import('../pages/DashboardVW'))
 const PatientsVW = lazy(() => import('../pages/PatientsVW'))
@@ -14,6 +12,7 @@ const HistoriaClinicaVW = lazy(() => import('../pages/HistoriaClinicaVW'))
 const CalendarVW = lazy(() => import('../pages/CalendarVW'))
 const BillingVW = lazy(() => import('../pages/BillingVW'))
 const DocumentationVW = lazy(() => import('../pages/DocumentationVW'))
+const LoginVW = lazy(() => import('../pages/LoginVW'))
 const LaboratoryVW = lazy(() => import('../pages/LaboratoryVW'))
 const InventoryVW = lazy(() => import('../pages/InventoryVW'))
 const OdontologosVW = lazy(() => import('../pages/OdontologosVW'))
@@ -25,9 +24,9 @@ const SettingsVW = lazy(() => import('../pages/SettingsVW'))
 const AgendarCitaVW = lazy(() => import('../pages/AgendarCitaVW'))
 const OdontogramaVW = lazy(() => import('../pages/OdontogramaVW'))
 const OAuthConsentVW = lazy(() => import('../pages/OAuthConsentVW'))
+const PublicHomeVW = lazy(() => import('../pages/PublicHomeVW'))
 const PrivacyPolicyVW = lazy(() => import('../pages/PrivacyPolicyVW'))
-
-import { hasRole, ROLES } from '../utils/roles'
+const AccessActionVW = lazy(() => import('../pages/AccessActionVW'))
 
 const AdminRoute = ({ profile, children }) => {
   return hasRole(profile, [ROLES.ADMIN]) ? children : <Navigate to="/dashboard" replace />

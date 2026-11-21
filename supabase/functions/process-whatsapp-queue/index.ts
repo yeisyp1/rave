@@ -75,13 +75,10 @@ const sendViaMeta = async (
 };
 
 Deno.serve(async (_req: Request) => {
-  const { data: pending, error } = await supabaseAdmin
-    .from("whatsapp_messages")
-    .select("*")
-    .eq("direction", "outbound")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(25);
+  // Reclamo atómico (pending -> processing, FOR UPDATE SKIP LOCKED): dos ejecuciones
+  // simultáneas nunca reciben el mismo mensaje.
+  const { data: claimed, error } = await supabaseAdmin.rpc("claim_whatsapp_messages", { p_limit: 25 });
+  const pending = (claimed as any[] | null)?.sort((a, b) => a.created_at.localeCompare(b.created_at)) ?? null;
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

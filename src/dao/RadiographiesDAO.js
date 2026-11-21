@@ -54,11 +54,6 @@ export const getRadiographySignedUrlDAO = async (filePath) => {
   return data?.signedUrl ?? null;
 };
 
-export const getRadiographyPublicUrlDAO = (filePath) => {
-  const { data } = supabase.storage.from(RADIOGRAPHY_BUCKET).getPublicUrl(filePath);
-  return data?.publicUrl ?? "";
-};
-
 export const uploadRadiographyFileDAO = async (filePath, file) => {
   const { error } = await supabase.storage.from(RADIOGRAPHY_BUCKET).upload(filePath, file, {
     cacheControl: "3600",
@@ -67,4 +62,10 @@ export const uploadRadiographyFileDAO = async (filePath, file) => {
   });
 
   if (error) throw new Error(error.message || "No se pudo subir la radiografía a Storage");
+};
+
+// Compensación: elimina archivos ya subidos cuando una operación posterior falla.
+export const removeRadiographyFilesDAO = async (filePaths) => {
+  if (!filePaths?.length) return;
+  await supabase.storage.from(RADIOGRAPHY_BUCKET).remove(filePaths);
 };
