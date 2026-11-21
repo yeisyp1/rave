@@ -37,6 +37,7 @@ const Header = ({ user, profile }) => {
   useEffect(() => {
     const theme = isDark ? 'dark' : 'light'
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.classList.toggle('dark', isDark)
     try {
       localStorage.setItem('theme', theme)
     } catch {

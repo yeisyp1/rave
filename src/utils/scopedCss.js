@@ -27,6 +27,10 @@ const scopeSelectorList = (selectorList, scope) =>
       if (selector === '*') return `${scope}, ${scope} *`
       if (/^(html|body|:root)$/i.test(selector)) return scope
       if (/^(html|body)\b/i.test(selector)) return selector.replace(/^(html|body)/i, scope)
+      if (/^\.dark\b/.test(selector)) {
+        const rest = selector.replace(/^\.dark\s*/, '').trim()
+        return rest ? `.dark ${scope} ${rest}` : `.dark ${scope}`
+      }
       if (selector.startsWith(scope)) return selector
       return `${scope} ${selector}`
     })
