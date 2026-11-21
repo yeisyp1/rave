@@ -14,20 +14,15 @@
   display: flex;
   flex-direction: column;
   margin-left: var(--sidebar-expanded-width);
-  width: calc(100vw - var(--sidebar-expanded-width));
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 100vh;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  transition: margin-left 0.3s ease;
 }
 
 /* Main area adjusts when sidebar is narrow-unfoldable */
 .sidebar.sidebar-narrow-unfoldable ~ .main-area {
   margin-left: var(--sidebar-collapsed-width);
-  width: calc(100vw - var(--sidebar-collapsed-width));
-}
-
-.sidebar.sidebar-narrow-unfoldable:hover ~ .main-area {
-  margin-left: var(--sidebar-expanded-width);
-  width: calc(100vw - var(--sidebar-expanded-width));
 }
 
 /* HEADER */
@@ -61,8 +56,8 @@
 .content {
   flex: 1;
   width: 100%;
-  padding: 20px;
-  overflow-y: auto;
+  padding: 0;
+  min-width: 0;
   background: var(--bg-primary);
   transition: background-color 0.3s ease;
   box-sizing: border-box;
@@ -71,7 +66,8 @@
 .page {
   width: 100%;
   margin: 0 auto;
-  padding: 0;
+  padding: var(--page-pad-y) var(--page-pad-x);
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -183,7 +179,6 @@
 @media (max-width: 991px) {
   .main-area {
     margin-left: 0;
-    width: 100vw;
   }
 
   .header {
@@ -192,10 +187,6 @@
 
   .header-menu-btn {
     display: flex;
-  }
-
-  .content {
-    padding: 20px;
   }
 
   .dashboard-cards {

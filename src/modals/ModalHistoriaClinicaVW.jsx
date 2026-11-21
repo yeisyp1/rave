@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDispatch } from "react-redux";
 import { showAlertModal } from "../app/store";
@@ -19,6 +19,10 @@ import "../styles/ModalHistoriaClinicaVW.css";
 import logoDark from "../assets/logo.png";
 import logoLight from "../assets/logo1.png";
 import { FiChevronDown, FiImage, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
+import { useModalBehavior } from "../hooks/useModalBehavior";
+import { promptReason } from "../utils/confirmDialog";
+import { toLocalDateTimeInput } from "../utils/dates";
+import { formatDate } from "../utils/format";
 import { useProfile } from "../context/ProfileContext";
 import { isClinicalStaff } from "../utils/roles";
 import OdontogramApp from "react-odontogram-editor-modul/src/App";
@@ -67,18 +71,14 @@ const calcAge = (dob) => {
   return age >= 0 ? String(age) : "";
 };
 
-const nowForDatetimeLocal = () => {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 16);
-};
+const nowForDatetimeLocal = () => toLocalDateTimeInput(new Date());
 
 const fieldToText = (value) => {
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
 };
 
-const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initialHistory = null }) => {
+const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false, initialHistory = null }) => {
   const dispatch = useDispatch();
   const profile = useProfile();
   const canEdit = isClinicalStaff(profile);
@@ -98,6 +98,10 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   const [showAnnulModal, setShowAnnulModal] = useState(false);
   const [annulHistoryId, setAnnulHistoryId] = useState(null);
   const [annulReason, setAnnulReason] = useState("");
+  const [dragging, setDragging] = useState(false);
+
+  const handleClose = useCallback(() => onClose?.(), [onClose]);
+  const containerRef = useModalBehavior(handleClose);
 
   // Pre-populate form with patient data when showing form
   useEffect(() => {
@@ -213,7 +217,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       ...data,
       medio_remision: history?.medio_remision ?? data.medio_remision ?? "",
       fecha: history?.fecha
-        ? new Date(history.fecha).toISOString().slice(0, 16)
+        ? toLocalDateTimeInput(history.fecha)
         : data.fecha ?? nowForDatetimeLocal(),
       motivo_consulta: history?.motivo_consulta ?? data.motivo_consulta ?? "",
       odontograma: history?.odontograma ?? data.odontograma ?? "",
@@ -230,14 +234,13 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   };
 
   const handleAnnulRadiography = async (radiography) => {
-    const motivo = window.prompt(
-      `Motivo de anulación de la radiografía "${radiography.file_name || "seleccionada"}":`,
-    );
-    if (motivo === null) return;
-    if (!motivo.trim()) {
-      setMediaStatus("El motivo de anulación es obligatorio.");
-      return;
-    }
+    const motivo = await promptReason({
+      title: "Anular la radiografía",
+      message: `La radiografía "${radiography.file_name || "seleccionada"}" quedará marcada como anulada.`,
+      reasonLabel: "Motivo de anulación",
+      confirmLabel: "Anular radiografía",
+    });
+    if (!motivo) return;
 
     try {
       await annulRadiographyCtrl(radiography.id, motivo);
@@ -303,6 +306,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       setMediaStatus("Guardado correctamente.");
       await fetchHistories();
       await fetchRadiographies(result.historyId);
+      onSaved?.();
     } catch (error) {
       console.error("Error guardando historia y radiografías:", error);
       setMediaStatus(error?.message || "No se pudo guardar la información. Revisa la consola.");
@@ -347,6 +351,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
     setAnnulReason("");
     setAnnulHistoryId(null);
     await fetchHistories();
+    onSaved?.();
   };
 
   const renderField = ({ label, name, type = "text", as = "input", placeholder = "", options = [], rows = 3, listId = "" }) => (
@@ -360,10 +365,11 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
           placeholder={placeholder}
           className="mhc-textarea"
           rows={rows}
+          disabled={!canEdit}
         />
       ) : as === "select" ? (
         <div className="mhc-select-wrap">
-          <select name={name} value={form[name]} onChange={handleChange} className="mhc-input mhc-select">
+          <select name={name} value={form[name]} onChange={handleChange} className="mhc-input mhc-select" disabled={!canEdit}>
             {options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -381,6 +387,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
             className="mhc-input"
             list={listId}
             type={type}
+            disabled={!canEdit}
           />
           <datalist id={listId}>
             {options.map((option) => (
@@ -396,6 +403,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
           placeholder={placeholder}
           className="mhc-input"
           type={type}
+          disabled={!canEdit}
         />
       )}
     </label>
@@ -404,10 +412,10 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
   const renderStatusGrid = (items, statusOptions, extraClass = "") => (
     <div className={`mhc-status-grid ${extraClass}`.trim()}>
       {items.map((item) => (
-        <div key={item.name} className="mhc-status-row">
+        <label key={item.name} className="mhc-status-row">
           <span className="mhc-status-label">{item.label}</span>
           <div className="mhc-select-wrap">
-            <select name={item.name} value={form[item.name]} onChange={handleChange} className="mhc-input mhc-select mhc-status-select">
+            <select name={item.name} value={form[item.name]} onChange={handleChange} className="mhc-input mhc-select mhc-status-select" disabled={!canEdit}>
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -415,7 +423,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
               ))}
             </select>
           </div>
-        </div>
+        </label>
       ))}
     </div>
   );
@@ -487,27 +495,33 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
       className="mhc-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="mhc-modal">
+      <div className="mhc-modal" ref={containerRef} role="dialog" aria-modal="true" aria-labelledby="mhc-title">
         <div className="mhc-modal-header">
           <div>
-            <h2 className="mhc-modal-title">Historias Clínicas</h2>
+            <h2 className="mhc-modal-title" id="mhc-title">Historias clínicas</h2>
             <p className="mhc-patient-name">
               {patient.nombre} {patient.apellidos}
             </p>
           </div>
           <div className="mhc-header-actions">
-            <div
-              className="mhc-logo-wrap"
-              role={canEdit ? "button" : undefined}
-              tabIndex={canEdit ? 0 : undefined}
-              title={canEdit ? "Ver odontograma del paciente" : undefined}
-              onClick={canEdit ? () => setShowForm(true) : undefined}
-              onKeyDown={canEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowForm(true); } } : undefined}
-            >
-              <img src={logoLight} alt="Rave" className="mhc-logo-light mhc-logo" />
-              <img src={logoDark} alt="Rave" className="mhc-logo-dark mhc-logo" />
-            </div>
-            <button className="mhc-modal-close" onClick={onClose} type="button">
+            {canEdit ? (
+              <button
+                type="button"
+                className="mhc-logo-wrap"
+                title="Ver odontograma del paciente"
+                aria-label="Ver odontograma del paciente"
+                onClick={() => setShowForm(true)}
+              >
+                <img src={logoLight} alt="" className="mhc-logo-light mhc-logo" />
+                <img src={logoDark} alt="" className="mhc-logo-dark mhc-logo" />
+              </button>
+            ) : (
+              <div className="mhc-logo-wrap">
+                <img src={logoLight} alt="RAVE" className="mhc-logo-light mhc-logo" />
+                <img src={logoDark} alt="RAVE" className="mhc-logo-dark mhc-logo" />
+              </div>
+            )}
+            <button className="mhc-modal-close" onClick={onClose} type="button" aria-label="Cerrar">
               <FiX size={18} />
             </button>
           </div>
@@ -520,7 +534,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
             <div className="mhc-form-container">
               <div className="mhc-histories-header mhc-form-toolbar">
                 <h3 className="mhc-form-title-inline">
-                  {editingHistoryId ? "Editar Historia" : "Nueva Historia"}
+                  {editingHistoryId ? "Editar historia" : "Nueva historia"}
                 </h3>
                 <button
                   className="mhc-btn-new"
@@ -538,7 +552,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
               <form onSubmit={handleSubmit} className="mhc-form">
                 <details className="mhc-accordion" open>
                   <summary className="mhc-accordion-summary">
-                    <span></span>
+                    <span>Datos de la consulta</span>
                     <FiChevronDown className="mhc-accordion-icon" size={16} />
                   </summary>
                   <div className="mhc-accordion-body mhc-grid-2 mhc-grid-compact">
@@ -707,7 +721,19 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                       <div className="pd-media-panel">
                         <h3 className="pd-section-title">Subir radiografías</h3>
                         {canEdit && (
-                        <label className="pd-upload-box">
+                        <label
+                          className={`pd-upload-box ${dragging ? 'is-dragging' : ''}`}
+                          onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+                          onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+                          onDragLeave={() => setDragging(false)}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            setDragging(false);
+                            const dropped = Array.from(event.dataTransfer.files ?? [])
+                              .filter((file) => file.type.startsWith('image/'));
+                            if (dropped.length > 0) setSelectedRadiographies(dropped);
+                          }}
+                        >
                           <input
                             type="file"
                             accept="image/*"
@@ -715,7 +741,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                             className="pd-upload-input"
                             onChange={(event) => setSelectedRadiographies(Array.from(event.target.files ?? []))}
                           />
-                          <span>Haz clic o arrastra aquí tus archivos</span>
+                          <span>Haz clic, pulsa Entrar o arrastra aquí tus archivos</span>
                           <small>JPG, PNG o WEBP</small>
                         </label>
                         )}
@@ -739,8 +765,12 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                           placeholder="Escribe aquí las notas clínicas del paciente..."
                           value={clinicalNote}
                           onChange={(event) => setClinicalNote(event.target.value)}
+                          disabled={!canEdit}
+                          aria-label="Notas clínicas"
                         />
-                        {mediaStatus ? <small className="pd-info-message">{mediaStatus}</small> : null}
+                        <div aria-live="polite">
+                          {mediaStatus ? <small className="pd-info-message">{mediaStatus}</small> : null}
+                        </div>
                       </div>
                     </div>
 
@@ -763,7 +793,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                               )}
                               <p className="pd-radiography-type">{radio.type || 'Radiografía'}</p>
                               <p className="pd-radiography-date">
-                                {radio.created_at?.split('T')[0] || '—'}
+                                {formatDate(radio.created_at)}
                               </p>
                               {radio.anulada ? (
                                 <p className="pd-radiography-type" title={radio.motivo_anulacion || ""}>
@@ -789,6 +819,11 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                 </details>
 
                 <div className="mhc-form-actions">
+                  {!canEdit && (
+                    <p className="mhc-readonly-note">
+                      Tu rol permite consultar la historia, pero no modificarla.
+                    </p>
+                  )}
                   <button
                     type="button"
                     className="mhc-btn-ghost"
@@ -802,7 +837,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                   </button>
                   {canEdit && (
                     <button type="submit" className="mhc-btn-primary" disabled={saving}>
-                      {saving ? "Guardando..." : "Guardar Historia"}
+                      {saving ? "Guardando..." : "Guardar historia"}
                     </button>
                   )}
                 </div>
@@ -811,7 +846,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
           ) : (
             <div className="mhc-histories-container">
               <div className="mhc-histories-header">
-                <h3>Historias Registradas</h3>
+                <h3>Historias registradas</h3>
                 {canEdit && (
                   <button
                     className="mhc-btn-new"
@@ -819,7 +854,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                     type="button"
                   >
                     <FiPlus size={14} />
-                    Nueva Historia
+                    Nueva historia
                   </button>
                 )}
               </div>
@@ -849,7 +884,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, startInForm = false, initial
                     return (
                       <div key={history.id} className="mhc-history-card">
                         <div className="mhc-history-date">
-                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-ES", {
+                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-CO", {
                             year: "numeric",
                             month: "long",
                             day: "numeric",

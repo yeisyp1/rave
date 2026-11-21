@@ -7,6 +7,8 @@ import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from 
 import { updatePatientDAO } from '../dao/PatientsDAO';
 import { logPatientAccessDAO } from '../dao/AuditDAO';
 import { captureOdontogramState } from '../utils/odontogramPersistence';
+import { promptReason } from '../utils/confirmDialog';
+import { formatDate, formatMoney } from '../utils/format';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -32,6 +34,8 @@ import { useProfile } from '../context/ProfileContext';
 import { isClinicalStaff } from '../utils/roles';
 import '../styles/PatientDetailVW.css';
 
+const SEXO_LABELS = { M: 'Masculino', F: 'Femenino', O: 'Otro' };
+
 const PatientDetailVW = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
@@ -41,6 +45,7 @@ const PatientDetailVW = () => {
   const canEdit = isClinicalStaff(profile);
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   // Permite abrir directamente en una pestaña (ej. "Ver historia clínica" desde la lista de pacientes).
   const [activeTab, setActiveTab] = useState(location.state?.tab ?? 'personal');
   const [procedures, setProcedures] = useState([]);
@@ -72,6 +77,7 @@ const PatientDetailVW = () => {
   const fetchPatientData = async () => {
     try {
       setLoading(true);
+      setLoadError('');
 
       const detail = await loadPatientDetailCtrl(patientId);
       setPatient(detail.patient);
@@ -82,6 +88,7 @@ const PatientDetailVW = () => {
       setAuthorizationMedium(detail.patient?.autorizacion_datos_medio || '');
     } catch (error) {
       console.error('Error fetching patient data:', error);
+      setLoadError(error.message || 'No se pudo cargar la ficha del paciente.');
     } finally {
       setLoading(false);
     }
@@ -160,8 +167,14 @@ const PatientDetailVW = () => {
   };
 
   const handleAnnulHistory = async (history) => {
-    const motivo = window.prompt('Motivo de anulación de esta historia clínica:');
-    if (motivo === null) return;
+    const motivo = await promptReason({
+      title: 'Anular la historia clínica',
+      message: 'La historia queda marcada como anulada y el motivo se guarda en la auditoría. No se borra ningún dato.',
+      reasonLabel: 'Motivo de anulación',
+      placeholder: 'Ej. error de digitación en el registro',
+      confirmLabel: 'Anular historia',
+    });
+    if (!motivo) return;
 
     const result = await annulPatientHistoryCtrl(history.id, motivo);
     if (!result.ok) {
@@ -222,7 +235,7 @@ const PatientDetailVW = () => {
   if (loading) {
     return (
       <div className="pd-page">
-        <LoaderVW text="Cargando informacion del paciente..." />
+        <LoaderVW text="Cargando información del paciente..." />
       </div>
     );
   }
@@ -230,8 +243,18 @@ const PatientDetailVW = () => {
   if (!patient) {
     return (
       <div className="pd-page">
-        <div className="pd-error">
-          <p>Paciente no encontrado</p>
+        <div className="pd-error" role="alert">
+          {loadError ? (
+            <>
+              <p>No se pudo cargar la ficha del paciente.</p>
+              <p className="pd-error-detail">{loadError}</p>
+              <button className="pd-btn-action-primary" onClick={fetchPatientData}>
+                Reintentar
+              </button>
+            </>
+          ) : (
+            <p>Paciente no encontrado</p>
+          )}
           <button className="pd-btn-secondary" onClick={() => navigate('/pacientes')}>
             Volver a pacientes
           </button>
@@ -241,12 +264,14 @@ const PatientDetailVW = () => {
   }
 
   const hasProcedures = procedures.length > 0;
+  const allergyText = String(patient.alergias ?? '').trim();
+  const hasAllergies = allergyText.length > 0 && !/^(no|ninguna|ninguno|n\/a|na|sin alergias|-)$/i.test(allergyText);
 
   return (
     <div className="pd-page">
       {/* ── HEADER ── */}
       <div className="pd-header">
-        <button className="pd-btn-back" onClick={() => navigate('/pacientes')} title="Volver">
+        <button className="pd-btn-back" onClick={() => navigate('/pacientes')} title="Volver" aria-label="Volver a la lista de pacientes">
           <FiArrowLeft size={20} />
         </button>
 
@@ -257,15 +282,20 @@ const PatientDetailVW = () => {
           <div className="pd-patient-header">
             <div className="pd-name-badge">
               <h1>{patient.nombre} {patient.apellidos}</h1>
-              <span className="pd-status-badge">
-                <FiAlertTriangle size={14} />
-                {patient.alergias}</span>
+              {hasAllergies ? (
+                <span className="pd-status-badge">
+                  <FiAlertTriangle size={14} aria-hidden="true" />
+                  Alergias: {patient.alergias}
+                </span>
+              ) : (
+                <span className="pd-status-badge pd-status-badge-ok">Sin alergias registradas</span>
+              )}
             </div>
             <div className="pd-header-details">
               <div className="pd-detail-item">
                 <span className="pd-label">{patient.edad ? `${patient.edad} años` : '—'}</span>
                 <span className="pd-label">•</span>
-                <span className="pd-label">{patient.sexo === 'M' ? 'Masculino' : patient.sexo === 'F' ? 'Femenino' : '—'}</span>
+                <span className="pd-label">{SEXO_LABELS[patient.sexo] ?? 'Sexo sin registrar'}</span>
                 <span className="pd-label">•</span>
                 <span className="pd-label">No. Documento: {patient.numero_documento}</span>
               </div>
@@ -291,7 +321,10 @@ const PatientDetailVW = () => {
             Editar
           </button>
 
-          <button className="pd-btn-action-secondary">
+          <button
+            className="pd-btn-action-secondary"
+            onClick={() => navigate('/agendarcita', { state: { patient } })}
+          >
             <FiPlus size={14} />
             Nueva cita
           </button>
@@ -413,7 +446,7 @@ const PatientDetailVW = () => {
                     return (
                       <div key={history.id} className="mhc-history-card">
                         <div className="mhc-history-date">
-                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-ES", {
+                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-CO", {
                             year: "numeric",
                             month: "long",
                             day: "numeric",
@@ -478,10 +511,10 @@ const PatientDetailVW = () => {
                     <tbody>
                       {procedures.map((proc) => (
                         <tr key={proc.id}>
-                          <td>{proc.fecha || proc.created_at?.split('T')[0] || '—'}</td>
+                          <td>{formatDate(proc.fecha ?? proc.created_at)}</td>
                           <td>{proc.tooth_number || '—'}</td>
                           <td>{proc.procedure_name || '—'}</td>
-                          <td>${proc.cost || '0.00'}</td>
+                          <td>{formatMoney(proc.cost)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -737,6 +770,7 @@ const PatientDetailVW = () => {
             setHistoryModalOpen(false);
             setHistoryToEdit(null);
           }}
+          onSaved={() => { fetchPatientData(); }}
           startInForm={canEdit}
           initialHistory={historyToEdit}
         />

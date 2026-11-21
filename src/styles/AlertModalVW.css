@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: var(--z-alert);
   padding: 16px;
   animation: am-fade-in 0.15s ease-out;
 }
@@ -66,6 +66,11 @@
   color: var(--button-primary);
 }
 
+.am-icon-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
 [data-theme="dark"] .am-icon-success {
   background: rgba(34, 197, 94, 0.15);
   color: #86efac;
@@ -114,4 +119,67 @@
 @keyframes am-pop-in {
   from { opacity: 0; transform: scale(0.96) translateY(4px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.am-modal-confirm {
+  max-width: 440px;
+  text-align: left;
+}
+
+.am-modal-confirm .am-icon,
+.am-modal-confirm .am-title {
+  text-align: left;
+}
+
+.am-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.am-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.am-field textarea {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+}
+
+.am-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.am-btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.am-btn.danger {
+  background: var(--danger-strong);
+  color: #fff;
+}
+
+.am-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.am-modal-warning .am-icon {
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }

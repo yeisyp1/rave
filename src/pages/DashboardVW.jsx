@@ -1,13 +1,14 @@
 import '../styles/DashboardVW.css'
 import '../styles/AdminViewsVW.css'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
   ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis,
 } from 'recharts'
 import {
   FiAlertTriangle, FiCalendar, FiCheck, FiCheckCircle, FiCreditCard, FiDollarSign, FiDownload,
-  FiFileText, FiInfo, FiPercent, FiSliders, FiThermometer, FiUserPlus, FiUserX, FiUsers, FiX,
+  FiFileText, FiInfo, FiPercent, FiRefreshCw, FiSliders, FiThermometer, FiUserPlus, FiUserX, FiUsers, FiX,
 } from 'react-icons/fi'
 import { useProfile } from '../context/ProfileContext'
 import { isAdmin, isAssistant } from '../utils/roles'
@@ -15,6 +16,7 @@ import { useDispatch } from 'react-redux'
 import { showAlertModal } from '../app/store'
 import { RANGE_LABELS, computeDashboardCtrl, describeRangeCtrl, fetchDashboardRawCtrl } from '../controllers/DashboardCtrl'
 import { fetchReportCtrlData } from '../controllers/ReportsCtrl'
+import { toLocalDateInput } from '../utils/dates'
 
 // El dashboard consume datos reales de Supabase a través de DashboardCtrl. Las pocas
 // métricas que el esquema aún no registra (ausentismo, ocupación, carga por odontólogo)
@@ -25,8 +27,8 @@ const short = (v) => (v >= 1e6 ? '$' + (v / 1e6).toFixed(1).replace('.', ',') + 
 
 // Colores para Recharts (los atributos SVG no resuelven variables CSS de forma fiable).
 const CHART_COLORS = {
-  light: { pr: '#0E8F8A', bl: '#3F86C8', g: '#22B06B', a: '#F0A81C', r: '#E5484D', faint: '#B9C2CB', mut: '#66737F', line: '#E3E8ED', ink: '#1B2733', surface: '#FFFFFF' },
-  dark: { pr: '#3CC4B9', bl: '#6FA8E3', g: '#34C77B', a: '#F0B429', r: '#F26B6B', faint: '#55636F', mut: '#94A1AD', line: '#26323D', ink: '#E8EEF3', surface: '#161E26' },
+  light: { pr: '#1562b9', bl: '#3F86C8', g: '#22B06B', a: '#F0A81C', r: '#E5484D', faint: '#B9C2CB', mut: '#66737F', line: '#E3E8ED', ink: '#1B2733', surface: '#FFFFFF' },
+  dark: { pr: '#6FA8E3', bl: '#6FA8E3', g: '#34C77B', a: '#F0B429', r: '#F26B6B', faint: '#55636F', mut: '#94A1AD', line: '#26323D', ink: '#E8EEF3', surface: '#161E26' },
 }
 
 const useDarkTheme = () => {
@@ -264,8 +266,22 @@ const REPORT_SECTIONS = [
 const defaultReportRange = () => {
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-  const toISO = (date) => date.toISOString().slice(0, 10)
-  return { from: toISO(firstOfMonth), to: toISO(today) }
+  return { from: toLocalDateInput(firstOfMonth), to: toLocalDateInput(today) }
+}
+
+const PREFS_KEY = 'rave:dashboard:prefs'
+
+const readPrefs = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}')
+    return {
+      thrA: Number.isFinite(stored.thrA) ? stored.thrA : 15,
+      thrO: Number.isFinite(stored.thrO) ? stored.thrO : 70,
+      hidden: stored.hidden && typeof stored.hidden === 'object' ? stored.hidden : {},
+    }
+  } catch {
+    return { thrA: 15, thrO: 70, hidden: {} }
+  }
 }
 
 const formatMoney = (value) => `$${Math.round(Number(value) || 0).toLocaleString('es-CO')}`
@@ -285,6 +301,7 @@ const downloadCsv = (filename, rows) => {
 }
 
 const Dashboard = () => {
+  const navigate = useNavigate()
   const profile = useProfile()
   const limited = isAssistant(profile)
   const dark = useDarkTheme()
@@ -295,19 +312,19 @@ const Dashboard = () => {
 
   const [raw, setRaw] = useState(null)
   const [fetching, setFetching] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
   const [range, setRange] = useState({ mode: 'preset', preset: 3 })
   const [rangeMenu, setRangeMenu] = useState(false)
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [dentist, setDentist] = useState(0)
   const [service, setService] = useState(0)
-  const [dismissed, setDismissed] = useState({})
+  const [alertState, setAlertState] = useState({})
   const [drawer, setDrawer] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [secs, setSecs] = useState(0)
-  const [hidden, setHidden] = useState({})
-  const [thrA, setThrA] = useState(15)
-  const [thrO, setThrO] = useState(70)
+  const [prefs, setPrefs] = useState(readPrefs)
+  const [draftPrefs, setDraftPrefs] = useState(prefs)
   const [gran, setGran] = useState('d')
   const [tipId, setTipId] = useState(null)
   const loadTimer = useRef(null)
@@ -347,22 +364,23 @@ const Dashboard = () => {
     [reportData]
   )
 
-  useEffect(() => {
-    let active = true
-    fetchDashboardRawCtrl()
-      .then((data) => { if (active) { setRaw(data); setFetching(false) } })
-      .catch((error) => {
-        if (!active) return
-        setFetching(false)
-        dispatch(showAlertModal({ message: `No se pudo cargar el dashboard: ${error.message}`, variant: 'error' }))
-      })
-    return () => { active = false }
-  }, [dispatch])
-
-  useEffect(() => {
-    const iv = setInterval(() => setSecs((s) => (s + 1) % 60), 1000)
-    return () => { clearInterval(iv); clearTimeout(loadTimer.current) }
+  const loadDashboard = useCallback(async () => {
+    setFetching(true)
+    setLoadError(null)
+    try {
+      const data = await fetchDashboardRawCtrl()
+      setRaw(data)
+      setLastUpdated(new Date())
+    } catch (error) {
+      setLoadError(error.message || 'Error desconocido')
+    } finally {
+      setFetching(false)
+    }
   }, [])
+
+  useEffect(() => { loadDashboard() }, [loadDashboard])
+
+  useEffect(() => () => clearTimeout(loadTimer.current), [])
 
   // Cálculo síncrono a partir de los datos crudos; el "loading" es solo el shimmer al cambiar filtros.
   const d = useMemo(
@@ -373,9 +391,45 @@ const Dashboard = () => {
   const refresh = (apply) => {
     apply()
     setLoading(true)
-    setSecs(0)
     clearTimeout(loadTimer.current)
     loadTimer.current = setTimeout(() => setLoading(false), 500)
+  }
+
+  const openDrawer = () => {
+    setDraftPrefs(prefs)
+    setDrawer(true)
+  }
+
+  const savePrefs = () => {
+    setPrefs(draftPrefs)
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(draftPrefs))
+    } catch {
+      dispatch(showAlertModal({ message: 'No se pudieron guardar las preferencias en este navegador.', variant: 'warning' }))
+    }
+    setDrawer(false)
+  }
+
+  const { thrA, thrO, hidden } = prefs
+
+  if (loadError) {
+    return (
+      <div className="rv-dash">
+        <div className="rv-head">
+          <div>
+            <h1 className="rv-title">Dashboard</h1>
+            <div className="rv-sub">{todayLabel()} · {CLINIC_LINE}</div>
+          </div>
+        </div>
+        <div className="rv-empty-alerts" role="alert">
+          <strong>No se pudo cargar el dashboard</strong>
+          <span>{loadError}</span>
+          <button type="button" className="rv-btn primary" style={{ marginTop: 14 }} onClick={loadDashboard}>
+            <FiRefreshCw size={15} /> Reintentar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (fetching || !d) {
@@ -420,8 +474,9 @@ const Dashboard = () => {
     }
   })
 
-  const alerts = d.alerts.filter((a) => !dismissed[a.id])
-  const dismiss = (id) => setDismissed((prev) => ({ ...prev, [id]: 1 }))
+  const alerts = d.alerts.filter((a) => !alertState[a.id])
+  const markAlert = (id, status) => setAlertState((prev) => ({ ...prev, [id]: status }))
+  const handledCount = Object.keys(alertState).length
   const visibleCharts = CHARTS.filter((ch) => !hidden['c_' + ch.id])
   const dentistOptions = d.dentistOptions
   const serviceOptions = d.serviceOptions
@@ -489,8 +544,14 @@ const Dashboard = () => {
           <div className="rv-sub">{todayLabel()} · {CLINIC_LINE}</div>
         </div>
         <div className="rv-head-actions">
-          <div className="rv-live"><span className="rv-live-dot" />Actualizado hace {secs} s</div>
-          <button type="button" className="rv-btn" onClick={() => setDrawer(true)}><FiSliders size={16} />Configurar indicadores</button>
+          <div className="rv-live">
+            <span className="rv-live-dot" />
+            {lastUpdated ? `Actualizado a las ${lastUpdated.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` : 'Sin actualizar'}
+          </div>
+          <button type="button" className="rv-btn" onClick={loadDashboard} disabled={fetching}>
+            <FiRefreshCw size={16} />{fetching ? 'Actualizando...' : 'Actualizar'}
+          </button>
+          <button type="button" className="rv-btn" onClick={openDrawer}><FiSliders size={16} />Configurar indicadores</button>
           {canSeeReports && (
             <button type="button" className="rv-btn primary" onClick={() => setReportDrawer(true)}><FiFileText size={16} />Generar reporte</button>
           )}
@@ -499,7 +560,12 @@ const Dashboard = () => {
 
       <div className="rv-filters">
         <div className="rv-range-wrap">
-          <button type="button" className="rv-chip rv-range-trigger" onClick={() => setRangeMenu((v) => !v)}>
+          <button
+            type="button"
+            className="rv-chip rv-range-trigger"
+            aria-expanded={rangeMenu}
+            onClick={() => setRangeMenu((v) => !v)}
+          >
             <FiCalendar size={13} />
             {describeRangeCtrl(range)}
           </button>
@@ -508,20 +574,22 @@ const Dashboard = () => {
               <div className="rv-range-scrim" onClick={() => setRangeMenu(false)} />
               <div className="rv-pop rv-range-menu">
                 {RANGE_LABELS.map((label, i) => (
-                  <div
+                  <button
+                    type="button"
                     key={label}
                     className={`rv-pop-item ${range.mode === 'preset' && range.preset === i ? 'active' : ''}`}
+                    aria-current={range.mode === 'preset' && range.preset === i}
                     onClick={() => { refresh(() => setRange({ mode: 'preset', preset: i })); setRangeMenu(false) }}
                   >
                     {label}
-                  </div>
+                  </button>
                 ))}
                 <div className="rv-range-sep" />
                 <div className="rv-range-custom">
                   <div className="rv-eyebrow" style={{ marginBottom: 6 }}>Rango personalizado</div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="date" className="rv-select" style={{ width: '100%' }} value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-                    <input type="date" className="rv-select" style={{ width: '100%' }} value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Desde" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Hasta" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
                   </div>
                   <button
                     type="button"
@@ -540,10 +608,10 @@ const Dashboard = () => {
             </>
           )}
         </div>
-        <select className="rv-select" value={dentist} onChange={(e) => refresh(() => setDentist(+e.target.value))}>
+        <select className="rv-select" aria-label="Filtrar por odontólogo" value={dentist} onChange={(e) => refresh(() => setDentist(+e.target.value))}>
           {dentistOptions.map((t, i) => <option key={t + i} value={i}>{t}</option>)}
         </select>
-        <select className="rv-select" value={service} onChange={(e) => refresh(() => setService(+e.target.value))}>
+        <select className="rv-select" aria-label="Filtrar por servicio" value={service} onChange={(e) => refresh(() => setService(+e.target.value))}>
           {serviceOptions.map((t, i) => <option key={t + i} value={i}>{t}</option>)}
         </select>
       </div>
@@ -562,7 +630,7 @@ const Dashboard = () => {
             >
               <FiDownload size={15} /> Exportar CSV
             </button>
-            <button type="button" className="rv-close" title="Cerrar reporte" onClick={() => setReportData(null)}><FiX size={16} /></button>
+            <button type="button" className="rv-close" title="Cerrar reporte" aria-label="Cerrar el reporte" onClick={() => setReportData(null)}><FiX size={16} /></button>
           </div>
 
           {!reportSections.length ? (
@@ -648,7 +716,7 @@ const Dashboard = () => {
                   <h3 className="admin-card-title">Alertas de inventario</h3>
                   <div className="admin-table-wrap">
                     <table className="admin-table">
-                      <thead><tr><th>Insumo</th><th>Stock</th><th>Minimo</th></tr></thead>
+                      <thead><tr><th>Insumo</th><th>Stock</th><th>Mínimo</th></tr></thead>
                       <tbody>
                         {reportData.lowStockItems.length === 0 ? (
                           <tr><td colSpan="3" className="admin-empty">No hay insumos por reponer.</td></tr>
@@ -703,7 +771,11 @@ const Dashboard = () => {
               <h2>Alertas</h2>
               <span className="rv-count">{alerts.length}</span>
               <div className="rv-spacer" />
-              {Object.keys(dismissed).length > 0 && <a className="rv-link" onClick={() => setDismissed({})}>Restablecer</a>}
+              {handledCount > 0 && (
+                <button type="button" className="rv-link" onClick={() => setAlertState({})}>
+                  Restablecer ({handledCount})
+                </button>
+              )}
             </div>
             {alerts.length === 0 && (
               <div className="rv-empty-alerts">
@@ -719,14 +791,34 @@ const Dashboard = () => {
                     <span className="rv-alert-dot" />
                     <span className="rv-alert-sev">{a.sev === 'r' ? 'Crítica' : 'Atención'}</span>
                     <div className="rv-spacer" />
-                    <button type="button" className="rv-icon-btn" title="Marcar como resuelta" onClick={() => dismiss(a.id)}><FiCheck size={15} /></button>
-                    <button type="button" className="rv-icon-btn muted" title="Descartar" onClick={() => dismiss(a.id)}><FiX size={14} /></button>
+                    <button
+                      type="button"
+                      className="rv-icon-btn"
+                      title="Marcar como resuelta"
+                      aria-label={`Marcar como resuelta: ${a.badge} ${a.text}`}
+                      onClick={() => markAlert(a.id, 'resolved')}
+                    >
+                      <FiCheck size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="rv-icon-btn muted"
+                      title="Ocultar hasta la próxima recarga"
+                      aria-label={`Ocultar la alerta: ${a.badge} ${a.text}`}
+                      onClick={() => markAlert(a.id, 'hidden')}
+                    >
+                      <FiX size={14} />
+                    </button>
                   </div>
                   <div className="rv-alert-body">
                     <span className="rv-alert-badge">{a.badge}</span>
                     <span className="rv-alert-text">{a.text}</span>
                   </div>
-                  {a.action && <a className="rv-alert-action">{a.action} →</a>}
+                  {a.action && a.to && (
+                    <button type="button" className="rv-alert-action" onClick={() => navigate(a.to)}>
+                      {a.action} →
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -761,8 +853,21 @@ const Dashboard = () => {
                   <div className="rv-kpi-top">
                     <div className="rv-kpi-icon"><Icon size={16} /></div>
                     <span className="rv-kpi-label">{k.label}{k.derived ? ' *' : ''}</span>
-                    <span className="rv-info" onMouseEnter={() => setTipId(k.id)} onMouseLeave={() => setTipId(null)}><FiInfo size={15} /></span>
+                    <button
+                      type="button"
+                      className="rv-info"
+                      aria-label={`Cómo se calcula: ${k.label}`}
+                      aria-expanded={tipId === k.id}
+                      onMouseEnter={() => setTipId(k.id)}
+                      onMouseLeave={() => setTipId(null)}
+                      onFocus={() => setTipId(k.id)}
+                      onBlur={() => setTipId(null)}
+                      onClick={() => setTipId((current) => (current === k.id ? null : k.id))}
+                    >
+                      <FiInfo size={15} />
+                    </button>
                     <span className={`rv-status ${k.st}`} title={STATUS_LABEL[k.st]} />
+                    <span className="sr-only">{STATUS_LABEL[k.st]}</span>
                   </div>
                   {loading ? (
                     <>
@@ -832,25 +937,58 @@ const Dashboard = () => {
             <div>
               <div className="rv-eyebrow">Umbrales de alerta</div>
               <div className="rv-thr">
-                <div className="rv-thr-row"><span>Ausentismo</span><span className="r">&gt; {thrA}% = rojo</span></div>
-                <input type="range" min="5" max="30" value={thrA} onChange={(e) => setThrA(+e.target.value)} />
+                <div className="rv-thr-row">
+                  <label htmlFor="thr-aus">Ausentismo</label>
+                  <span className="r">&gt; {draftPrefs.thrA}% = rojo</span>
+                </div>
+                <input
+                  id="thr-aus"
+                  type="range"
+                  min="5"
+                  max="30"
+                  value={draftPrefs.thrA}
+                  onChange={(e) => setDraftPrefs((prev) => ({ ...prev, thrA: +e.target.value }))}
+                />
               </div>
               <div className="rv-thr">
-                <div className="rv-thr-row"><span>Ocupación de agenda</span><span className="g">≥ {thrO}% = verde</span></div>
-                <input type="range" min="40" max="90" value={thrO} onChange={(e) => setThrO(+e.target.value)} />
-                <div className="rv-sub">Ámbar hasta {thrO - 15}%; por debajo, rojo.</div>
+                <div className="rv-thr-row">
+                  <label htmlFor="thr-ocu">Ocupación de agenda</label>
+                  <span className="g">≥ {draftPrefs.thrO}% = verde</span>
+                </div>
+                <input
+                  id="thr-ocu"
+                  type="range"
+                  min="40"
+                  max="90"
+                  value={draftPrefs.thrO}
+                  onChange={(e) => setDraftPrefs((prev) => ({ ...prev, thrO: +e.target.value }))}
+                />
+                <div className="rv-sub">Ámbar hasta {draftPrefs.thrO - 15}%; por debajo, rojo.</div>
               </div>
             </div>
             <div>
               <div className="rv-eyebrow">Widgets visibles</div>
               {widgets.map((w) => (
-                <div key={w.key} className="rv-widget" onClick={() => setHidden((h) => ({ ...h, [w.key]: !h[w.key] }))}>
+                <button
+                  type="button"
+                  key={w.key}
+                  className="rv-widget"
+                  role="switch"
+                  aria-checked={!draftPrefs.hidden[w.key]}
+                  onClick={() => setDraftPrefs((prev) => ({
+                    ...prev,
+                    hidden: { ...prev.hidden, [w.key]: !prev.hidden[w.key] },
+                  }))}
+                >
                   <span className="rv-spacer">{w.label}</span>
-                  <span className={`rv-switch ${hidden[w.key] ? '' : 'on'}`}><span /></span>
-                </div>
+                  <span className={`rv-switch ${draftPrefs.hidden[w.key] ? '' : 'on'}`}><span /></span>
+                </button>
               ))}
             </div>
-            <button type="button" className="rv-btn primary wide" onClick={() => setDrawer(false)}>Guardar y cerrar</button>
+            <div className="rv-drawer-actions">
+              <button type="button" className="rv-btn" onClick={() => setDrawer(false)}>Cancelar</button>
+              <button type="button" className="rv-btn primary wide" onClick={savePrefs}>Guardar y cerrar</button>
+            </div>
           </aside>
         </div>
       )}
@@ -867,8 +1005,9 @@ const Dashboard = () => {
               <div className="rv-eyebrow">Periodo del reporte</div>
               <div className="rv-thr" style={{ display: 'flex', gap: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <label className="rv-sub" style={{ display: 'block', marginBottom: 4 }}>Desde</label>
+                  <label className="rv-sub" htmlFor="rep-from" style={{ display: 'block', marginBottom: 4 }}>Desde</label>
                   <input
+                    id="rep-from"
                     type="date"
                     className="rv-select"
                     style={{ width: '100%', boxSizing: 'border-box' }}
@@ -877,8 +1016,9 @@ const Dashboard = () => {
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label className="rv-sub" style={{ display: 'block', marginBottom: 4 }}>Hasta</label>
+                  <label className="rv-sub" htmlFor="rep-to" style={{ display: 'block', marginBottom: 4 }}>Hasta</label>
                   <input
+                    id="rep-to"
                     type="date"
                     className="rv-select"
                     style={{ width: '100%', boxSizing: 'border-box' }}
@@ -892,15 +1032,22 @@ const Dashboard = () => {
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
                 <div className="rv-eyebrow" style={{ marginBottom: 0 }}>Secciones del documento</div>
                 <div className="rv-spacer" />
-                <a className="rv-link" onClick={toggleAllReportSections}>
+                <button type="button" className="rv-link" onClick={toggleAllReportSections}>
                   {reportSections.length === REPORT_SECTIONS.length ? 'Desmarcar todas' : 'Marcar todas'}
-                </a>
+                </button>
               </div>
               {REPORT_SECTIONS.map((s) => (
-                <div key={s.key} className="rv-widget" onClick={() => toggleReportSection(s.key)}>
+                <button
+                  type="button"
+                  key={s.key}
+                  className="rv-widget"
+                  role="switch"
+                  aria-checked={showsReportSection(s.key)}
+                  onClick={() => toggleReportSection(s.key)}
+                >
                   <span className="rv-spacer">{s.label}</span>
                   <span className={`rv-switch ${showsReportSection(s.key) ? 'on' : ''}`}><span /></span>
-                </div>
+                </button>
               ))}
             </div>
             <button

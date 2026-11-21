@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
@@ -11,6 +12,7 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
   const dispatch = useDispatch()
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const containerRef = useModalBehavior(onClose, { enabled: Boolean(invoice) })
 
   useEffect(() => {
     if (!invoice) return
@@ -43,17 +45,21 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
     setSaving(false)
   }
 
-  if (!invoice) return null
-
-  const modal = (
+  const modal = invoice && (
     <div className="pt-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="pt-modal pt-modal-wide">
+      <div
+        className="pt-modal pt-modal-wide"
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pt-invoice-title"
+      >
         <div className="pt-modal-header">
           <div>
             <div className="pt-modal-eyebrow">Clínica RAVE</div>
-            <h2 className="pt-modal-title">Ver / Editar factura #{String(invoice.id).padStart(3, '0')}</h2>
+            <h2 className="pt-modal-title" id="pt-invoice-title">Ver / editar factura #{String(invoice.id).padStart(3, '0')}</h2>
           </div>
-          <button className="pt-modal-close" onClick={onClose}>
+          <button className="pt-modal-close" onClick={onClose} aria-label="Cerrar">
             <FiX size={16} />
           </button>
         </div>
@@ -70,6 +76,8 @@ const ModalViewInvoiceVW = ({ invoice = null, onClose = () => {}, onSaved = () =
       </div>
     </div>
   )
+
+  if (!invoice) return null
 
   return createPortal(modal, document.body)
 }

@@ -1,18 +1,23 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiX, FiSave, FiTrash2, FiEdit } from 'react-icons/fi'
 import moment from 'moment'
 import '../styles/CitaModalVW.css'
 import '../styles/ModalViewEventVW.css'
 import { showAlertModal } from '../app/store'
+import ModalShellVW from '../components/ModalShellVW'
+import { confirmAction } from '../utils/confirmDialog'
+import { toLocalDateInput, toLocalTimeInput } from '../utils/dates'
 import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
 
 /* MODAL VER CITA */
 const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEdit, onDelete, onNoShow, onAttended, onClose, deleting }) => {
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
-  const today = moment().format('YYYY-MM-DD')
-  const originalDate = moment(event?.start).format('YYYY-MM-DD')
+  const today = toLocalDateInput(new Date())
+  const originalDate = toLocalDateInput(event?.start ?? new Date())
+  const uid = useId()
+  const fieldId = (name) => `${uid}-${name}`
 
   const findPatient = (text) => findPatientByText(patientOptions, text)
 
@@ -25,9 +30,9 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
     service:     event?.resource?.service || '',
     description: event?.resource?.description || '',
     location:    event?.resource?.location || '',
-    startTime:   moment(event?.start).format('HH:mm'),
-    endTime:     moment(event?.end).format('HH:mm'),
-    date:        moment(event?.start).format('YYYY-MM-DD'),
+    startTime:   toLocalTimeInput(event?.start ?? new Date()),
+    endTime:     toLocalTimeInput(event?.end ?? new Date()),
+    date:        toLocalDateInput(event?.start ?? new Date()),
     doctorId:    event?.resource?.doctorId || '',
   })
 
@@ -76,32 +81,52 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
     setIsEditing(false)
   }
 
-  const handleDelete = () => {
-    const confirm = window.confirm(`¿Estás seguro de que deseas eliminar la cita "${event.title}"?`)
-    if (confirm) onDelete()
+  const handleDelete = async () => {
+    const confirmed = await confirmAction({
+      title: 'Eliminar la cita',
+      message: `La cita "${event.title}" se eliminará de Google Calendar. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (confirmed) onDelete()
   }
 
-  const handleNoShow = () => {
-    if (window.confirm(`¿Marcar la cita "${event.title}" como no asistida?`)) onNoShow()
+  const handleNoShow = async () => {
+    const confirmed = await confirmAction({
+      title: 'Marcar como no asistida',
+      message: `La cita "${event.title}" quedará registrada como no asistida.`,
+      confirmLabel: 'Marcar no asistida',
+    })
+    if (confirmed) onNoShow()
   }
 
-  const handleAttended = () => {
-    if (window.confirm(`¿Marcar la cita "${event.title}" como atendida?`)) onAttended()
+  const handleAttended = async () => {
+    const confirmed = await confirmAction({
+      title: 'Marcar como atendida',
+      message: `La cita "${event.title}" quedará registrada como atendida.`,
+      confirmLabel: 'Marcar atendida',
+    })
+    if (confirmed) onAttended()
   }
 
   const canMarkNoShow = onNoShow && !event?.allDay && new Date(event?.start) <= new Date()
   const canMarkAttended = onAttended && !event?.allDay && new Date(event?.start) <= new Date()
 
   return (
-    <div className="cl-overlay" onClick={(e) => e.target === e.currentTarget && !isEditing && onClose()}>
+    <ModalShellVW
+      overlayClassName="cl-overlay"
+      onClose={onClose}
+      closeOnBackdrop={!isEditing}
+      labelledBy={fieldId('title')}
+    >
       <div className="cl-modal">
         <div className="cl-modal-header">
           <div>
-            <h2 className="cl-modal-title">
-              {isEditing ? 'Editar Cita' : 'Detalles de la Cita'}
+            <h2 className="cl-modal-title" id={fieldId('title')}>
+              {isEditing ? 'Editar cita' : 'Detalles de la cita'}
             </h2>
           </div>
-          <button className="cl-modal-close" onClick={onClose} disabled={isEditing}>
+          <button className="cl-modal-close" onClick={onClose} disabled={isEditing} aria-label="Cerrar">
             <FiX size={16} />
           </button>
         </div>
@@ -112,8 +137,8 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
           {isEditing ? (
             <>
               <div className="cl-field">
-                <label className="cl-label">Paciente <span className="cl-req">*</span></label>
-                <input name="patientName" list="edit-patient-list" value={form.patientName} onChange={handlePatientChange} placeholder="Buscar paciente por nombre o documento" className="cl-input" autoFocus/>
+                <label className="cl-label" htmlFor={fieldId('patient')}>Paciente <span className="cl-req">*</span></label>
+                <input id={fieldId('patient')} name="patientName" list="edit-patient-list" value={form.patientName} onChange={handlePatientChange} placeholder="Buscar paciente por nombre o documento" className="cl-input" autoFocus/>
                 <datalist id="edit-patient-list">
                   {patientOptions.map((patient) => (
                     <option key={patient.id} value={getPatientLabel(patient)} />
@@ -122,13 +147,13 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Servicio <span className="cl-req">*</span></label>
-                <input name="service" value={form.service} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
+                <label className="cl-label" htmlFor={fieldId('service')}>Servicio <span className="cl-req">*</span></label>
+                <input id={fieldId('service')} name="service" value={form.service} onChange={handleChange} placeholder="Ej. Limpieza dental, ortodoncia..." className="cl-input"/>
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
-                <select name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
+                <label className="cl-label" htmlFor={fieldId('doctor')}>Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+                <select id={fieldId('doctor')} name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
                   <option value="">Selecciona un odontólogo...</option>
                   {doctorOptions.map((doctor) => (
                     <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
@@ -137,71 +162,71 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Notas</label>
-                <input name="description" value={form.description} onChange={handleChange} placeholder="Observaciones de la cita" className="cl-input"/>
+                <label className="cl-label" htmlFor={fieldId('notes')}>Notas</label>
+                <input id={fieldId('notes')} name="description" value={form.description} onChange={handleChange} placeholder="Observaciones de la cita" className="cl-input"/>
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Ubicación</label>
-                <input name="location" value={form.location} onChange={handleChange} placeholder="Ej. Consultorio 1" className="cl-input"/>
+                <label className="cl-label" htmlFor={fieldId('location')}>Ubicación</label>
+                <input id={fieldId('location')} name="location" value={form.location} onChange={handleChange} placeholder="Ej. Consultorio 1" className="cl-input"/>
               </div>
 
               <div className="cl-field-row">
                 <div className="cl-field">
-                  <label className="cl-label">Hora inicio</label>
-                  <input type="time" name="startTime" value={form.startTime} onChange={handleChange} className="cl-input"/>
+                  <label className="cl-label" htmlFor={fieldId('start')}>Hora inicio</label>
+                  <input id={fieldId('start')} type="time" name="startTime" value={form.startTime} onChange={handleChange} className="cl-input"/>
                 </div>
                 <div className="cl-field">
-                  <label className="cl-label">Hora fin</label>
-                  <input type="time" name="endTime" value={form.endTime} onChange={handleChange} className="cl-input"/>
+                  <label className="cl-label" htmlFor={fieldId('end')}>Hora fin</label>
+                  <input id={fieldId('end')} type="time" name="endTime" value={form.endTime} onChange={handleChange} className="cl-input"/>
                 </div>
               </div>
 
               <div className="cl-field">
-                <label className="cl-label">Fecha</label>
-                <input type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
+                <label className="cl-label" htmlFor={fieldId('date')}>Fecha</label>
+                <input id={fieldId('date')} type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
               </div>
             </>
           ) : (
             <>
               <div className="cl-view-field">
-                <label className="cl-label">Paciente</label>
+                <span className="cl-label">Paciente</span>
                 <p className="cl-view-value">{event?.resource?.patient || '-'}</p>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Servicio</label>
+                <span className="cl-label">Servicio</span>
                 <p className="cl-view-value">{event?.resource?.service || '-'}</p>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Odontólogo</label>
+                <span className="cl-label">Odontólogo</span>
                 <p className="cl-view-value">{event?.resource?.doctorName || '-'}</p>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Notas</label>
+                <span className="cl-label">Notas</span>
                 <p className="cl-view-value">{event?.resource?.description || 'Sin notas'}</p>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Ubicación</label>
+                <span className="cl-label">Ubicación</span>
                 <p className="cl-view-value">{event?.resource?.location || 'Sin ubicación'}</p>
               </div>
 
               <div className="cl-view-field-row">
                 <div className="cl-view-field">
-                  <label className="cl-label">Hora Inicio</label>
+                  <span className="cl-label">Hora inicio</span>
                   <p className="cl-view-value">{moment(event?.start).format('HH:mm')}</p>
                 </div>
                 <div className="cl-view-field">
-                  <label className="cl-label">Hora Fin</label>
+                  <span className="cl-label">Hora fin</span>
                   <p className="cl-view-value">{moment(event?.end).format('HH:mm')}</p>
                 </div>
               </div>
 
               <div className="cl-view-field">
-                <label className="cl-label">Fecha</label>
+                <span className="cl-label">Fecha</span>
                 <p className="cl-view-value">{moment(event?.start).format('dddd, D [de] MMMM [de] YYYY')}</p>
               </div>
             </>
@@ -248,7 +273,7 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
           )}
         </div>
       </div>
-    </div>
+    </ModalShellVW>
   )
 }
 

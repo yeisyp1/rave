@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import { useModalBehavior } from '../hooks/useModalBehavior'
+import { promptReason } from '../utils/confirmDialog'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
@@ -22,6 +24,7 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
   const [payments, setPayments] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const containerRef = useModalBehavior(onClose, { enabled: Boolean(invoice) })
 
   const loadPayments = async () => {
     try {
@@ -59,8 +62,13 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
   }
 
   const handleAnnul = async (payment) => {
-    const motivo = window.prompt(`Motivo de anulación del pago de ${money(payment.amount)}:`)
-    if (motivo === null) return
+    const motivo = await promptReason({
+      title: 'Anular el pago',
+      message: `El pago de ${money(payment.amount)} queda marcado como anulado y el motivo se guarda en la auditoría.`,
+      reasonLabel: 'Motivo de anulación',
+      confirmLabel: 'Anular pago',
+    })
+    if (!motivo) return
 
     const result = await annulPaymentCtrl(payment.id, motivo)
     if (!result.ok) {
@@ -73,13 +81,19 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
 
   const modal = (
     <div className="pt-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="pt-modal pt-modal-wide">
+      <div
+        className="pt-modal pt-modal-wide"
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pt-payments-title"
+      >
         <div className="pt-modal-header">
           <div>
             <div className="pt-modal-eyebrow">Factura #{String(invoice.id).padStart(3, '0')} · {invoice.patient}</div>
-            <h2 className="pt-modal-title">Pagos</h2>
+            <h2 className="pt-modal-title" id="pt-payments-title">Pagos</h2>
           </div>
-          <button className="pt-modal-close" onClick={onClose}>
+          <button className="pt-modal-close" onClick={onClose} aria-label="Cerrar">
             <FiX size={16} />
           </button>
         </div>
@@ -147,8 +161,8 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
             <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
               <div className="pt-form-grid">
                 <div className="pt-field">
-                  <label className="pt-label">Valor del pago</label>
-                  <input
+                  <label className="pt-label" htmlFor="modalpayme-valor-del-pago">Valor del pago</label>
+                  <input id="modalpayme-valor-del-pago"
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -162,8 +176,8 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
                   />
                 </div>
                 <div className="pt-field">
-                  <label className="pt-label">Fecha</label>
-                  <input type="date" name="paidAt" value={form.paidAt} onChange={handleChange} required className="pt-input" />
+                  <label className="pt-label" htmlFor="modalpayme-fecha">Fecha</label>
+                  <input id="modalpayme-fecha" type="date" name="paidAt" value={form.paidAt} onChange={handleChange} required className="pt-input" />
                 </div>
                 <div className="pt-field">
                   <label className="pt-label">Medio de pago</label>
@@ -175,12 +189,12 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
                   </div>
                 </div>
                 <div className="pt-field">
-                  <label className="pt-label">Referencia</label>
-                  <input name="reference" value={form.reference} onChange={handleChange} placeholder="No. de transacción o recibo" className="pt-input" />
+                  <label className="pt-label" htmlFor="modalpayme-referencia">Referencia</label>
+                  <input id="modalpayme-referencia" name="reference" value={form.reference} onChange={handleChange} placeholder="No. de transacción o recibo" className="pt-input" />
                 </div>
                 <div className="pt-field pt-field-full">
-                  <label className="pt-label">Notas</label>
-                  <input name="notes" value={form.notes} onChange={handleChange} className="pt-input" />
+                  <label className="pt-label" htmlFor="modalpayme-notas">Notas</label>
+                  <input id="modalpayme-notas" name="notes" value={form.notes} onChange={handleChange} className="pt-input" />
                 </div>
               </div>
               <div className="pt-modal-nav">

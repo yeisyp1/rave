@@ -5,7 +5,7 @@ import logo from "../assets/logo.png";
 import "../styles/LoginVW.css";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { FiAlertCircle, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
+import { FiAlertCircle, FiCheckCircle, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
 import { showAlertModal } from "../app/store";
 
 const Login = () => {
@@ -14,6 +14,7 @@ const Login = () => {
   const [password, setPassword]         = useState("");
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState("");
+  const [successMsg, setSuccessMsg]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focused, setFocused]           = useState("");
 
@@ -38,6 +39,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
+    setSuccessMsg("");
 
     const result = await loginWithPasswordCtrl(email, password);
     setLoading(false);
@@ -58,9 +60,11 @@ const Login = () => {
   const handleMagicLink = async () => {
     setLoading(true);
     setErrorMsg('');
+    setSuccessMsg('');
     const result = await sendMagicLinkCtrl(email);
     setLoading(false);
-    setErrorMsg(result.message);
+    if (result.ok) setSuccessMsg(result.message);
+    else setErrorMsg(result.message);
   };
 
 
@@ -84,7 +88,7 @@ const Login = () => {
               <defs>
                 <linearGradient id="hg" x1="0" y1="0" x2="60" y2="80" gradientUnits="userSpaceOnUse">
                   <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.88" />
-                  <stop offset="100%" stopColor="#c9934a" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#A2CDFF" stopOpacity="0.55" />
                 </linearGradient>
               </defs>
               <path
@@ -92,7 +96,7 @@ const Login = () => {
                    1-4 2-10 4-14 1-3 2-5 3-5s2 2 3 5c2 4 3 10 4 14 1 3 4 3 6 0 3-4 4-14 5-20
                    1-8 2-15 5-20 2-4 4-8 4-13 0-7-5-13-12-13-4 0-7 2-10 4-3-2-6-4-10-4z"
                 fill="url(#hg)"
-                stroke="rgba(201,147,74,0.4)"
+                stroke="rgba(162,205,255,0.4)"
                 strokeWidth="1.5"
               />
               <path
@@ -135,21 +139,32 @@ const Login = () => {
           <div className="form-title-access">Acceso al sistema</div>   
           <div className="form-subtitle">Ingresa con tus credenciales profesionales</div>
 
-          {errorMsg && (
-            <div className="err-box">
-              <FiAlertCircle size={18} />
-              {errorMsg}
-            </div>
-          )}
+          <div aria-live="polite">
+            {errorMsg && (
+              <div className="err-box" role="alert">
+                <FiAlertCircle size={18} />
+                {errorMsg}
+              </div>
+            )}
+            {successMsg && (
+              <div className="ok-box">
+                <FiCheckCircle size={18} />
+                {successMsg}
+              </div>
+            )}
+          </div>
 
           <form onSubmit={handleLogin}>
 
             {/* EMAIL */}
             <div className="field">
-              <label className="field-label">Correo electrónico</label>
+              <label className="field-label" htmlFor="login-email">Correo electrónico</label>
               <div className={`field-wrap ${focused === "email" ? "is-on" : ""}`}>
-                <FiMail className="fi" />
+                <FiMail className="fi" aria-hidden="true" />
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   className="field-input"
                   placeholder="doctor@rave.com"
@@ -164,10 +179,13 @@ const Login = () => {
 
             {/* PASSWORD */}
             <div className="field">
-              <label className="field-label">Contraseña</label>
+              <label className="field-label" htmlFor="login-password">Contraseña</label>
               <div className={`field-wrap ${focused === "password" ? "is-on" : ""}`}>
-                <FiLock className="fi" />
+                <FiLock className="fi" aria-hidden="true" />
                 <input
+                  id="login-password"
+                  name="current-password"
+                  autoComplete="current-password"
                   type={showPassword ? "text" : "password"}
                   className="field-input"
                   placeholder="••••••••••"
@@ -181,7 +199,8 @@ const Login = () => {
                   type="button"
                   className="eye-btn"
                   onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar la contraseña' : 'Mostrar la contraseña'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <FiEye /> : <FiEyeOff />}
                 </button>
@@ -190,10 +209,6 @@ const Login = () => {
 
             {/* OPCIONES */}
             <div className="options-row">
-              <label className="remember">
-                <input type="checkbox" id="remember" />
-                <span>Recordar sesión</span>
-              </label>
               <button type="button" className="forgot" onClick={() => navigate('/recuperar-contrasena')}>
                 ¿Olvidaste tu contraseña?
               </button>
@@ -207,7 +222,7 @@ const Login = () => {
                   Verificando...
                 </span>
               ) : (
-                "Iniciar Sesión"
+                "Iniciar sesión"
               )}
             </button>
 

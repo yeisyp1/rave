@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
+import AdminMessageVW from '../components/AdminMessageVW'
+import { confirmAction } from '../utils/confirmDialog'
+import { FiEdit, FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import { showAlertModal } from '../app/store'
 import {
@@ -15,6 +17,12 @@ import {
   setAuthorizedUserActiveCtrl,
 } from '../controllers/DoctorsCtrl'
 import '../styles/AdminViewsVW.css'
+
+const ROLE_PILL_CLASS = {
+  admin: 'role-admin',
+  dentist: 'role-dentist',
+  assistant: 'role-assistant',
+}
 
 const DoctorsVW = () => {
   const dispatch = useDispatch()
@@ -72,7 +80,12 @@ const DoctorsVW = () => {
   }
 
   const handleDeactivate = async (row) => {
-    if (!confirm(`¿Desactivar a ${row.email}?`)) return
+    const confirmed = await confirmAction({
+      title: 'Desactivar al usuario',
+      message: `${row.email} perderá el acceso a la aplicación. Puedes volver a activarlo cuando quieras.`,
+      confirmLabel: 'Desactivar',
+    })
+    if (!confirmed) return
 
     const result = await setAuthorizedUserActiveCtrl(row.id, false)
     if (!result.ok) {
@@ -100,7 +113,12 @@ const DoctorsVW = () => {
     }
 
     const actionLabel = getPasswordActionLabel(hasProfile)
-    const confirmed = confirm(`¿Enviar a ${row.email} un correo para ${actionLabel} su contraseña?`)
+    const confirmed = await confirmAction({
+      title: 'Enviar el correo de contraseña',
+      message: `Se enviará a ${row.email} un correo para ${actionLabel} su contraseña.`,
+      confirmLabel: 'Enviar correo',
+      variant: 'info',
+    })
     if (!confirmed) return
 
     const result = await sendPasswordSetupEmailCtrl(row, hasProfile)
@@ -128,7 +146,7 @@ const DoctorsVW = () => {
         </button>
       </div>
 
-      <div className="admin-grid">
+      <div className="admin-grid stats">
         <div className="admin-card admin-stat">
           <div>
             <div className="admin-stat-value">{authorizedUsers.length}</div>
@@ -146,7 +164,7 @@ const DoctorsVW = () => {
         <div className="admin-card admin-stat">
           <div>
             <div className="admin-stat-value">{totalDentists}</div>
-            <div className="admin-stat-label">odontólogas</div>
+            <div className="admin-stat-label">odontólogos</div>
           </div>
           <span className="admin-icon"><FiUserPlus /></span>
         </div>
@@ -171,8 +189,8 @@ const DoctorsVW = () => {
           <h2 className="admin-card-title">Nuevo acceso</h2>
           <form className="admin-form" onSubmit={handleSubmit}>
             <div className="admin-field">
-              <label>Nombre</label>
-              <input
+              <label htmlFor="doctors-nombre">Nombre</label>
+              <input id="doctors-nombre"
                 className="admin-input"
                 value={form.full_name}
                 onChange={(event) => setForm({ ...form, full_name: event.target.value })}
@@ -181,8 +199,8 @@ const DoctorsVW = () => {
               />
             </div>
             <div className="admin-field">
-              <label>Correo</label>
-              <input
+              <label htmlFor="doctors-correo">Correo</label>
+              <input id="doctors-correo"
                 className="admin-input"
                 type="email"
                 value={form.email}
@@ -192,14 +210,14 @@ const DoctorsVW = () => {
               />
             </div>
             <div className="admin-field">
-              <label>Rol</label>
-              <select
+              <label htmlFor="doctors-rol">Rol</label>
+              <select id="doctors-rol"
                 className="admin-select"
                 value={form.role}
                 onChange={(event) => setForm({ ...form, role: event.target.value })}
               >
                 <option value="assistant">Asistente</option>
-                <option value="dentist">Odontóloga</option>
+                <option value="dentist">Odontólogo/a</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -209,7 +227,7 @@ const DoctorsVW = () => {
               </button>
             </div>
           </form>
-          {message && <p className="admin-message">{message}</p>}
+          <AdminMessageVW text={message} />
         </div>
 
         <div className="admin-card">
@@ -220,21 +238,21 @@ const DoctorsVW = () => {
                 <div className="admin-row-title">Administrador</div>
                 <div className="admin-row-sub">Acceso total, usuarios, pagos, inventario y laboratorio.</div>
               </div>
-              <span className="admin-pill">admin</span>
+              <span className="admin-pill role-admin">Administrador</span>
             </div>
             <div className="admin-list-row">
               <div>
-                <div className="admin-row-title">Odontóloga</div>
+                <div className="admin-row-title">Odontólogo/a</div>
                 <div className="admin-row-sub">Pacientes, citas, historias clínicas, odontograma y planes de tratamiento.</div>
               </div>
-              <span className="admin-pill good">dentist</span>
+              <span className="admin-pill role-dentist">Odontólogo/a</span>
             </div>
             <div className="admin-list-row">
               <div>
                 <div className="admin-row-title">Asistente</div>
                 <div className="admin-row-sub">Pacientes, citas, historias clínicas y odontograma.</div>
               </div>
-              <span className="admin-pill good">assistant</span>
+              <span className="admin-pill role-assistant">Asistente</span>
             </div>
           </div>
         </div>
@@ -250,15 +268,14 @@ const DoctorsVW = () => {
                 <th>Correo</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                <th>Perfil</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6"><LoaderVW text="Cargando usuarios..." className="loader-inline" /></td></tr>
+                <tr><td colSpan="5"><LoaderVW text="Cargando usuarios..." className="loader-inline" /></td></tr>
               ) : authorizedUsers.length === 0 ? (
-                <tr><td colSpan="6" className="admin-empty">No hay usuarios autorizados.</td></tr>
+                <tr><td colSpan="5" className="admin-empty">No hay usuarios autorizados.</td></tr>
               ) : (
                 authorizedUsers.map((row) => {
                   const profile = profileByEmail.get(normalizeUserEmailCtrl(row.email ?? ''))
@@ -266,9 +283,12 @@ const DoctorsVW = () => {
                     <tr key={row.id ?? row.email}>
                       <td>{row.full_name || profile?.full_name || '-'}</td>
                       <td>{row.email}</td>
-                      <td><span className="admin-pill">{DOCTOR_ROLE_LABELS[row.role] ?? row.role ?? 'Asistente'}</span></td>
+                      <td>
+                        <span className={`admin-pill ${ROLE_PILL_CLASS[row.role] ?? 'role-assistant'}`}>
+                          {DOCTOR_ROLE_LABELS[row.role] ?? row.role ?? 'Asistente'}
+                        </span>
+                      </td>
                       <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
-                      <td>{profile?.id ?? '-'}</td>
 
                       <td>
                         <div className="admin-actions">
@@ -277,18 +297,26 @@ const DoctorsVW = () => {
                             onClick={() => handleSendPasswordSetup(row, Boolean(profile))}
                             disabled={!row.active}
                             title={profile ? 'Enviar correo para actualizar la contraseña' : 'Enviar correo para asignar la contraseña'}
+                            aria-label={profile
+                              ? `Enviar a ${row.email} un correo para actualizar la contraseña`
+                              : `Enviar a ${row.email} un correo para asignar la contraseña`}
                           >
                             <FiMail /> 
                           </button>
                           
-                          <button className="admin-btn edit" onClick={() => handleEdit(row)}>
-                            <FiTrash2 /> Editar
+                          <button
+                            className="admin-btn edit"
+                            onClick={() => handleEdit(row)}
+                            aria-label={`Editar a ${row.full_name || row.email}`}
+                          >
+                            <FiEdit /> Editar
                           </button>
                           
                           {row.active ? (
                             <button
                               className="admin-btn danger"
                               onClick={() => handleDeactivate(row)}
+                              aria-label={`Desactivar a ${row.full_name || row.email}`}
                             >
                               <FiTrash2 /> Desactivar
                             </button>
@@ -296,6 +324,7 @@ const DoctorsVW = () => {
                             <button
                               className="admin-btn success"
                               onClick={() => handleActivate(row)}
+                              aria-label={`Activar a ${row.full_name || row.email}`}
                             >
                               <FiRefreshCw /> Activar
                             </button>

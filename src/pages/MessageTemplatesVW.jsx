@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import AdminMessageVW from '../components/AdminMessageVW'
+import { confirmAction } from '../utils/confirmDialog'
 import { FiCheck, FiEdit, FiMail, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
@@ -88,7 +90,13 @@ const MessageTemplatesVW = () => {
   }
 
   const removeTemplate = async (template) => {
-    if (!confirm(`¿Eliminar la plantilla "${template.name}"?`)) return
+    const confirmed = await confirmAction({
+      title: 'Eliminar la plantilla',
+      message: `Se eliminará la plantilla "${template.name}". Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const result = await deleteMessageTemplateCtrl(template.id)
     if (!result.ok) {
@@ -111,24 +119,24 @@ const MessageTemplatesVW = () => {
         <h2 className="admin-card-title">Nueva plantilla</h2>
         <form className="admin-form full" onSubmit={addTemplate}>
           <div className="admin-field">
-            <label>Nombre</label>
-            <input className="admin-input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+            <label htmlFor="messagetem-nombre">Nombre</label>
+            <input id="messagetem-nombre" className="admin-input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Canal</label>
-            <select className="admin-input" value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}>
+            <label htmlFor="messagetem-canal">Canal</label>
+            <select id="messagetem-canal" className="admin-input" value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}>
               <option value="Email">Email</option>
               <option value="SMS">SMS</option>
               <option value="WhatsApp">WhatsApp</option>
             </select>
           </div>
           <div className="admin-field">
-            <label>Asunto (opcional)</label>
-            <input className="admin-input" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} />
+            <label htmlFor="messagetem-asunto-opcional">Asunto (opcional)</label>
+            <input id="messagetem-asunto-opcional" className="admin-input" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} />
           </div>
           <div className="admin-field full">
-            <label>Mensaje</label>
-            <textarea
+            <label htmlFor="messagetem-mensaje">Mensaje</label>
+            <textarea id="messagetem-mensaje"
               className="admin-input"
               rows={3}
               value={form.body}
@@ -143,7 +151,7 @@ const MessageTemplatesVW = () => {
             </button>
           </div>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message} />
       </div>
 
       <div className="admin-card">
@@ -178,8 +186,8 @@ const MessageTemplatesVW = () => {
                         <td>-</td>
                         <td>
                           <div className="admin-actions">
-                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(template.id)} title="Guardar"><FiCheck /></button>
-                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(template.id)} title="Guardar" aria-label={`Guardar los cambios de ${template.name}`}><FiCheck /></button>
+                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar" aria-label="Cancelar la edición"><FiX /></button>
                           </div>
                         </td>
                       </tr>
@@ -199,8 +207,8 @@ const MessageTemplatesVW = () => {
                       </td>
                       <td>
                         <div className="admin-actions">
-                          <button className="admin-btn" type="button" onClick={() => startEdit(template)} title="Editar"><FiEdit /></button>
-                          <button className="admin-btn danger" type="button" onClick={() => removeTemplate(template)} title="Eliminar"><FiTrash2 /></button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(template)} title="Editar" aria-label={`Editar la plantilla ${template.name}`}><FiEdit /></button>
+                          <button className="admin-btn danger" type="button" onClick={() => removeTemplate(template)} title="Eliminar" aria-label={`Eliminar la plantilla ${template.name}`}><FiTrash2 /></button>
                         </div>
                       </td>
                     </tr>

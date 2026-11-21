@@ -1,6 +1,8 @@
+import { Fragment } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSidebar } from '../app/store'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import { supabase } from '../dao/SupabaseDAO'
 import { isAdmin, isClinicalStaff } from '../utils/roles'
 import '../styles/SidebarVW.css'
@@ -8,6 +10,8 @@ import logoLight from '../assets/logo1.png'
 import logoDark from '../assets/logo.png'
 import {
   FiActivity,
+  FiClipboard,
+  FiGrid,
   FiUsers,
   FiCalendar,
   FiBookOpen,
@@ -29,7 +33,7 @@ const Sidebar = ({ profile }) => {
   const dispatch = useDispatch()
   const open = useSelector((state) => state.ui.sidebarOpen)
   const navigate = useNavigate()
-  const isMobile = window.innerWidth < 992
+  const isMobile = useIsMobile()
   const admin = isAdmin(profile)
   const clinicalStaff = isClinicalStaff(profile)
 
@@ -50,13 +54,15 @@ const Sidebar = ({ profile }) => {
         { to: '/dashboard', icon: FiActivity, label: 'Dashboard' },
         { to: '/pacientes', icon: FiUsers, label: 'Pacientes' },
         { to: '/calendar', icon: FiCalendar, label: 'Calendario' },
-        { to: '/agendarcita', icon: FiBookOpen, label: 'Agendar Cita' },
+        { to: '/agendarcita', icon: FiBookOpen, label: 'Agendar cita' },
       ],
     },
     {
       section: 'Clínico',
       clinicalOnly: true,
       items: [
+        { to: '/histories', icon: FiClipboard, label: 'Historias clínicas' },
+        { to: '/odontograma', icon: FiGrid, label: 'Odontograma' },
         { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
         { to: '/inventory', icon: FiInbox, label: 'Inventario' },
       ],
@@ -65,27 +71,30 @@ const Sidebar = ({ profile }) => {
       section: 'Admin',
       adminOnly: true,
       items: [
-        { to: '/billing', icon: FiCreditCard, label: 'Pagos' },
+        { to: '/billing', icon: FiCreditCard, label: 'Cartera' },
         { to: '/doctors', icon: FiUser, label: 'Usuarios' },
         { to: '/odontologos', icon: FiUserCheck, label: 'Odontólogos' },
         { to: '/plantillas', icon: FiMail, label: 'Plantillas' },
         { to: '/solicitudes-datos', icon: FiShield, label: 'Solicitudes de datos' },
         { to: '/whatsapp-solicitudes', icon: FiMessageCircle, label: 'Solicitudes WhatsApp' },
-        { to: '/documentation', icon: FiFolder, label: 'Documentacion' },
+        { to: '/documentation', icon: FiFolder, label: 'Documentación' },
         { to: '/settings', icon: FiSettings, label: 'Configuración' },
       ],
     },
     {
       section: 'Extra',
       items: [
-        { icon: FiLogOut, label: 'Cerrar Sesion', action: 'logout' },
+        { icon: FiLogOut, label: 'Cerrar sesión', action: 'logout' },
       ],
     },
   ].filter((section) => (!section.adminOnly || admin) && (!section.clinicalOnly || clinicalStaff))
 
   return (
     <>
-      <aside className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}>
+      <aside
+        className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}
+        aria-label="Menú principal"
+      >
         <div className="sidebar-header">
           <div className="sidebar-brand-n sidebar-brand-logo" aria-label="RAVE">
             <img className="sidebar-brand-img sidebar-brand-img-light" src={logoLight} alt="RAVE" />
@@ -104,13 +113,18 @@ const Sidebar = ({ profile }) => {
 
         <ul className="sidebar-nav">
           {navItems.map((section, sectionIdx) => (
-            <div key={sectionIdx}>
+            <Fragment key={sectionIdx}>
               <li className="nav-title">{section.section}</li>
               {section.items.map((item, itemIdx) => {
                 if (item.action === 'logout') {
                   return (
                     <li key={itemIdx} className="nav-item">
-                      <button onClick={handleLogout} className="nav-link logout-btn">
+                      <button
+                        onClick={handleLogout}
+                        className="nav-link logout-btn"
+                        title={item.label}
+                        aria-label={item.label}
+                      >
                         <item.icon className="nav-icon" size={18} />
                         <span className="nav-text">{item.label}</span>
                       </button>
@@ -123,6 +137,8 @@ const Sidebar = ({ profile }) => {
                     <NavLink
                       to={item.to}
                       onClick={handleClick}
+                      title={item.label}
+                      aria-label={item.label}
                       className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     >
                       <item.icon className="nav-icon" size={18} />
@@ -131,7 +147,7 @@ const Sidebar = ({ profile }) => {
                   </li>
                 )
               })}
-            </div>
+            </Fragment>
           ))}
         </ul>
       </aside>

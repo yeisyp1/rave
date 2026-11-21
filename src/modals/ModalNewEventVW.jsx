@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { FiX } from 'react-icons/fi'
-import moment from 'moment'
 import { showAlertModal } from '../app/store'
+import ModalShellVW from '../components/ModalShellVW'
+import { toLocalDateInput, toLocalTimeInput } from '../utils/dates'
 import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils/patientLabel'
 import '../styles/CitaModalVW.css'
 
@@ -17,15 +18,17 @@ const NewEventModal = ({
   doctorOptions = [],
 }) => {
   const dispatch = useDispatch()
-  const today = moment().format('YYYY-MM-DD')
+  const today = toLocalDateInput(new Date())
+  const uid = useId()
+  const fieldId = (name) => `${uid}-${name}`
 
   const [form, setForm] = useState({
     title: '',
     description: '',
     location: '',
-    startTime: moment(slot?.start).format('HH:mm'),
-    endTime: moment(slot?.end).format('HH:mm'),
-    date: moment(slot?.start).format('YYYY-MM-DD'),
+    startTime: toLocalTimeInput(slot?.start ?? new Date()),
+    endTime: toLocalTimeInput(slot?.end ?? new Date()),
+    date: toLocalDateInput(slot?.start ?? new Date()),
     serviceType: '',
     doctorId: '',
   })
@@ -86,13 +89,13 @@ const NewEventModal = ({
   }
 
   return (
-    <div className="cl-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <ModalShellVW overlayClassName="cl-overlay" onClose={onClose} labelledBy={fieldId('title')}>
       <div className="cl-modal">
         <div className="cl-modal-header">
           <div>
-            <h2 className="cl-modal-title">Nueva Cita</h2>
+            <h2 className="cl-modal-title" id={fieldId('title')}>Nueva cita</h2>
           </div>
-          <button className="cl-modal-close" onClick={onClose}>
+          <button className="cl-modal-close" onClick={onClose} aria-label="Cerrar">
             <FiX size={16} />
           </button>
         </div>
@@ -101,8 +104,9 @@ const NewEventModal = ({
 
         <div className="cl-modal-body">
           <div className="cl-field">
-            <label className="cl-label">Paciente <span className="cl-req">*</span></label>
+            <label className="cl-label" htmlFor={fieldId('patient')}>Paciente <span className="cl-req">*</span></label>
             <input
+              id={fieldId('patient')}
               name="title"
               list="patient-list"
               value={form.title}
@@ -119,8 +123,9 @@ const NewEventModal = ({
           </div>
 
           <div className="cl-field">
-            <label className="cl-label">Tipo de servicio <span className="cl-req">*</span></label>
+            <label className="cl-label" htmlFor={fieldId('service')}>Tipo de servicio <span className="cl-req">*</span></label>
             <input
+              id={fieldId('service')}
               name="serviceType"
               list="service-type-list"
               value={form.serviceType}
@@ -136,8 +141,8 @@ const NewEventModal = ({
           </div>
 
           <div className="cl-field">
-            <label className="cl-label">Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
-            <select name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
+            <label className="cl-label" htmlFor={fieldId('doctor')}>Odontólogo {doctorOptions.length > 0 && <span className="cl-req">*</span>}</label>
+            <select id={fieldId('doctor')} name="doctorId" value={form.doctorId} onChange={handleChange} className="cl-input">
               <option value="">Selecciona un odontólogo...</option>
               {doctorOptions.map((doctor) => (
                 <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
@@ -146,24 +151,24 @@ const NewEventModal = ({
           </div>
 
           <div className="cl-field">
-            <label className="cl-label">Ubicación</label>
-            <input name="location" value={form.location} onChange={handleChange} placeholder="Ej. Consultorio 1" className="cl-input"/>
+            <label className="cl-label" htmlFor={fieldId('location')}>Ubicación</label>
+            <input id={fieldId('location')} name="location" value={form.location} onChange={handleChange} placeholder="Ej. Consultorio 1" className="cl-input"/>
           </div>
 
           <div className="cl-field-row">
             <div className="cl-field">
-              <label className="cl-label">Hora inicio</label>
-              <input type="time" name="startTime" value={form.startTime} onChange={handleChange} className="cl-input"/>
+              <label className="cl-label" htmlFor={fieldId('start')}>Hora inicio</label>
+              <input id={fieldId('start')} type="time" name="startTime" value={form.startTime} onChange={handleChange} className="cl-input"/>
             </div>
             <div className="cl-field">
-              <label className="cl-label">Hora fin</label>
-              <input type="time" name="endTime" value={form.endTime} onChange={handleChange} className="cl-input"/>
+              <label className="cl-label" htmlFor={fieldId('end')}>Hora fin</label>
+              <input id={fieldId('end')} type="time" name="endTime" value={form.endTime} onChange={handleChange} className="cl-input"/>
             </div>
           </div>
 
           <div className="cl-field">
-            <label className="cl-label">Fecha</label>
-            <input type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
+            <label className="cl-label" htmlFor={fieldId('date')}>Fecha</label>
+            <input id={fieldId('date')} type="date" name="date" value={form.date} min={today} onChange={handleChange} className="cl-input" />
           </div>
         </div>
 
@@ -180,7 +185,7 @@ const NewEventModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalShellVW>
   )
 }
 

@@ -66,7 +66,7 @@ const Odontograma = () => {
     <div className="odon-page">
 
       {loading ? (
-        <LoaderVW text="Cargando informacion del paciente..." />
+        <LoaderVW text="Cargando información del paciente..." />
       ) : (
         <OdontogramApp
           title={odontogramTitle}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AdminMessageVW from '../components/AdminMessageVW'
 import { FiSave } from 'react-icons/fi'
 import { loadSystemSettingsCtrl, saveSystemSettingsCtrl } from '../controllers/SettingsCtrl'
 import LoaderVW from '../components/LoaderVW'
@@ -9,17 +10,17 @@ const SettingsVW = () => {
   const [form, setForm] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(null)
 
   const loadSettings = async () => {
     setLoading(true)
-    setMessage('')
+    setMessage(null)
     try {
       const { settings: data, form: initialForm } = await loadSystemSettingsCtrl()
       setSettings(data)
       setForm(initialForm)
     } catch (error) {
-      setMessage(`No se pudo cargar la configuración: ${error.message}`)
+      setMessage({ text: `No se pudo cargar la configuración: ${error.message}`, tone: 'error' })
     }
     setLoading(false)
   }
@@ -33,14 +34,14 @@ const SettingsVW = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
-    setMessage('')
+    setMessage(null)
 
     const result = await saveSystemSettingsCtrl(settings.id, form)
     if (!result.ok) {
-      setMessage(`No se pudo guardar la configuración: ${result.message}`)
+      setMessage({ text: `No se pudo guardar la configuración: ${result.message}`, tone: 'error' })
     } else {
       setSettings(result.data)
-      setMessage('Configuración guardada.')
+      setMessage({ text: 'Configuración guardada.', tone: 'ok' })
     }
 
     setSaving(false)
@@ -66,8 +67,8 @@ const SettingsVW = () => {
         <h2 className="admin-card-title">Parámetros del consultorio</h2>
         <form className="admin-form" onSubmit={handleSubmit}>
           <div className="admin-field">
-            <label>Duración estándar de cita (minutos)</label>
-            <input
+            <label htmlFor="settings-duracion-estandar-de-cita-minutos">Duración estándar de cita (minutos)</label>
+            <input id="settings-duracion-estandar-de-cita-minutos"
               className="admin-input"
               type="number"
               min="1"
@@ -77,8 +78,8 @@ const SettingsVW = () => {
             />
           </div>
           <div className="admin-field">
-            <label>Hora de apertura</label>
-            <input
+            <label htmlFor="settings-hora-de-apertura">Hora de apertura</label>
+            <input id="settings-hora-de-apertura"
               className="admin-input"
               type="time"
               value={form.business_hours_start}
@@ -87,8 +88,8 @@ const SettingsVW = () => {
             />
           </div>
           <div className="admin-field">
-            <label>Hora de cierre</label>
-            <input
+            <label htmlFor="settings-hora-de-cierre">Hora de cierre</label>
+            <input id="settings-hora-de-cierre"
               className="admin-input"
               type="time"
               value={form.business_hours_end}
@@ -102,7 +103,7 @@ const SettingsVW = () => {
             </button>
           </div>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message?.text} tone={message?.tone} />
       </div>
     </div>
   )

@@ -1,31 +1,32 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayoutVW from '../layouts/AppLayoutVW'
+import LoaderVW from '../components/LoaderVW'
 
-import DashboardVW from '../pages/DashboardVW'
-import PatientsVW from '../pages/PatientsVW'
-import PatientDetailVW from '../pages/PatientDetailVW'
-import HistoriaClinicaVW from '../pages/HistoriaClinicaVW'
-import CalendarVW from '../pages/CalendarVW'
-import BillingVW from '../pages/BillingVW'
-import DocumentationVW from '../pages/DocumentationVW'
 import LoginVW from '../pages/LoginVW'
-import LaboratoryVW from '../pages/LaboratoryVW'
-import InventoryVW from '../pages/InventoryVW'
-import OdontologosVW from '../pages/OdontologosVW'
-import MessageTemplatesVW from '../pages/MessageTemplatesVW'
-import DataRequestsVW from '../pages/DataRequestsVW'
-import WhatsappRequestsVW from '../pages/WhatsappRequestsVW'
-import HistoriesVW from '../pages/HistoriesVW'
-import DoctorsVW from '../pages/DoctorsVW'
-import SettingsVW from '../pages/SettingsVW'
-import AgendarCitaVW from '../pages/AgendarCitaVW'
-import OdontogramaVW from '../pages/OdontogramaVW'
-import ModalViewPatientsVW from '../modals/ModalViewPatientsVW'
-import NewEventModalVW from '../modals/ModalNewEventVW'
-import OAuthConsentVW from '../pages/OAuthConsentVW'
 import PublicHomeVW from '../pages/PublicHomeVW'
-import PrivacyPolicyVW from '../pages/PrivacyPolicyVW'
 import AccessActionVW from '../pages/AccessActionVW'
+
+const DashboardVW = lazy(() => import('../pages/DashboardVW'))
+const PatientsVW = lazy(() => import('../pages/PatientsVW'))
+const PatientDetailVW = lazy(() => import('../pages/PatientDetailVW'))
+const HistoriaClinicaVW = lazy(() => import('../pages/HistoriaClinicaVW'))
+const CalendarVW = lazy(() => import('../pages/CalendarVW'))
+const BillingVW = lazy(() => import('../pages/BillingVW'))
+const DocumentationVW = lazy(() => import('../pages/DocumentationVW'))
+const LaboratoryVW = lazy(() => import('../pages/LaboratoryVW'))
+const InventoryVW = lazy(() => import('../pages/InventoryVW'))
+const OdontologosVW = lazy(() => import('../pages/OdontologosVW'))
+const MessageTemplatesVW = lazy(() => import('../pages/MessageTemplatesVW'))
+const DataRequestsVW = lazy(() => import('../pages/DataRequestsVW'))
+const WhatsappRequestsVW = lazy(() => import('../pages/WhatsappRequestsVW'))
+const DoctorsVW = lazy(() => import('../pages/DoctorsVW'))
+const SettingsVW = lazy(() => import('../pages/SettingsVW'))
+const AgendarCitaVW = lazy(() => import('../pages/AgendarCitaVW'))
+const OdontogramaVW = lazy(() => import('../pages/OdontogramaVW'))
+const OAuthConsentVW = lazy(() => import('../pages/OAuthConsentVW'))
+const PrivacyPolicyVW = lazy(() => import('../pages/PrivacyPolicyVW'))
+
 import { hasRole, ROLES } from '../utils/roles'
 
 const AdminRoute = ({ profile, children }) => {
@@ -39,8 +40,10 @@ const ClinicalRoute = ({ profile, children }) => {
 const AppRouter = ({ user, profile }) => {
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<LoaderVW text="Cargando..." />}>
+        <Routes>
         <Route path="/" element={<PublicHomeVW />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/politica-privacidad" element={<PrivacyPolicyVW />} />
         <Route path="/crear-contrasena" element={<AccessActionVW mode="create" />} />
         <Route path="/recuperar-contrasena" element={<AccessActionVW mode="recover" />} />
@@ -54,11 +57,9 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/dashboard" element={<DashboardVW />} />
           <Route path="/pacientes" element={<PatientsVW />} />
           <Route path="/pacientes/:patientId" element={<PatientDetailVW />} />
-          <Route path="/modal-history/:patientId" element={<ModalViewPatientsVW />} />
           <Route path="/calendar" element={<CalendarVW />} />
           <Route path="/odontograma" element={<OdontogramaVW />} />
           <Route path="/odontograma/:patientId" element={<OdontogramaVW />} />
-          <Route path="/new-event-modal" element={<NewEventModalVW />} />
           <Route path="/billing" element={<AdminRoute profile={profile}><BillingVW /></AdminRoute>} />
           <Route path="/documentation" element={<AdminRoute profile={profile}><DocumentationVW /></AdminRoute>} />
           <Route path="/laboratory" element={<ClinicalRoute profile={profile}><LaboratoryVW /></ClinicalRoute>} />
@@ -73,7 +74,8 @@ const AppRouter = ({ user, profile }) => {
           <Route path="/agendarcita" element={<AgendarCitaVW />} />
           <Route path="/oauth/consent" element={<OAuthConsentVW />} />
         </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

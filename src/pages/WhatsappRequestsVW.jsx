@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { Link } from 'react-router-dom'
+import AdminMessageVW from '../components/AdminMessageVW'
 import { FiCalendar, FiCheck, FiMessageSquare, FiSettings, FiXCircle } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
@@ -131,14 +132,18 @@ const WhatsappRequestsVW = () => {
             </tbody>
           </table>
         </div>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message} />
       </div>
 
-      <div className="admin-card">
-        <h2 className="admin-card-title">Configuración de la integración</h2>
-        <p className="admin-subtitle" style={{ marginTop: '-.5rem' }}>
+      <details className="admin-card wa-config-details">
+        <summary className="admin-card-title wa-config-summary">
+          Configuración técnica de la integración
+          <span className="wa-config-hint">Solo para quien instala la integración</span>
+        </summary>
+        <p className="admin-subtitle">
           Los recordatorios y respuestas automáticas corren en Edge Functions de Supabase sobre la Cloud API de Meta.
           La configuración sensible vive fuera de la app: en Supabase (Dashboard → Edge Functions → Secrets) y en Meta.
+          Aquí solo se listan los nombres de los secrets, nunca sus valores.
         </p>
 
         <div className="wa-config">
@@ -178,7 +183,7 @@ const WhatsappRequestsVW = () => {
             </div>
           </div>
         </div>
-      </div>
+      </details>
     </div>
   )
 }

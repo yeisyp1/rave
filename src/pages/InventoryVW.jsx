@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import AdminMessageVW from '../components/AdminMessageVW'
+import { confirmAction } from '../utils/confirmDialog'
 import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import { useProfile } from '../context/ProfileContext'
@@ -102,7 +104,13 @@ const InventoryVW = () => {
   }
 
   const removeItem = async (item) => {
-    if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return
+    const confirmed = await confirmAction({
+      title: 'Eliminar el insumo',
+      message: `Se eliminará "${item.name}" del inventario. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const result = await deleteInventoryItemCtrl(item.id)
     if (!result.ok) {
@@ -141,8 +149,8 @@ const InventoryVW = () => {
         <h2 className="admin-card-title">Nuevo insumo</h2>
         <form className="admin-form full" onSubmit={addItem}>
           <div className="admin-field">
-            <label>Insumo</label>
-            <input className="admin-input" list="inventory-name-list" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+            <label htmlFor="inventory-insumo">Insumo</label>
+            <input id="inventory-insumo" className="admin-input" list="inventory-name-list" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
             <datalist id="inventory-name-list">
               {nameOptions.map((value) => (
                 <option key={value} value={value} />
@@ -150,8 +158,8 @@ const InventoryVW = () => {
             </datalist>
           </div>
           <div className="admin-field">
-            <label>Categoria</label>
-            <input className="admin-input" list="inventory-category-list" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} required />
+            <label htmlFor="inv-categoria">Categoría</label>
+            <input id="inv-categoria" className="admin-input" list="inventory-category-list" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} required />
             <datalist id="inventory-category-list">
               {categoryOptions.map((value) => (
                 <option key={value} value={value} />
@@ -159,16 +167,16 @@ const InventoryVW = () => {
             </datalist>
           </div>
           <div className="admin-field">
-            <label>Stock</label>
-            <input className="admin-input" type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} required />
+            <label htmlFor="inventory-stock">Stock</label>
+            <input id="inventory-stock" className="admin-input" type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Minimo</label>
-            <input className="admin-input" type="number" min="0" value={form.min} onChange={(event) => setForm({ ...form, min: event.target.value })} required />
+            <label htmlFor="inv-minimo">Mínimo</label>
+            <input id="inv-minimo" className="admin-input" type="number" min="0" value={form.min} onChange={(event) => setForm({ ...form, min: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Unidad</label>
-            <input className="admin-input" list="inventory-unit-list" value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} required />
+            <label htmlFor="inventory-unidad">Unidad</label>
+            <input id="inventory-unidad" className="admin-input" list="inventory-unit-list" value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} required />
             <datalist id="inventory-unit-list">
               {unitOptions.map((value) => (
                 <option key={value} value={value} />
@@ -181,7 +189,7 @@ const InventoryVW = () => {
             </button>
           </div>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message} />
       </div>
       )}
 
@@ -190,7 +198,7 @@ const InventoryVW = () => {
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>Insumo</th><th>Categoria</th><th>Stock</th><th>Minimo</th><th>Estado</th>{canWrite && <th>Acciones</th>}</tr>
+              <tr><th>Insumo</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Estado</th>{canWrite && <th>Acciones</th>}</tr>
             </thead>
             <tbody>
               {loading ? (
@@ -212,8 +220,8 @@ const InventoryVW = () => {
                       <td>-</td>
                       <td>
                         <div className="admin-actions">
-                          <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
-                          <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                          <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar" aria-label={`Guardar los cambios de ${item.name}`}><FiCheck /></button>
+                          <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar" aria-label="Cancelar la edición"><FiX /></button>
                         </div>
                       </td>
                     </tr>
@@ -232,8 +240,8 @@ const InventoryVW = () => {
                         <div className="admin-actions">
                           <button className="admin-btn" type="button" onClick={() => adjustStock(item, -1)}>-1</button>
                           <button className="admin-btn" type="button" onClick={() => adjustStock(item, 1)}>+1</button>
-                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
-                          <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar"><FiTrash2 /></button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar" aria-label={`Editar ${item.name}`}><FiEdit /></button>
+                          <button className="admin-btn danger" type="button" onClick={() => removeItem(item)} title="Eliminar" aria-label={`Eliminar ${item.name}`}><FiTrash2 /></button>
                         </div>
                       </td>
                     )}

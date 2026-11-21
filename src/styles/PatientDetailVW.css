@@ -2,13 +2,20 @@
 .pd-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
   background: var(--bg-primary);
   color: var(--text-primary);
-  padding: 1.5rem;
+  padding: var(--page-pad-y) var(--page-pad-x);
 }
 
 .pd-loading,
+.pd-error-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
 .pd-error {
   display: flex;
   flex-direction: column;
@@ -101,7 +108,9 @@
 }
 
 .pd-status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0.25rem 0.75rem;
   background: rgba(175, 76, 76, 0.1);
   color: #cc3535;
@@ -109,6 +118,12 @@
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+.pd-status-badge-ok {
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  text-transform: none;
 }
 
 .pd-header-details {
@@ -550,7 +565,21 @@
 }
 
 .pd-upload-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.pd-upload-box:focus-within {
+  border-color: var(--field-focus-border);
+  box-shadow: 0 0 0 3px var(--field-focus-ring);
+}
+
+.pd-upload-box.is-dragging {
+  border-color: var(--primary-color);
+  background: var(--field-focus);
+  color: var(--text-primary);
 }
 
 .pd-upload-list {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
   deletePatientCtrl,
@@ -8,35 +8,56 @@ import {
   reactivatePatientCtrl,
 } from "../controllers/PatientsCtrl";
 import { usePatientModal } from "../hooks/usePatientModal";
+import { confirmAction } from "../utils/confirmDialog";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
 import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2, FiRotateCcw } from 'react-icons/fi'
 import { showAlertModal } from "../app/store";
 
+const SEXO_LABELS = { M: "Masculino", F: "Femenino", O: "Otro" };
+
 const PatientsVW = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const dispatch = useDispatch();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("buscar") ?? "");
   const [statusFilter, setStatusFilter] = useState("activos");
 
   const patientModal = usePatientModal(() => getPatients());
 
   const getPatients = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const data = await loadPatientsCtrl(statusFilter);
       setPatients(data);
     } catch (error) {
       console.error("Error cargando pacientes:", error);
+      setPatients([]);
+      setLoadError(error.message || "No se pudo cargar la lista de pacientes.");
     }
     setLoading(false);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { getPatients(); }, [statusFilter]);
+
+  useEffect(() => {
+    const term = searchParams.get("buscar") ?? "";
+    setSearch(term);
+  }, [searchParams]);
+
+  const updateSearch = (value) => {
+    setSearch(value);
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set("buscar", value);
+    else next.delete("buscar");
+    setSearchParams(next, { replace: true });
+  };
 
   /* ── Handlers ── */
   // Lleva a la pestaña "Historial médico" del detalle del paciente (antes abría
@@ -50,7 +71,12 @@ const PatientsVW = () => {
   };
 
   const deletePatient = async (id) => {
-    if (!confirm("¿Inactivar este paciente? Sus datos se conservarán en el sistema.")) return;
+    const confirmed = await confirmAction({
+      title: "Inactivar el paciente",
+      message: "El paciente dejará de aparecer en la lista de activos. Sus datos se conservan y puedes reactivarlo cuando quieras.",
+      confirmLabel: "Inactivar",
+    });
+    if (!confirmed) return;
     const result = await deletePatientCtrl(id);
     if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
     else {
@@ -78,7 +104,7 @@ const PatientsVW = () => {
         </div>
         <button className="pt-btn-primary" onClick={() => patientModal.openEditModal()}>
           <FiPlus size={16} />
-          Nuevo Paciente
+          Nuevo paciente
         </button>
       </div>
 
@@ -89,8 +115,9 @@ const PatientsVW = () => {
           <input
             className="pt-search"
             placeholder="Buscar por nombre, documento o correo..."
+            aria-label="Buscar pacientes"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateSearch(e.target.value)}
           />
         </div>
         <div className="pt-select-wrap">
@@ -105,8 +132,12 @@ const PatientsVW = () => {
           </select>
         </div>
         <div className="pt-stat">
-          <span className="pt-stat-num">{patients.length}</span>
-          <span className="pt-stat-label">{statusFilter === "activos" ? "Pacientes" : "Inactivos"}</span>
+          <span className="pt-stat-num">{filtered.length}</span>
+          <span className="pt-stat-label">
+            {search
+              ? `de ${patients.length}`
+              : statusFilter === "activos" ? "Pacientes" : "Inactivos"}
+          </span>
         </div>
       </div>
 
@@ -126,7 +157,6 @@ const PatientsVW = () => {
                   <th>EPS</th>
                   <th>Email</th>
                   <th>Opciones</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -136,12 +166,36 @@ const PatientsVW = () => {
                       <div className="pt-empty-icon">
                         <FiUser size={48} />
                       </div>
-                      <p>{search ? "Sin resultados para la búsqueda" : statusFilter === "activos" ? "No hay pacientes registrados" : "No hay pacientes inactivos"}</p>
+                      {loadError ? (
+                        <>
+                          <p>No se pudo cargar la lista de pacientes.</p>
+                          <p className="pt-empty-detail">{loadError}</p>
+                          <button type="button" className="pt-btn-primary" onClick={getPatients}>
+                            <FiRotateCcw size={15} /> Reintentar
+                          </button>
+                        </>
+                      ) : (
+                        <p>{search ? "Sin resultados para la búsqueda" : statusFilter === "activos" ? "No hay pacientes registrados" : "No hay pacientes inactivos"}</p>
+                      )}
                     </td>
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id} className="pt-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/pacientes/${p.id}`)}>
+                    <tr
+                      key={p.id}
+                      className="pt-row"
+                      style={{ cursor: 'pointer' }}
+                      tabIndex={0}
+                      aria-label={`Abrir la ficha de ${p.nombre} ${p.apellidos}`}
+                      onClick={() => navigate(`/pacientes/${p.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) return;
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          navigate(`/pacientes/${p.id}`);
+                        }
+                      }}
+                    >
                       <td>
                         <span className="pt-doc-badge">{p.tipo_documento}</span>
                         {p.numero_documento}
@@ -153,7 +207,7 @@ const PatientsVW = () => {
                           </div>
                           <div>
                             <div className="pt-name">{p.nombre} {p.apellidos}</div>
-                            <div className="pt-sexo">{p.sexo === "M" ? "Masculino" : p.sexo === "F" ? "Femenino" : p.sexo ?? "—"}</div>
+                            <div className="pt-sexo">{SEXO_LABELS[p.sexo] ?? "Sin registrar"}</div>
                           </div>
                         </div>
                       </td>
@@ -168,7 +222,7 @@ const PatientsVW = () => {
                         <button
                           className="pt-btn-action"
                           onClick={(e) => { e.stopPropagation(); viewHistory(p); }}
-                          title="Ver historia clínica"
+                          title="Ver historia clínica" aria-label={`Ver la historia clínica de ${p.nombre} ${p.apellidos}`}
                         >
                           <FiFileText size={16} />
                         </button>
@@ -177,7 +231,7 @@ const PatientsVW = () => {
                         <button
                           className="pt-btn-action"
                           onClick={(e) => { e.stopPropagation(); scheduleAppointment(p); }}
-                          title="Agendar cita"
+                          title="Agendar cita" aria-label={`Agendar una cita para ${p.nombre} ${p.apellidos}`}
                         >
                           <FiBookOpen size={16} />
                         </button>
@@ -186,7 +240,7 @@ const PatientsVW = () => {
                         <button
                           className="pt-btn-action"
                           onClick={(e) => { e.stopPropagation(); patientModal.openEditModal(p); }}
-                          title="Editar paciente"
+                          title="Editar paciente" aria-label={`Editar a ${p.nombre} ${p.apellidos}`}
                         >
                           <FiEdit size={16} />
                         </button>
@@ -196,7 +250,7 @@ const PatientsVW = () => {
                           <button
                             className="pt-btn-action"
                             onClick={(e) => { e.stopPropagation(); reactivatePatient(p.id); }}
-                            title="Reactivar paciente"
+                            title="Reactivar paciente" aria-label={`Reactivar a ${p.nombre} ${p.apellidos}`}
                           >
                             <FiRotateCcw size={16} />
                           </button>
@@ -204,7 +258,7 @@ const PatientsVW = () => {
                           <button
                             className="pt-btn-action pt-btn-action-danger"
                             onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
-                            title="Inactivar paciente"
+                            title="Inactivar paciente" aria-label={`Inactivar a ${p.nombre} ${p.apellidos}`}
                           >
                             <FiTrash2 size={16} />
                           </button>

@@ -7,7 +7,7 @@ import 'moment/locale/es'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import '../styles/CitaModalVW.css'
 import '../styles/CalendarVW.css'
-import { FiRefreshCw, FiPlus, FiAlertCircle, FiX } from 'react-icons/fi'
+import { FiRefreshCw, FiPlus, FiAlertCircle } from 'react-icons/fi'
 import {
   connectGoogleCalendarCtrl,
   createGoogleEventCtrl,
@@ -22,12 +22,20 @@ import {
   syncGoogleEventsCtrl,
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
 import ModalViewEventVW from '../modals/ModalViewEventVW'
 
 moment.locale('es')
 moment.updateLocale('es', { week: { dow: 1 } })
 const localizer = momentLocalizer(moment)
+
+const EVENT_STATES = {
+  confirmed: { color: '#1562b9', label: 'Confirmada' },
+  pending:   { color: '#8a5a00', label: 'Pendiente' },
+  attended:  { color: '#1b7f4f', label: 'Atendida' },
+  no_show:   { color: '#b3261e', label: 'No asistió' },
+}
 
 /* ─────────────────────────────
    CALENDAR PAGE
@@ -47,7 +55,12 @@ const CalendarVW = () => {
   const [patientOptions, setPatientOptions] = useState([])
   const [serviceOptions, setServiceOptions] = useState([])
   const [doctorOptions, setDoctorOptions] = useState([])
-  const [patientValidationError, setPatientValidationError] = useState(null)
+  const isMobile = useIsMobile()
+  const [view, setView] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 992 ? 'day' : 'week'))
+
+  useEffect(() => {
+    setView(isMobile ? 'day' : 'week')
+  }, [isMobile])
 
   /* ── Al montar: obtener token y cargar eventos ── */
   useEffect(() => {
@@ -193,11 +206,22 @@ const CalendarVW = () => {
     }
   }
 
+  const applyAttendance = (eventId, attendance) => {
+    setEvents((prev) =>
+      prev.map((item) =>
+        item.id === eventId
+          ? { ...item, resource: { ...item.resource, attendance } }
+          : item,
+      ),
+    )
+  }
+
   /* ── Marcar cita como no asistida ── */
   const handleNoShowEvent = async () => {
     if (!selectedEvent) return
     try {
       await markAppointmentNoShowCtrl(selectedEvent.resource.googleId)
+      applyAttendance(selectedEvent.id, 'no_show')
       setSelectedEvent(null)
       dispatch(showAlertModal({ message: 'La cita quedó registrada como no asistida', variant: 'success' }))
     } catch (err) {
@@ -211,6 +235,7 @@ const CalendarVW = () => {
     if (!selectedEvent) return
     try {
       await markAppointmentAttendedCtrl(selectedEvent.resource.googleId)
+      applyAttendance(selectedEvent.id, 'attended')
       setSelectedEvent(null)
       dispatch(showAlertModal({ message: 'La cita quedó registrada como atendida', variant: 'success' }))
     } catch (err) {
@@ -224,14 +249,16 @@ const CalendarVW = () => {
     await connectGoogleCalendarCtrl()
   }
 
-  /* ── Estilos de eventos ── */
   const eventStyleGetter = (event) => {
-    let bg = '#c9934a'
-    if (event.resource?.status === 'pending')   bg = '#d4943a'
-    if (event.resource?.status === 'confirmed') bg = '#4caf82'
+    const attendance = event.resource?.attendance
+    let key = event.resource?.status === 'pending' ? 'pending' : 'confirmed'
+    if (attendance === 'attended') key = 'attended'
+    if (attendance === 'no_show') key = 'no_show'
+
     return {
+      className: `cl-event cl-event-${key}`,
       style: {
-        backgroundColor: bg,
+        backgroundColor: EVENT_STATES[key].color,
         borderRadius: '6px',
         border: 'none',
         color: '#fff',
@@ -294,9 +321,14 @@ const CalendarVW = () => {
             </button>
           )}
 
-          <button className="cl-btn-primary" onClick={() => setNewSlot({ start: new Date(), end: new Date(Date.now() + 30*60000) })}>
+          <button
+            className="cl-btn-primary"
+            onClick={() => setNewSlot({ start: new Date(), end: new Date(Date.now() + 30 * 60000) })}
+            disabled={!googleToken}
+            title={googleToken ? 'Nueva cita' : 'Conecta Google Calendar para crear citas'}
+          >
             <FiPlus size={14} />
-            Nueva Cita
+            Nueva cita
           </button>
         </div>
       </div>
@@ -314,8 +346,13 @@ const CalendarVW = () => {
         </div>
       )}
 
-      {/* ── LEYENDA ── */}
       <div className="cl-legend">
+        {Object.entries(EVENT_STATES).map(([key, state]) => (
+          <span key={key} className="cl-legend-item">
+            <i className="cl-legend-dot" style={{ background: state.color }} aria-hidden="true" />
+            {state.label}
+          </span>
+        ))}
         {syncing && (
           <div className="cl-legend-item syncing">
             <span className="cl-spinner-sm" />
@@ -331,7 +368,7 @@ const CalendarVW = () => {
           events={events}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 'calc(100vh - 260px)', minHeight: 500 }}
+          style={{ height: 'calc(100vh - 320px)', minHeight: 420 }}
           date={currentDate}
           onNavigate={setCurrentDate}
           onSelectSlot={handleSelectSlot}
@@ -343,7 +380,8 @@ const CalendarVW = () => {
           formats={formats}
           culture="es"
           views={['month', 'week', 'day', 'agenda']}
-          defaultView="week"
+          view={view}
+          onView={setView}
         />
       </div>
 
@@ -375,35 +413,6 @@ const CalendarVW = () => {
          />
        )}
 
-       {/* MODAL VALIDACIÓN DE PACIENTE NO ENCONTRADO */}
-       {patientValidationError && (
-         <div className="cl-overlay" onClick={() => setPatientValidationError(null)}>
-           <div className="cl-modal">
-             <div className="cl-modal-header">
-               <div>
-                 <h2 className="cl-modal-title">Error de validación</h2>
-               </div>
-               <button className="cl-modal-close" onClick={() => setPatientValidationError(null)}>
-                 <FiX size={16} />
-               </button>
-             </div>
-
-             <div className="cl-modal-accent" />
-
-             <div className="cl-modal-body">
-               <div className="cl-field">
-                 <p className="cl-view-value">{patientValidationError}</p>
-               </div>
-             </div>
-
-             <div className="cl-modal-nav">
-               <button className="cl-btn-primary" onClick={() => setPatientValidationError(null)}>
-                 Entendido
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
     </div>
   )
 }

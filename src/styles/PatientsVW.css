@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Tenor+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
 /* PAGE LAYOUT*/
 .pt-page {
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
   background: var(--pt-bg);
-  padding: 36px 40px;
+  padding: var(--page-pad-y) var(--page-pad-x);
   font-family: 'Nunito', sans-serif;
   color: var(--pt-text);
   position: relative;
@@ -23,7 +22,7 @@
   z-index: 0;
 }
 
-.pt-page > * { position: relative; z-index: 1; }
+.pt-page > *:not(.pt-overlay) { position: relative; z-index: 1; }
 
 /* HEADER */
 .pt-header {
@@ -381,3 +380,14 @@
 }
 
 
+
+.pt-empty-detail {
+  font-size: 13px;
+  color: var(--pt-text-soft);
+  margin-bottom: 14px;
+}
+
+.pt-row:focus-visible {
+  outline: 2px solid var(--field-focus-border);
+  outline-offset: -2px;
+}

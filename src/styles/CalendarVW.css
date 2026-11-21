@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
 
 .cl-page {
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
   background: var(--cl-bg);
-  padding: 28px 32px;
+  padding: var(--page-pad-y) var(--page-pad-x);
   font-family: 'Nunito', sans-serif;
   color: var(--cl-text);
   transition: background 0.3s ease, color 0.3s ease;
@@ -21,7 +21,7 @@
   z-index: 0;
 }
 
-.cl-page > * { position: relative; z-index: 1; }
+.cl-page > *:not(.cl-overlay) { position: relative; z-index: 1; }
 
 /* ─────────────────────────────
    HEADER
@@ -124,7 +124,8 @@
 .cl-legend {
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 8px 18px;
   margin-bottom: 14px;
 }
 
@@ -146,8 +147,7 @@
   flex-shrink: 0;
 }
 
-.cl-legend-dot.confirmed { background: var(--cl-success); }
-.cl-legend-dot.pending   { background: var(--cl-pending); }
+.cl-legend-item i.cl-legend-dot { display: inline-block; }
 
 /* ─────────────────────────────
    CALENDAR WRAPPER

@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,500;1,600&family=Nunito:wght@300;400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Tenor+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -9,6 +7,11 @@
 /* ROOT / LAYOUT */
 
 .rave-root {
+  --gold: #A2CDFF;
+  --gold-lt: #c7e0ff;
+  --blue: #A2CDFF;
+  --soft: rgba(255, 255, 255, 0.78);
+  --muted: rgba(255, 255, 255, 0.62);
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -364,7 +367,7 @@
 }
 
 .field-input::placeholder {
-  color: rgba(255, 255, 255, 0.17);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Eye / Password Toggle */
@@ -393,7 +396,7 @@
 
 .options-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 26px;
 }
@@ -495,6 +498,7 @@
 .divider {
   display: flex;
   align-items: center;
+  gap: 12px;
   background: var(--vacio);
   margin: 22px 0;
 }
@@ -502,18 +506,8 @@
 .div-line {
   flex: 1;
   height: 1px;
-  background: var(--border);
   flex-shrink: 0;
-  padding: 0 12px;
-  background: var(--navy-deep);
-  position: relative;
-  z-index: 1;
-}
-
-.div-line-uno {
-  flex: 1;
-  height: 1px;
-  background: color rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .div-text {
@@ -556,6 +550,28 @@
 }
 
 /*  ERROR BOX */
+
+.ok-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(34, 197, 94, 0.10);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #a7f3cd;
+  line-height: 1.45;
+  animation: errIn 0.3s ease;
+}
+
+.ok-box svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 
 .err-box {
   display: flex;

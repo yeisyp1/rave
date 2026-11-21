@@ -1,4 +1,5 @@
 import '../styles/BillingVW.css'
+import { promptReason } from '../utils/confirmDialog'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { showAlertModal } from '../app/store'
@@ -48,8 +49,13 @@ const BillingVW = () => {
   const handleDownloadInvoice = (inv) => generateInvoicePdf(inv)
 
   const handleAnnul = async (inv) => {
-    const motivo = window.prompt(`Motivo de anulación de la factura #${String(inv.id).padStart(3, '0')}:`)
-    if (motivo === null) return
+    const motivo = await promptReason({
+      title: `Anular la factura #${String(inv.id).padStart(3, '0')}`,
+      message: 'La factura queda marcada como anulada y el motivo se guarda en la auditoría. No se borra ningún dato.',
+      reasonLabel: 'Motivo de anulación',
+      confirmLabel: 'Anular factura',
+    })
+    if (!motivo) return
 
     setAnnullingId(inv.id)
     const result = await annulBillingInvoiceCtrl(inv.id, motivo)
@@ -69,7 +75,7 @@ const BillingVW = () => {
         </div>
         <button className="bl-btn-primary" onClick={() => setShowNewInvoiceModal(true)}>
           <FiPlus size={15} />
-          Nueva Factura
+          Nueva factura
         </button>
         {showNewInvoiceModal && (
           <ModalNewInvoiceVW
@@ -161,10 +167,10 @@ const BillingVW = () => {
                   </td>
                   <td>
                     <div className="bl-actions">
-                      <button className="bl-btn-ghost" onClick={() => { setSelectedInvoice(inv); setShowViewInvoiceModal(true) }} title="Ver / editar factura">
+                      <button className="bl-btn-ghost" onClick={() => { setSelectedInvoice(inv); setShowViewInvoiceModal(true) }} title="Ver / editar factura" aria-label={`Ver o editar la factura #${String(inv.id).padStart(3, '0')}`}>
                         <FiEye size={14} />
                       </button>
-                      <button className="bl-btn-ghost" onClick={() => handleDownloadInvoice(inv)} title="Descargar factura en PDF">
+                      <button className="bl-btn-ghost" onClick={() => handleDownloadInvoice(inv)} title="Descargar factura en PDF" aria-label={`Descargar en PDF la factura #${String(inv.id).padStart(3, '0')}`}>
                         <FiDownload size={14} />
                       </button>
                       {!inv.isVoid && (

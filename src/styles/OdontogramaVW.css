@@ -1,6 +1,6 @@
 /* basic wrapper for odontograma page */
 .odon-page {
-  padding: 1rem;
+  padding: var(--page-pad-y) var(--page-pad-x);
 }
 
 .odon-title {

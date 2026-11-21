@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import AdminMessageVW from '../components/AdminMessageVW'
+import { confirmAction } from '../utils/confirmDialog'
 import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import { useProfile } from '../context/ProfileContext'
@@ -120,7 +122,13 @@ const LaboratoryVW = () => {
   }
 
   const removeCase = async (item) => {
-    if (!confirm(`¿Eliminar el trabajo "${item.work_name}"?`)) return
+    const confirmed = await confirmAction({
+      title: 'Eliminar el trabajo de laboratorio',
+      message: `Se eliminará "${item.work_name}". Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const result = await deleteLaboratoryCaseCtrl(item.id)
     if (!result.ok) {
@@ -158,8 +166,8 @@ const LaboratoryVW = () => {
         <h2 className="admin-card-title">Nuevo trabajo</h2>
         <form className="admin-form full" onSubmit={addCase}>
           <div className="admin-field">
-            <label>Paciente</label>
-            <input className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value, treatmentId: '' })} required />
+            <label htmlFor="laboratory-paciente">Paciente</label>
+            <input id="laboratory-paciente" className="admin-input" list="lab-patient-list" value={form.patient} onChange={(event) => setForm({ ...form, patient: event.target.value, treatmentId: '' })} required />
             <datalist id="lab-patient-list">
               {patients.map((patient) => (
                 <option key={patient.id} value={getLaboratoryPatientLabel(patient)} />
@@ -167,8 +175,8 @@ const LaboratoryVW = () => {
             </datalist>
           </div>
           <div className="admin-field">
-            <label>Tratamiento del paciente</label>
-            <select className="admin-input" value={form.treatmentId} onChange={(event) => selectTreatment(event.target.value)} disabled={!selectedPatientId}>
+            <label htmlFor="laboratory-tratamiento-del-paciente">Tratamiento del paciente</label>
+            <select id="laboratory-tratamiento-del-paciente" className="admin-input" value={form.treatmentId} onChange={(event) => selectTreatment(event.target.value)} disabled={!selectedPatientId}>
               <option value="">{selectedPatientId ? 'Sin tratamiento asociado' : 'Selecciona primero el paciente'}</option>
               {treatments.map((treatment) => (
                 <option key={treatment.id} value={treatment.id}>{getLaboratoryTreatmentLabel(treatment)}</option>
@@ -176,8 +184,8 @@ const LaboratoryVW = () => {
             </select>
           </div>
           <div className="admin-field">
-            <label>Trabajo</label>
-            <input className="admin-input" list="lab-procedure-list" value={form.work} onChange={(event) => setForm({ ...form, work: event.target.value })} required />
+            <label htmlFor="laboratory-trabajo">Trabajo</label>
+            <input id="laboratory-trabajo" className="admin-input" list="lab-procedure-list" value={form.work} onChange={(event) => setForm({ ...form, work: event.target.value })} required />
             <datalist id="lab-procedure-list">
               {procedures.map((procedure) => (
                 <option key={procedure.id} value={procedure.name} />
@@ -185,18 +193,18 @@ const LaboratoryVW = () => {
             </datalist>
           </div>
           <div className="admin-field">
-            <label>Laboratorio</label>
-            <input className="admin-input" value={form.lab} onChange={(event) => setForm({ ...form, lab: event.target.value })} required />
+            <label htmlFor="laboratory-laboratorio">Laboratorio</label>
+            <input id="laboratory-laboratorio" className="admin-input" value={form.lab} onChange={(event) => setForm({ ...form, lab: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Entrega</label>
-            <input className="admin-input" type="date" value={form.due} onChange={(event) => setForm({ ...form, due: event.target.value })} required />
+            <label htmlFor="laboratory-entrega">Entrega</label>
+            <input id="laboratory-entrega" className="admin-input" type="date" value={form.due} onChange={(event) => setForm({ ...form, due: event.target.value })} required />
           </div>
           <div className="admin-actions">
             <button className="admin-btn primary" type="submit" disabled={saving}><FiPlus /> {saving ? 'Guardando...' : 'Agregar'}</button>
           </div>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message} />
       </div>
 
       <div className="admin-card">
@@ -226,8 +234,8 @@ const LaboratoryVW = () => {
                         <td>-</td>
                         <td>
                           <div className="admin-actions">
-                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar"><FiCheck /></button>
-                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(item.id)} title="Guardar" aria-label={`Guardar los cambios de ${item.work_name}`}><FiCheck /></button>
+                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar" aria-label="Cancelar la edición"><FiX /></button>
                           </div>
                         </td>
                       </tr>
@@ -253,9 +261,9 @@ const LaboratoryVW = () => {
                         <div className="admin-actions">
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>Proceso</button>
                           <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>Entregado</button>
-                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar"><FiEdit /></button>
+                          <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar" aria-label={`Editar ${item.work_name}`}><FiEdit /></button>
                           {canDelete && (
-                            <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar"><FiTrash2 /></button>
+                            <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar" aria-label={`Eliminar ${item.work_name}`}><FiTrash2 /></button>
                           )}
                         </div>
                       </td>

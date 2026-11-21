@@ -48,7 +48,7 @@ const HistoriaClinicaVW = () => {
     <div className="hc-page">
       <div className="hc-header">
         <div className="hc-header-left">
-          <h1 className="hc-title">Historias Clinicas</h1>
+          <h1 className="hc-title">Historias clínicas</h1>
         </div>
       </div>
 
@@ -78,9 +78,9 @@ const HistoriaClinicaVW = () => {
                 <tr>
                   <th>Paciente</th>
                   <th>Tipo Documento</th>
-                  <th>Numero Documento</th>
+                  <th>Número de documento</th>
                   <th>Edad</th>
-                  <th>Telefono</th>
+                  <th>Teléfono</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -107,7 +107,7 @@ const HistoriaClinicaVW = () => {
                       </td>
                       <td>{patient.tipo_documento || '—'}</td>
                       <td>{patient.numero_documento || '—'}</td>
-                      <td>{patient.edad ? `${patient.edad} anos` : '—'}</td>
+                      <td>{patient.edad ? `${patient.edad} años` : '—'}</td>
                       <td>{patient.celular || '—'}</td>
                       <td className="hc-actions">
                         <button

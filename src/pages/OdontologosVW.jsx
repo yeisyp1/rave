@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { confirmAction } from '../utils/confirmDialog'
 import { useDispatch } from 'react-redux'
 import { FiCheck, FiEdit, FiPlus, FiUserCheck, FiUserX, FiUsers, FiX } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
@@ -83,7 +84,12 @@ const OdontologosVW = () => {
   const toggleActive = async (doctor) => {
     const next = !doctor.activo
     const verb = next ? 'activar' : 'desactivar'
-    if (!confirm(`¿Deseas ${verb} a ${doctor.nombre} ${doctor.apellidos}?`)) return
+    const confirmed = await confirmAction({
+      title: next ? 'Activar al odontólogo' : 'Desactivar al odontólogo',
+      message: `${doctor.nombre} ${doctor.apellidos} quedará ${next ? 'activo' : 'inactivo'} en la agenda.`,
+      confirmLabel: next ? 'Activar' : 'Desactivar',
+    })
+    if (!confirmed) return
 
     const result = await setOdontologoActiveCtrl(doctor.id, next)
     if (!result.ok) {
@@ -117,36 +123,36 @@ const OdontologosVW = () => {
         <h2 className="admin-card-title">Nuevo odontólogo</h2>
         <form className="admin-form full" onSubmit={addDoctor}>
           <div className="admin-field">
-            <label>Nombre</label>
-            <input className="admin-input" value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} required />
+            <label htmlFor="odontologo-nombre">Nombre</label>
+            <input id="odontologo-nombre" className="admin-input" value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Apellidos</label>
-            <input className="admin-input" value={form.apellidos} onChange={(event) => setForm({ ...form, apellidos: event.target.value })} required />
+            <label htmlFor="odontologo-apellidos">Apellidos</label>
+            <input id="odontologo-apellidos" className="admin-input" value={form.apellidos} onChange={(event) => setForm({ ...form, apellidos: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Documento de identidad</label>
-            <input className="admin-input" value={form.documento_identidad} onChange={(event) => setForm({ ...form, documento_identidad: event.target.value })} />
+            <label htmlFor="odontologo-documento-de-identidad">Documento de identidad</label>
+            <input id="odontologo-documento-de-identidad" className="admin-input" value={form.documento_identidad} onChange={(event) => setForm({ ...form, documento_identidad: event.target.value })} />
           </div>
           <div className="admin-field">
-            <label>Especialidad</label>
-            <input className="admin-input" value={form.especialidad} onChange={(event) => setForm({ ...form, especialidad: event.target.value })} placeholder="Ej. Odontología general" />
+            <label htmlFor="odontologo-especialidad">Especialidad</label>
+            <input id="odontologo-especialidad" className="admin-input" value={form.especialidad} onChange={(event) => setForm({ ...form, especialidad: event.target.value })} placeholder="Ej. Odontología general" />
           </div>
           <div className="admin-field">
-            <label>Registro profesional</label>
-            <input className="admin-input" value={form.registro_profesional} onChange={(event) => setForm({ ...form, registro_profesional: event.target.value })} />
+            <label htmlFor="odontologo-registro-profesional">Registro profesional</label>
+            <input id="odontologo-registro-profesional" className="admin-input" value={form.registro_profesional} onChange={(event) => setForm({ ...form, registro_profesional: event.target.value })} />
           </div>
           <div className="admin-field">
-            <label>Correo</label>
-            <input className="admin-input" type="email" value={form.correo} onChange={(event) => setForm({ ...form, correo: event.target.value })} />
+            <label htmlFor="odontologo-correo">Correo</label>
+            <input id="odontologo-correo" className="admin-input" type="email" value={form.correo} onChange={(event) => setForm({ ...form, correo: event.target.value })} />
           </div>
           <div className="admin-field">
-            <label>Teléfono</label>
-            <input className="admin-input" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} />
+            <label htmlFor="odontologo-telefono">Teléfono</label>
+            <input id="odontologo-telefono" className="admin-input" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} />
           </div>
           <div className="admin-field span-2">
-            <label>Observaciones</label>
-            <input className="admin-input" value={form.observaciones} onChange={(event) => setForm({ ...form, observaciones: event.target.value })} />
+            <label htmlFor="odontologo-observaciones">Observaciones</label>
+            <input id="odontologo-observaciones" className="admin-input" value={form.observaciones} onChange={(event) => setForm({ ...form, observaciones: event.target.value })} />
           </div>
           <div className="admin-actions">
             <button className="admin-btn primary" type="submit" disabled={saving}>
@@ -188,8 +194,8 @@ const OdontologosVW = () => {
                         <td>-</td>
                         <td>
                           <div className="admin-actions">
-                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(doctor.id)} title="Guardar"><FiCheck /></button>
-                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar"><FiX /></button>
+                            <button className="admin-btn primary" type="button" onClick={() => saveEdit(doctor.id)} title="Guardar" aria-label={`Guardar los cambios de ${doctor.nombre} ${doctor.apellidos}`}><FiCheck /></button>
+                            <button className="admin-btn" type="button" onClick={cancelEdit} title="Cancelar" aria-label="Cancelar la edición"><FiX /></button>
                           </div>
                         </td>
                       </tr>
@@ -205,7 +211,7 @@ const OdontologosVW = () => {
                       <td><span className={`admin-pill ${doctor.activo ? 'good' : 'bad'}`}>{doctor.activo ? 'Activo' : 'Inactivo'}</span></td>
                       <td>
                         <div className="admin-actions">
-                          <button className="admin-btn edit" type="button" onClick={() => startEdit(doctor)} title="Editar"><FiEdit /></button>
+                          <button className="admin-btn edit" type="button" onClick={() => startEdit(doctor)} title="Editar" aria-label={`Editar a ${doctor.nombre} ${doctor.apellidos}`}><FiEdit /></button>
                           <button
                             className={`admin-btn ${doctor.activo ? 'danger' : ''}`}
                             type="button"

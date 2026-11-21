@@ -412,11 +412,11 @@ export const computeDashboardCtrl = (raw, { range = { mode: 'preset', preset: 3 
 
   // ── Alertas derivadas de los datos reales ──
   const alerts = []
-  if (canceladasHoy > 0) alerts.push({ id: 'cit', sev: 'r', badge: String(canceladasHoy), text: 'citas canceladas hoy', action: 'Ver y reprogramar' })
-  if (overdue > 0) alerts.push({ id: 'cxc', sev: 'r', badge: money(overdue), text: 'en cuentas por cobrar vencidas', action: 'Ver cartera vencida' })
-  if (lowStock.length > 0) alerts.push({ id: 'inv', sev: 'a', badge: String(lowStock.length), text: 'insumos con stock bajo', action: 'Revisar inventario' })
-  if (pendingLab.length > 0) alerts.push({ id: 'lab', sev: 'a', badge: String(pendingLab.length), text: 'casos de laboratorio pendientes', action: 'Abrir laboratorio' })
-  if (solicitadasHoy > 0) alerts.push({ id: 'sol', sev: 'a', badge: String(solicitadasHoy), text: 'solicitudes de cita por confirmar', action: 'Revisar solicitudes' })
+  if (canceladasHoy > 0) alerts.push({ id: 'cit', sev: 'r', badge: String(canceladasHoy), text: 'citas canceladas hoy', action: 'Ver y reprogramar', to: '/calendar' })
+  if (overdue > 0) alerts.push({ id: 'cxc', sev: 'r', badge: money(overdue), text: 'en cuentas por cobrar vencidas', action: 'Ver cartera vencida', to: '/billing' })
+  if (lowStock.length > 0) alerts.push({ id: 'inv', sev: 'a', badge: String(lowStock.length), text: 'insumos con stock bajo', action: 'Revisar inventario', to: '/inventory' })
+  if (pendingLab.length > 0) alerts.push({ id: 'lab', sev: 'a', badge: String(pendingLab.length), text: 'casos de laboratorio pendientes', action: 'Abrir laboratorio', to: '/laboratory' })
+  if (solicitadasHoy > 0) alerts.push({ id: 'sol', sev: 'a', badge: String(solicitadasHoy), text: 'solicitudes de cita por confirmar', action: 'Revisar solicitudes', to: '/whatsapp-solicitudes' })
 
   // ── Listas ──
   const fullName = (appt) => `${appt.patients?.nombre ?? ''} ${appt.patients?.apellidos ?? ''}`.trim() || 'Paciente'

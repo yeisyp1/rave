@@ -8,8 +8,8 @@
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
-  z-index: 1000;
+  transition: width 0.3s ease, transform 0.3s ease;
+  z-index: var(--z-sidebar);
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: 2px 0 10px var(--sidebar-shadow);
@@ -224,16 +224,24 @@
 }
 
 .sidebar.sidebar-narrow-unfoldable .nav-text {
-  opacity: 0;
-  display: none;
-  width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .sidebar.sidebar-narrow-unfoldable:hover .nav-text {
-  opacity: 1;
-  display: inline;
+  position: static;
   width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: nowrap;
 }
 
 .badge {
@@ -302,9 +310,12 @@
   }
 
   .sidebar.sidebar-narrow-unfoldable.mobile .nav-text {
-    opacity: 1;
-    display: inline;
+    position: static;
     width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
   }
 
   .sidebar.sidebar-narrow-unfoldable.mobile .nav-title {
@@ -349,7 +360,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: var(--z-sidebar-overlay);
   animation: fadeIn 0.3s ease;
 }
 
@@ -390,8 +401,7 @@
   color: var(--sidebar-text-hover);
 }
 
-/* Quitar borde azul al hacer click */
-.logout-btn:focus {
+.logout-btn:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }

@@ -11,7 +11,7 @@ export const DOCTOR_EMPTY_FORM = { full_name: "", email: "", role: "assistant" }
 
 export const DOCTOR_ROLE_LABELS = {
   admin: "Administrador",
-  dentist: "Odontóloga",
+  dentist: "Odontólogo/a",
   assistant: "Asistente",
 };
 

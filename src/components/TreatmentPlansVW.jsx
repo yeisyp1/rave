@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useModalBehavior } from '../hooks/useModalBehavior';
 import { useDispatch } from 'react-redux';
 import { FiPlus, FiX, FiDownload } from 'react-icons/fi';
 import { showAlertModal } from '../app/store';
@@ -57,6 +58,8 @@ const TreatmentPlansVW = ({ patientId, patient = null, onConsentRegistered = () 
   const [busy, setBusy] = useState(false);
   // Modal para cerrar/cancelar un plan: { plan, mode: 'close' | 'cancel' }.
   const [planAction, setPlanAction] = useState(null);
+  const closePlanAction = useCallback(() => setPlanAction(null), []);
+  const planActionRef = useModalBehavior(closePlanAction, { enabled: Boolean(planAction) });
   const [actionNote, setActionNote] = useState('');
 
   const load = async () => {
@@ -295,12 +298,12 @@ const TreatmentPlansVW = ({ patientId, patient = null, onConsentRegistered = () 
 
             {editingPlanId === plan.id && canEdit ? (
               <form className="pd-plan-form" onSubmit={submitEditPlan}>
-                <label className="pd-info-label">Título</label>
-                <input value={editPlanForm.title} onChange={(event) => setEditPlanForm({ ...editPlanForm, title: event.target.value })} />
-                <label className="pd-info-label">Diagnóstico</label>
-                <textarea rows={2} value={editPlanForm.diagnosis} onChange={(event) => setEditPlanForm({ ...editPlanForm, diagnosis: event.target.value })} />
-                <label className="pd-info-label">Notas</label>
-                <textarea rows={2} value={editPlanForm.notes} onChange={(event) => setEditPlanForm({ ...editPlanForm, notes: event.target.value })} />
+                <label className="pd-info-label" htmlFor="treatmentp-titulo">Título</label>
+                <input id="treatmentp-titulo" value={editPlanForm.title} onChange={(event) => setEditPlanForm({ ...editPlanForm, title: event.target.value })} />
+                <label className="pd-info-label" htmlFor="treatmentp-diagnostico">Diagnóstico</label>
+                <textarea id="treatmentp-diagnostico" rows={2} value={editPlanForm.diagnosis} onChange={(event) => setEditPlanForm({ ...editPlanForm, diagnosis: event.target.value })} />
+                <label className="pd-info-label" htmlFor="treatmentp-notas">Notas</label>
+                <textarea id="treatmentp-notas" rows={2} value={editPlanForm.notes} onChange={(event) => setEditPlanForm({ ...editPlanForm, notes: event.target.value })} />
                 <div className="pd-history-actions">
                   <button type="submit" className="pd-btn-action-primary" disabled={busy}>Guardar</button>
                   <button type="button" className="pd-btn-secondary" onClick={() => setEditingPlanId(null)}>Cancelar</button>
@@ -340,12 +343,12 @@ const TreatmentPlansVW = ({ patientId, patient = null, onConsentRegistered = () 
 
             {canEdit && consentPlanId === plan.id && (
               <form className="pd-plan-form" onSubmit={(event) => submitConsent(event, plan)}>
-                <label className="pd-info-label">Información presentada al paciente</label>
-                <textarea rows={3} value={consentForm.content} onChange={(event) => setConsentForm({ ...consentForm, content: event.target.value })} placeholder="Procedimientos del plan, riesgos, alternativas y costos explicados." />
-                <label className="pd-info-label">Firma (nombre de quien autoriza)</label>
-                <input value={consentForm.patient_signature_name} onChange={(event) => setConsentForm({ ...consentForm, patient_signature_name: event.target.value })} placeholder="Nombre del paciente o acudiente" />
-                <label className="pd-info-label">Decisión del paciente</label>
-                <select value={consentForm.aceptado ? 'si' : 'no'} onChange={(event) => setConsentForm({ ...consentForm, aceptado: event.target.value === 'si' })}>
+                <label className="pd-info-label" htmlFor="treatmentp-informacion-presentada-al-paciente">Información presentada al paciente</label>
+                <textarea id="treatmentp-informacion-presentada-al-paciente" rows={3} value={consentForm.content} onChange={(event) => setConsentForm({ ...consentForm, content: event.target.value })} placeholder="Procedimientos del plan, riesgos, alternativas y costos explicados." />
+                <label className="pd-info-label" htmlFor="treatmentp-firma-nombre-de-quien-autoriza">Firma (nombre de quien autoriza)</label>
+                <input id="treatmentp-firma-nombre-de-quien-autoriza" value={consentForm.patient_signature_name} onChange={(event) => setConsentForm({ ...consentForm, patient_signature_name: event.target.value })} placeholder="Nombre del paciente o acudiente" />
+                <label className="pd-info-label" htmlFor="treatmentp-decision-del-paciente">Decisión del paciente</label>
+                <select id="treatmentp-decision-del-paciente" value={consentForm.aceptado ? 'si' : 'no'} onChange={(event) => setConsentForm({ ...consentForm, aceptado: event.target.value === 'si' })}>
                   <option value="si">Acepta el tratamiento</option>
                   <option value="no">No acepta (queda registrada la negativa)</option>
                 </select>
@@ -412,7 +415,13 @@ const TreatmentPlansVW = ({ patientId, patient = null, onConsentRegistered = () 
 
       {planAction && (
         <div className="am-overlay" onClick={(event) => event.target === event.currentTarget && setPlanAction(null)}>
-          <form className="am-modal pd-plan-action-modal" onSubmit={submitPlanAction}>
+          <form
+            className="am-modal pd-plan-action-modal"
+            onSubmit={submitPlanAction}
+            ref={planActionRef}
+            role="dialog"
+            aria-modal="true"
+          >
             <button type="button" className="am-close" onClick={() => setPlanAction(null)} aria-label="Cerrar">
               <FiX size={18} />
             </button>

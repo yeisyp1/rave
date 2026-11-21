@@ -1,5 +1,5 @@
 .hc-page {
-  padding: 2rem;
+  padding: var(--page-pad-y) var(--page-pad-x);
   max-width: 1400px;
   margin: 0 auto;
   animation: fadeIn 0.3s ease-in;

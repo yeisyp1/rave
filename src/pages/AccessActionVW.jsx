@@ -78,11 +78,66 @@ const AccessActionVW = ({ mode }) => {
         <p className="public-kicker">RAVE Odontología</p>
         <h1>{title}</h1>
         <p className="access-description">{description}</p>
-        {!isReset && !hasSession && <label>Correo electrónico<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>}
-        {(isCreate || isReset) && <><label>Nueva contraseña<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength="8" required /></label><label>Confirmar contraseña<input type="password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} minLength="8" required /></label></>}
-        {error && <p className="access-error">{error}</p>}
-        {message && <p className="access-message">{message}</p>}
-        {(!message || isReset) && <form onSubmit={submit}><button className="public-button" disabled={loading}>{loading ? 'Procesando...' : isReset ? 'Guardar contraseña' : isCreate ? 'Crear contraseña' : 'Enviar enlace'}</button></form>}
+
+        <form onSubmit={submit} noValidate={false}>
+          {!isReset && !hasSession && (
+            <label htmlFor="access-email">
+              Correo electrónico
+              <input
+                id="access-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </label>
+          )}
+
+          {(isCreate || isReset) && (
+            <>
+              <label htmlFor="access-password">
+                Nueva contraseña
+                <input
+                  id="access-password"
+                  name="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </label>
+              <label htmlFor="access-confirmation">
+                Confirmar contraseña
+                <input
+                  id="access-confirmation"
+                  name="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmation}
+                  onChange={(e) => setConfirmation(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </label>
+            </>
+          )}
+
+          <div aria-live="polite" role="status">
+            {error && <p className="access-error">{error}</p>}
+            {message && <p className="access-message">{message}</p>}
+          </div>
+
+          {(!message || isReset) && (
+            <button className="public-button" type="submit" disabled={loading}>
+              {loading ? 'Procesando...' : isReset ? 'Guardar contraseña' : isCreate ? 'Crear contraseña' : 'Enviar enlace'}
+            </button>
+          )}
+        </form>
+
         <Link to="/login" className="access-back">Volver al inicio de sesión</Link>
       </section>
     </main>

@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useModalBehavior } from "../hooks/useModalBehavior";
 import "../styles/ModalViewPatientsVW.css";
 
 export default function ModalViewPatient({
@@ -6,6 +7,7 @@ export default function ModalViewPatient({
   onClose,
   patient,
 }) {
+  const containerRef = useModalBehavior(onClose, { enabled: Boolean(show && patient) });
 
   if (!show || !patient) return null;
 
@@ -14,15 +16,21 @@ export default function ModalViewPatient({
       className="pt-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="pt-modal pt-modal-view">
+      <div
+        className="pt-modal pt-modal-view"
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pt-view-title"
+      >
 
         {/* Header */}
         <div className="pt-modal-header">
           <div>
-            <h2 className="pt-modal-title">Información del paciente</h2>
+            <h2 className="pt-modal-title" id="pt-view-title">Información del paciente</h2>
           </div>
 
-          <button className="pt-modal-close" onClick={onClose}>
+          <button className="pt-modal-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
         </div>

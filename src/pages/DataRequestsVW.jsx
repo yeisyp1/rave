@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import AdminMessageVW from '../components/AdminMessageVW'
+import { confirmAction } from '../utils/confirmDialog'
 import { FiCheckCircle, FiClock, FiShield } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
 import {
@@ -51,10 +53,13 @@ const DataRequestsVW = () => {
   }
 
   const applyRequest = async (item) => {
-    const confirmed = window.confirm(
-      `${item.request_type}: se eliminarán los datos de contacto del paciente, se revocará su autorización y se dará de baja WhatsApp. ` +
-      'La historia clínica se conserva por obligación legal (15 años). Esta acción no se puede deshacer. ¿Continuar?',
-    )
+    const confirmed = await confirmAction({
+      title: `Aplicar la solicitud: ${item.request_type}`,
+      message: 'Se eliminarán los datos de contacto del paciente, se revocará su autorización y se dará de baja WhatsApp. '
+        + 'La historia clínica se conserva por obligación legal (15 años). Esta acción no se puede deshacer.',
+      confirmLabel: 'Aplicar solicitud',
+      variant: 'danger',
+    })
     if (!confirmed) return
     const result = await applyDataRequestCtrl(item.id)
     if (!result.ok) {
@@ -144,7 +149,7 @@ const DataRequestsVW = () => {
             </tbody>
           </table>
         </div>
-        {message && <p className="admin-message">{message}</p>}
+        <AdminMessageVW text={message} />
       </div>
     </div>
   )

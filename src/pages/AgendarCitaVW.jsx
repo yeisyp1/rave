@@ -10,10 +10,12 @@ import {
   ScheduleConflictError,
 } from '../controllers/CalendarCtrl'
 import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
+import ModalShellVW from '../components/ModalShellVW'
+import { toLocalDateInput } from '../utils/dates'
 import '../styles/AdminViewsVW.css'
 import '../styles/CitaModalVW.css'
 
-const formatInputDate = (date) => date.toISOString().slice(0, 10)
+const formatInputDate = (date) => toLocalDateInput(date)
 
 const AgendarCitaVW = () => {
   const location = useLocation()
@@ -29,7 +31,7 @@ const AgendarCitaVW = () => {
   const [form, setForm] = useState({
     patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
     document: patient?.numero_documento ?? '',
-    service: 'Valoracion odontologica',
+    service: 'Valoración odontológica',
     doctorId: '',
     date: formatInputDate(new Date()),
     startTime: '09:00',
@@ -187,7 +189,7 @@ const AgendarCitaVW = () => {
         setMessage('El horario seleccionado ya está ocupado por otra cita. Elige otro horario.')
         return
       }
-      setMessage('No se pudo crear la cita. Verifica la conexion con Google Calendar.')
+      setMessage('No se pudo crear la cita. Verifica la conexión con Google Calendar.')
     } finally {
       setSaving(false)
     }
@@ -215,8 +217,9 @@ const AgendarCitaVW = () => {
         <h2 className="admin-card-title">Datos de la cita</h2>
         <form className="admin-form" onSubmit={handleSubmit}>
           <div className="admin-field">
-            <label>Paciente</label>
+            <label htmlFor="cita-paciente">Paciente</label>
             <input
+              id="cita-paciente"
               className="admin-input"
               list="appointment-patient-names"
               value={form.patientName}
@@ -225,8 +228,9 @@ const AgendarCitaVW = () => {
             />
           </div>
           <div className="admin-field">
-            <label>Documento</label>
+            <label htmlFor="cita-documento">Documento</label>
             <input
+              id="cita-documento"
               className="admin-input"
               list="appointment-patient-documents"
               value={form.document}
@@ -235,12 +239,12 @@ const AgendarCitaVW = () => {
             />
           </div>
           <div className="admin-field span-2">
-            <label>Servicio</label>
-            <input className="admin-input" value={form.service} onChange={(event) => setForm({ ...form, service: event.target.value })} required />
+            <label htmlFor="cita-servicio">Servicio</label>
+            <input id="cita-servicio" className="admin-input" value={form.service} onChange={(event) => setForm({ ...form, service: event.target.value })} required />
           </div>
           <div className="admin-field span-2">
-            <label>Odontólogo {doctorOptions.length > 0 && <span className="admin-req">*</span>}</label>
-            <select className="admin-input" value={form.doctorId} onChange={(event) => setForm({ ...form, doctorId: event.target.value })}>
+            <label htmlFor="cita-odontologo">Odontólogo {doctorOptions.length > 0 && <span className="admin-req">*</span>}</label>
+            <select id="cita-odontologo" className="admin-input" value={form.doctorId} onChange={(event) => setForm({ ...form, doctorId: event.target.value })}>
               <option value="">Selecciona un odontólogo...</option>
               {doctorOptions.map((doctor) => (
                 <option key={doctor.id} value={doctor.id}>{`${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim()}</option>
@@ -248,24 +252,24 @@ const AgendarCitaVW = () => {
             </select>
           </div>
           <div className="admin-field">
-            <label>Fecha</label>
-            <input className="admin-input" type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} required />
+            <label htmlFor="cita-fecha">Fecha</label>
+            <input id="cita-fecha" className="admin-input" type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Inicio</label>
-            <input className="admin-input" type="time" value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} required />
+            <label htmlFor="cita-inicio">Inicio</label>
+            <input id="cita-inicio" className="admin-input" type="time" value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Fin</label>
-            <input className="admin-input" type="time" value={form.endTime} onChange={(event) => setForm({ ...form, endTime: event.target.value })} required />
+            <label htmlFor="cita-fin">Fin</label>
+            <input id="cita-fin" className="admin-input" type="time" value={form.endTime} onChange={(event) => setForm({ ...form, endTime: event.target.value })} required />
           </div>
           <div className="admin-field">
-            <label>Ubicacion</label>
-            <input className="admin-input" value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} />
+            <label htmlFor="cita-ubicacion">Ubicación</label>
+            <input id="cita-ubicacion" className="admin-input" value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} />
           </div>
           <div className="admin-field span-2">
-            <label>Notas</label>
-            <textarea className="admin-textarea" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+            <label htmlFor="cita-notas">Notas</label>
+            <textarea id="cita-notas" className="admin-textarea" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
           </div>
           <div className="admin-actions">
             <button className="admin-btn primary" type="submit" disabled={saving}>
@@ -273,7 +277,9 @@ const AgendarCitaVW = () => {
             </button>
           </div>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        <div aria-live="polite">
+          {message && <p className="admin-message admin-message-error">{message}</p>}
+        </div>
       </div>
 
       <datalist id="appointment-patient-names">
@@ -294,29 +300,25 @@ const AgendarCitaVW = () => {
         <div className="admin-toast" role="status" aria-live="polite">
           <div className="admin-toast-bar" />
           <div>
-            <div className="admin-toast-text">La cita de {form.patientName} se agendó correctamete.</div>
+            <div className="admin-toast-text">La cita de {form.patientName} se agendó correctamente.</div>
           </div>
         </div>
       )}
       {patientValidationError && (
-        <div
-          className="cl-overlay"
-          onClick={() => setPatientValidationError(null)}
+        <ModalShellVW
+          overlayClassName="cl-overlay"
+          onClose={() => setPatientValidationError(null)}
+          labelledBy="cita-validacion-titulo"
         >
-          <div
-            className="cl-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="cl-modal">
             <div className="cl-modal-header">
               <div>
-                <h2 className="cl-modal-title">
-                  Error de validación
-                </h2>
+                <h2 className="cl-modal-title" id="cita-validacion-titulo">Error de validación</h2>
               </div>
-
               <button
                 className="cl-modal-close"
                 onClick={() => setPatientValidationError(null)}
+                aria-label="Cerrar"
               >
                 <FiX size={16} />
               </button>
@@ -326,22 +328,17 @@ const AgendarCitaVW = () => {
 
             <div className="cl-modal-body">
               <div className="cl-view-field">
-                <p className="cl-view-value">
-                  {patientValidationError}
-                </p>
+                <p className="cl-view-value">{patientValidationError}</p>
               </div>
             </div>
 
             <div className="cl-modal-nav">
-              <button
-                className="cl-btn-primary"
-                onClick={() => setPatientValidationError(null)}
-              >
+              <button className="cl-btn-primary" onClick={() => setPatientValidationError(null)}>
                 Entendido
               </button>
             </div>
           </div>
-        </div>
+        </ModalShellVW>
       )}
     </div>
   )

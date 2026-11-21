@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
 
 .bl-page {
-  min-height: 100vh;
+  min-height: 100%;
+  box-sizing: border-box;
   background: var(--bl-bg);
-  padding: 36px 40px;
+  padding: var(--page-pad-y) var(--page-pad-x);
   font-family: 'Nunito', sans-serif;
   color: var(--bl-text);
   transition: background 0.3s ease, color 0.3s ease;
@@ -21,7 +21,7 @@
   z-index: 0;
 }
 
-.bl-page > * { position: relative; z-index: 1; }
+.bl-page > *:not(.pt-overlay) { position: relative; z-index: 1; }
 
 /* ─────────────────────────────
    HEADER

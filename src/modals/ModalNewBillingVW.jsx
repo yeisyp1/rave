@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { toLocalDateInput } from '../utils/dates';
+import { useModalBehavior } from '../hooks/useModalBehavior';
 import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import { FiX } from 'react-icons/fi';
@@ -7,10 +9,7 @@ import { createBillingInvoiceCtrl, loadBillableProceduresCtrl } from '../control
 import { loadPatientsCtrl } from '../controllers/PatientsCtrl';
 import { showAlertModal } from '../app/store';
 
-const getLocalDate = () => {
-    const tzOffset = new Date().getTimezoneOffset() * 60000;
-    return new Date(Date.now() - tzOffset).toISOString().slice(0, 10);
-};
+const getLocalDate = () => toLocalDateInput(new Date());
 
 const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
     const dispatch = useDispatch();
@@ -24,6 +23,7 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
     }));
 
     const [saving, setSaving] = useState(false);
+    const containerRef = useModalBehavior(onClose);
     const [billableProcedures, setBillableProcedures] = useState([]);
     const [selectedProcedureIds, setSelectedProcedureIds] = useState([]);
     const [extraItems, setExtraItems] = useState([{ description: '', amount: '' }]);
@@ -133,13 +133,19 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
             className="pt-overlay"
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
-            <div className="pt-modal">
+            <div
+                className="pt-modal"
+                ref={containerRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="pt-newinvoice-title"
+            >
                 <div className="pt-modal-header">
                     <div>
-                        <h2 className="pt-modal-title">Nueva factura</h2>
+                        <h2 className="pt-modal-title" id="pt-newinvoice-title">Nueva factura</h2>
                     </div>
 
-                    <button className="pt-modal-close" onClick={onClose}>
+                    <button className="pt-modal-close" onClick={onClose} aria-label="Cerrar">
                         <FiX size={16} />
                     </button>
                 </div>
@@ -147,11 +153,11 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                 <form onSubmit={handleSubmit} className="pt-modal-body">
                     <div className="pt-form-grid">
                         <div className="pt-field pt-field-full">
-                            <label className="pt-label">
+                            <label className="pt-label" htmlFor="modalnewbi-documento-del-paciente">
                                 Documento del paciente
                             </label>
 
-                            <input
+                            <input id="modalnewbi-documento-del-paciente"
                                 list="billing-patient-list"
                                 name="patientDocument"
                                 value={form.patientDocument}
@@ -175,11 +181,11 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                         </div>
 
                         <div className="pt-field">
-                            <label className="pt-label">
+                            <label className="pt-label" htmlFor="modalnewbi-nombre-paciente">
                                 Nombre paciente
                             </label>
 
-                            <input
+                            <input id="modalnewbi-nombre-paciente"
                                 name="patientName"
                                 value={form.patientName}
                                 onChange={handleChange}
@@ -188,9 +194,9 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                         </div>
 
                         <div className="pt-field">
-                            <label className="pt-label">Fecha</label>
+                            <label className="pt-label" htmlFor="modalnewbi-fecha">Fecha</label>
 
-                            <input
+                            <input id="modalnewbi-fecha"
                                 type="date"
                                 name="date"
                                 value={form.date}
@@ -259,9 +265,9 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
                         </div>
 
                         <div className="pt-field pt-field-full">
-                            <label className="pt-label">Notas</label>
+                            <label className="pt-label" htmlFor="modalnewbi-notas">Notas</label>
 
-                            <textarea
+                            <textarea id="modalnewbi-notas"
                                 name="notes"
                                 value={form.notes}
                                 onChange={handleChange}
