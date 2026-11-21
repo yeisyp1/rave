@@ -12,10 +12,11 @@ import { confirmAction } from "../utils/confirmDialog";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
 import LoaderVW from "../components/LoaderVW";
 import "../styles/PatientsVW.css";
-import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiTrash2, FiRotateCcw } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiUser, FiFileText, FiBookOpen, FiEdit, FiUserX, FiRotateCcw, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { showAlertModal } from "../app/store";
 
 const SEXO_LABELS = { M: "Masculino", F: "Femenino", O: "Otro" };
+const PAGE_SIZE = 25;
 
 const PatientsVW = () => {
   const navigate = useNavigate();
@@ -26,11 +27,12 @@ const PatientsVW = () => {
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState(() => searchParams.get("buscar") ?? "");
   const [statusFilter, setStatusFilter] = useState("activos");
+  const [page, setPage] = useState(1);
 
-  const patientModal = usePatientModal(() => getPatients());
+  const patientModal = usePatientModal(() => getPatients({ silent: true }));
 
-  const getPatients = async () => {
-    setLoading(true);
+  const getPatients = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setLoadError("");
     try {
       const data = await loadPatientsCtrl(statusFilter);
@@ -40,7 +42,7 @@ const PatientsVW = () => {
       setPatients([]);
       setLoadError(error.message || "No se pudo cargar la lista de pacientes.");
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,6 +55,7 @@ const PatientsVW = () => {
 
   const updateSearch = (value) => {
     setSearch(value);
+    setPage(1);
     const next = new URLSearchParams(searchParams);
     if (value) next.set("buscar", value);
     else next.delete("buscar");
@@ -81,18 +84,21 @@ const PatientsVW = () => {
     if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
     else {
       dispatch(showAlertModal({ message: result.message, variant: "success" }));
-      getPatients();
+      getPatients({ silent: true });
     }
   };
 
   const reactivatePatient = async (id) => {
     const result = await reactivatePatientCtrl(id);
     dispatch(showAlertModal({ message: result.message, variant: result.ok ? "success" : "error" }));
-    if (result.ok) getPatients();
+    if (result.ok) getPatients({ silent: true });
   };
 
   /* ── Filtro de búsqueda ── */
   const filtered = filterPatientsCtrl(patients, search);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div className="pt-page">
@@ -124,7 +130,7 @@ const PatientsVW = () => {
           <select
             className="pt-select"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             aria-label="Filtrar pacientes por estado"
           >
             <option value="activos">Activos</option>
@@ -180,7 +186,7 @@ const PatientsVW = () => {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((p) => (
+                  visible.map((p) => (
                     <tr
                       key={p.id}
                       className="pt-row"
@@ -260,7 +266,7 @@ const PatientsVW = () => {
                             onClick={(e) => { e.stopPropagation(); deletePatient(p.id); }}
                             title="Inactivar paciente" aria-label={`Inactivar a ${p.nombre} ${p.apellidos}`}
                           >
-                            <FiTrash2 size={16} />
+                            <FiUserX size={16} />
                           </button>
                         )}
 
@@ -271,6 +277,32 @@ const PatientsVW = () => {
               </tbody>
             </table>
           </div>
+        )}
+
+        {!loading && totalPages > 1 && (
+          <nav className="pt-pagination" aria-label="Paginación de pacientes">
+            <button
+              type="button"
+              className="pt-btn-action"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage === 1}
+              aria-label="Página anterior"
+            >
+              <FiChevronLeft size={16} />
+            </button>
+            <span className="pt-pagination-info">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              type="button"
+              className="pt-btn-action"
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="Página siguiente"
+            >
+              <FiChevronRight size={16} />
+            </button>
+          </nav>
         )}
       </div>
 

@@ -292,6 +292,10 @@ svg {
   font-size: 2rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;

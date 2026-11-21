@@ -11,7 +11,6 @@ import logoDark from '../assets/logo.png'
 import {
   FiActivity,
   FiClipboard,
-  FiGrid,
   FiUsers,
   FiCalendar,
   FiBookOpen,
@@ -62,7 +61,6 @@ const Sidebar = ({ profile }) => {
       clinicalOnly: true,
       items: [
         { to: '/histories', icon: FiClipboard, label: 'Historias clínicas' },
-        { to: '/odontograma', icon: FiGrid, label: 'Odontograma' },
         { to: '/laboratory', icon: FiThermometer, label: 'Laboratorio' },
         { to: '/inventory', icon: FiInbox, label: 'Inventario' },
       ],
@@ -94,6 +92,8 @@ const Sidebar = ({ profile }) => {
       <aside
         className={`sidebar sidebar-narrow-unfoldable ${open ? 'open' : ''} ${isMobile ? 'mobile' : ''}`}
         aria-label="Menú principal"
+        aria-hidden={isMobile && !open ? 'true' : undefined}
+        inert={isMobile && !open ? '' : undefined}
       >
         <div className="sidebar-header">
           <div className="sidebar-brand-n sidebar-brand-logo" aria-label="RAVE">

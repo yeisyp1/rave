@@ -2,6 +2,7 @@ import { getPatientByIdDAO } from "../dao/PatientsDAO";
 import { listPatientProceduresDAO } from "../dao/ProceduresDAO";
 import { listPatientRadiographiesDAO } from "../dao/RadiographiesDAO";
 import { loadPatientHistoriesCtrl } from "./HistoriaClinicaCtrl";
+import { getLatestOdontogramDAO } from "../dao/ClinicalHistoriesDAO";
 import { createInformedConsentDAO, listInformedConsentsByPatientDAO } from "../dao/InformedConsentDAO";
 import { createDataRequestDAO, listDataRequestsByPatientDAO } from "../dao/DataRequestsDAO";
 import { getCurrentUserIdDAO } from "../dao/SupabaseDAO";
@@ -17,13 +18,14 @@ const normalizeProcedures = (patientProcedures) =>
 export const loadPatientDetailCtrl = async (patientId) => {
   const patient = await getPatientByIdDAO(patientId);
 
-  const [patientProcedures, clinicalHistories, consents, dataRequests, radiographies] =
+  const [patientProcedures, clinicalHistories, consents, dataRequests, radiographies, savedOdontogram] =
     await Promise.all([
       listPatientProceduresDAO(patientId),
       loadPatientHistoriesCtrl(patientId),
       listInformedConsentsByPatientDAO(patientId),
       listDataRequestsByPatientDAO(patientId),
       listPatientRadiographiesDAO(patientId),
+      getLatestOdontogramDAO(patientId),
     ]);
 
   return {
@@ -33,6 +35,7 @@ export const loadPatientDetailCtrl = async (patientId) => {
     consents,
     dataRequests,
     radiographies,
+    savedOdontogram,
   };
 };
 

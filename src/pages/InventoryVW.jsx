@@ -125,7 +125,7 @@ const InventoryVW = () => {
       <div className="admin-header">
         <div>
           <h1 className="admin-title">Inventario</h1>
-          <p className="admin-subtitle">Control rapido de insumos clinicos y alertas de reposicion.</p>
+          <p className="admin-subtitle">Control rápido de insumos clínicos y alertas de reposición.</p>
         </div>
       </div>
 

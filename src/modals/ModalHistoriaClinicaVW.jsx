@@ -22,7 +22,7 @@ import { FiChevronDown, FiImage, FiPlus, FiSave, FiTrash2, FiX } from "react-ico
 import { useModalBehavior } from "../hooks/useModalBehavior";
 import { promptReason } from "../utils/confirmDialog";
 import { toLocalDateTimeInput } from "../utils/dates";
-import { formatDate } from "../utils/format";
+import { formatDate, formatDateTime } from "../utils/format";
 import { useProfile } from "../context/ProfileContext";
 import { isClinicalStaff } from "../utils/roles";
 import OdontogramApp from "react-odontogram-editor-modul/src/App";
@@ -310,8 +310,9 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
     } catch (error) {
       console.error("Error guardando historia y radiografías:", error);
       setMediaStatus(error?.message || "No se pudo guardar la información. Revisa la consola.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleNewHistory = () => {
@@ -884,13 +885,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                     return (
                       <div key={history.id} className="mhc-history-card">
                         <div className="mhc-history-date">
-                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-CO", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatDateTime(history.fecha ?? history.created_at)}
                         </div>
                         <div className="mhc-history-summary">
                           <span><b>Doctor:</b> {fieldToText(history.doctor || historyData.doctor)}</span>

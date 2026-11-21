@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import OdontogramApp from 'react-odontogram-editor-modul/src/App';
 import 'react-odontogram-editor-modul/src/index.css';
 import { loadOdontogramPatientCtrl } from '../controllers/HistoriaClinicaCtrl';
@@ -9,8 +9,10 @@ import {
   loadOdontogramDraft,
   restoreOdontogramState,
   saveOdontogramDraft,
+  waitForOdontogramReady,
 } from '../utils/odontogramPersistence';
 
+import '../styles/AdminViewsVW.css';
 import '../styles/OdontogramaVW.css';
 
 const Odontograma = () => {
@@ -45,13 +47,14 @@ const Odontograma = () => {
   useEffect(() => {
     if (!patientId || loading) return undefined;
 
-    const restore = window.setTimeout(() => {
-      const draft = loadOdontogramDraft(patientId);
-      restoreOdontogramState(draft || savedOdontogram);
-    }, 0);
+    let active = true;
+    waitForOdontogramReady().then((ready) => {
+      if (!active || !ready) return;
+      restoreOdontogramState(loadOdontogramDraft(patientId) || savedOdontogram);
+    });
 
     return () => {
-      window.clearTimeout(restore);
+      active = false;
       captureOdontogramState()
         .then((state) => saveOdontogramDraft(patientId, state))
         .catch((error) => console.error('Error guardando borrador del odontograma:', error));
@@ -61,6 +64,19 @@ const Odontograma = () => {
   const odontogramTitle = patient
     ? `Módulo de Odontograma - ${patient.nombre} ${patient.apellidos}`
     : 'Módulo de Odontograma';
+
+  if (!patientId) {
+    return (
+      <div className="odon-page">
+        <h1 className="odon-title">Odontograma</h1>
+        <p className="odon-empty">
+          El odontograma se guarda dentro de la ficha de cada paciente. Abre un paciente y entra en
+          la pestaña "Tratamientos y odontograma".
+        </p>
+        <Link className="admin-btn primary" to="/pacientes">Ir a pacientes</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="odon-page">

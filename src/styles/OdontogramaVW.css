@@ -29,3 +29,10 @@
   --odon-line: var(--border-color, #334155);
   --odon-accent: var(--button-primary, #A2CDFF);
 }
+
+.odon-empty {
+  max-width: 560px;
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

@@ -30,6 +30,25 @@ export const captureOdontogramState = async () => {
   }
 };
 
+export const waitForOdontogramReady = (timeout = 6000) =>
+  new Promise((resolve) => {
+    const start = Date.now();
+    const tick = () => {
+      const input = document.getElementById("statusImportInput");
+      const exportButton = document.getElementById("btnStatusExport");
+      if (input && exportButton) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - start > timeout) {
+        resolve(false);
+        return;
+      }
+      window.setTimeout(tick, 100);
+    };
+    tick();
+  });
+
 export const restoreOdontogramState = (state) => {
   if (!state) return false;
   const input = document.getElementById("statusImportInput");

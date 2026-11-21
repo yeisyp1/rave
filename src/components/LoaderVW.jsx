@@ -4,7 +4,7 @@ export const DEFAULT_LOADING_MESSAGE = 'Cargando...'
 
 const LoaderVW = ({ text = DEFAULT_LOADING_MESSAGE, className = '' }) => {
   return (
-    <div className={`loader-wrap ${className}`.trim()}>
+    <div className={`loader-wrap ${className}`.trim()} role="status" aria-live="polite">
       <div className="loader-cube" aria-hidden="true">
         <div />
         <div />

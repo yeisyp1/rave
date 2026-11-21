@@ -359,3 +359,12 @@
   .cl-header      { flex-direction: column; align-items: flex-start; }
   .cl-field-row   { grid-template-columns: 1fr; }
 }
+.cl-calendar-sized {
+  height: clamp(420px, calc(100dvh - 300px), 900px);
+}
+
+@media (max-width: 768px) {
+  .cl-calendar-sized {
+    height: clamp(380px, calc(100dvh - 260px), 700px);
+  }
+}

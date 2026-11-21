@@ -6,9 +6,15 @@ import { annulPatientHistoryCtrl, saveOdontogramCtrl } from '../controllers/Hist
 import { loadPatientDetailCtrl, submitConsentCtrl, submitDataRequestCtrl } from '../controllers/PatientDetailCtrl';
 import { updatePatientDAO } from '../dao/PatientsDAO';
 import { logPatientAccessDAO } from '../dao/AuditDAO';
-import { captureOdontogramState } from '../utils/odontogramPersistence';
-import { promptReason } from '../utils/confirmDialog';
-import { formatDate, formatMoney } from '../utils/format';
+import {
+  captureOdontogramState,
+  loadOdontogramDraft,
+  restoreOdontogramState,
+  saveOdontogramDraft,
+  waitForOdontogramReady,
+} from '../utils/odontogramPersistence';
+import { confirmAction, promptReason } from '../utils/confirmDialog';
+import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import {
   FiArrowLeft,
   FiAlertTriangle,
@@ -46,6 +52,11 @@ const PatientDetailVW = () => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [savedOdontogram, setSavedOdontogram] = useState(null);
+  const [odontogramReady, setOdontogramReady] = useState(false);
+  const [treatmentsVisited, setTreatmentsVisited] = useState(activeTab === 'treatments');
+
+  if (activeTab === 'treatments' && !treatmentsVisited) setTreatmentsVisited(true);
   // Permite abrir directamente en una pestaña (ej. "Ver historia clínica" desde la lista de pacientes).
   const [activeTab, setActiveTab] = useState(location.state?.tab ?? 'personal');
   const [procedures, setProcedures] = useState([]);
@@ -64,7 +75,7 @@ const PatientDetailVW = () => {
   const [authorizationMedium, setAuthorizationMedium] = useState('');
 
   // Usar el custom hook para la lógica del modal
-  const patientModal = usePatientModal(() => fetchPatientData());
+  const patientModal = usePatientModal(() => fetchPatientData({ silent: true }));
 
   useEffect(() => {
     fetchPatientData();
@@ -74,9 +85,9 @@ const PatientDetailVW = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
-  const fetchPatientData = async () => {
+  const fetchPatientData = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setLoadError('');
 
       const detail = await loadPatientDetailCtrl(patientId);
@@ -85,16 +96,45 @@ const PatientDetailVW = () => {
       setClinicalHistories(detail.clinicalHistories);
       setConsents(detail.consents);
       setDataRequests(detail.dataRequests);
+      setSavedOdontogram(detail.savedOdontogram ?? null);
       setAuthorizationMedium(detail.patient?.autorizacion_datos_medio || '');
     } catch (error) {
       console.error('Error fetching patient data:', error);
       setLoadError(error.message || 'No se pudo cargar la ficha del paciente.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (loading || !patient) return undefined;
+    if (activeTab !== 'treatments' || !odontogramOpen) return undefined;
+
+    let active = true;
+    waitForOdontogramReady().then((ready) => {
+      if (!active || !ready) return;
+      restoreOdontogramState(loadOdontogramDraft(patientId) || savedOdontogram);
+      setOdontogramReady(true);
+    });
+
+    return () => {
+      active = false;
+      setOdontogramReady(false);
+      captureOdontogramState()
+        .then((state) => saveOdontogramDraft(patientId, state))
+        .catch((error) => console.error('Error guardando borrador del odontograma:', error));
+    };
+  }, [loading, patient, activeTab, odontogramOpen, patientId, savedOdontogram]);
+
   const handleSaveOdontogram = async () => {
+    if (!odontogramReady) {
+      dispatch(showAlertModal({
+        message: 'El odontograma todavía se está cargando. Espera a que aparezca antes de guardarlo.',
+        variant: 'warning',
+      }));
+      return;
+    }
+
     setSavingOdontogram(true);
     try {
       const odontogramData = await captureOdontogramState();
@@ -139,6 +179,15 @@ const PatientDetailVW = () => {
 
   const handleToggleWhatsappBaja = async () => {
     const baja = !patient.whatsapp_baja;
+    const confirmed = await confirmAction({
+      title: baja ? 'Dar de baja de WhatsApp' : 'Reactivar los mensajes de WhatsApp',
+      message: baja
+        ? `${patient.nombre} ${patient.apellidos} dejará de recibir recordatorios y confirmaciones por WhatsApp.`
+        : `${patient.nombre} ${patient.apellidos} volverá a recibir recordatorios y confirmaciones por WhatsApp.`,
+      confirmLabel: baja ? 'Dar de baja' : 'Reactivar',
+    });
+    if (!confirmed) return;
+
     try {
       const { error } = await updatePatientDAO(patient.id, {
         whatsapp_baja: baja,
@@ -153,6 +202,18 @@ const PatientDetailVW = () => {
     } catch (error) {
       console.error('Error updating WhatsApp opt-out:', error);
       dispatch(showAlertModal({ message: 'No se pudo actualizar la preferencia de WhatsApp', variant: 'error' }));
+    }
+  };
+
+  const handleTabKeyDown = (event) => {
+    const keys = ['personal', 'history', 'treatments', 'compliance'];
+    const index = keys.indexOf(activeTab);
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      setActiveTab(keys[(index + 1) % keys.length]);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      setActiveTab(keys[(index - 1 + keys.length) % keys.length]);
     }
   };
 
@@ -183,7 +244,7 @@ const PatientDetailVW = () => {
     }
 
     dispatch(showAlertModal({ message: result.message, variant: 'success' }));
-    await fetchPatientData();
+    await fetchPatientData({ silent: true });
   };
 
   const submitConsent = async (event) => {
@@ -198,6 +259,7 @@ const PatientDetailVW = () => {
       }
       setConsents((current) => [result.consent, ...current]);
       setConsentForm({ content: '', patient_signature_name: '' });
+      dispatch(showAlertModal({ message: 'Consentimiento registrado correctamente.', variant: 'success' }));
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo registrar el consentimiento: ${error.message}`, variant: 'error' }));
     } finally {
@@ -217,6 +279,7 @@ const PatientDetailVW = () => {
       }
       setDataRequests((current) => [result.request, ...current]);
       setRequestForm({ request_type: 'Rectificación', description: '' });
+      dispatch(showAlertModal({ message: 'Solicitud registrada correctamente.', variant: 'success' }));
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo registrar la solicitud: ${error.message}`, variant: 'error' }));
     } finally {
@@ -332,28 +395,56 @@ const PatientDetailVW = () => {
       </div>
 
       {/* ── TABS ── */}
-      <div className="pd-tabs">
+      <div className="pd-tabs" role="tablist" aria-label="Secciones del paciente">
         <button
+          type="button"
+          role="tab"
+          id="pd-tab-personal"
+          aria-selected={activeTab === 'personal'}
+          aria-controls="pd-panel-personal"
+          tabIndex={activeTab === 'personal' ? 0 : -1}
           className={`pd-tab ${activeTab === 'personal' ? 'active' : ''}`}
           onClick={() => setActiveTab('personal')}
+          onKeyDown={handleTabKeyDown}
         >
           Datos personales
         </button>
         <button
+          type="button"
+          role="tab"
+          id="pd-tab-history"
+          aria-selected={activeTab === 'history'}
+          aria-controls="pd-panel-history"
+          tabIndex={activeTab === 'history' ? 0 : -1}
           className={`pd-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
+          onKeyDown={handleTabKeyDown}
         >
           Historial médico
         </button>
         <button
+          type="button"
+          role="tab"
+          id="pd-tab-treatments"
+          aria-selected={activeTab === 'treatments'}
+          aria-controls="pd-panel-treatments"
+          tabIndex={activeTab === 'treatments' ? 0 : -1}
           className={`pd-tab ${activeTab === 'treatments' ? 'active' : ''}`}
           onClick={() => setActiveTab('treatments')}
+          onKeyDown={handleTabKeyDown}
         >
           Tratamientos y odontograma
         </button>
         <button
+          type="button"
+          role="tab"
+          id="pd-tab-compliance"
+          aria-selected={activeTab === 'compliance'}
+          aria-controls="pd-panel-compliance"
+          tabIndex={activeTab === 'compliance' ? 0 : -1}
           className={`pd-tab ${activeTab === 'compliance' ? 'active' : ''}`}
           onClick={() => setActiveTab('compliance')}
+          onKeyDown={handleTabKeyDown}
         >
           Consentimiento y datos
         </button>
@@ -363,7 +454,7 @@ const PatientDetailVW = () => {
       <div className="pd-content">
         {/* ── TAB: PERSONAL DATA ── */}
         {activeTab === 'personal' && (
-          <div className="pd-tab-content">
+          <div className="pd-tab-content" role="tabpanel" id="pd-panel-personal" aria-labelledby="pd-tab-personal">
             <div className="pd-info-grid">
               <div className="pd-info-card">
                 <h3>Información Personal</h3>
@@ -373,13 +464,11 @@ const PatientDetailVW = () => {
                 </div>
                 <div className="pd-info-row">
                   <span className="pd-info-label">Fecha de nacimiento:</span>
-                  <span className="pd-info-value">{patient.fecha_nacimiento || '—'}</span>
+                  <span className="pd-info-value">{formatDate(patient.fecha_nacimiento)}</span>
                 </div>
                 <div className="pd-info-row">
                   <span className="pd-info-label">Sexo:</span>
-                  <span className="pd-info-value">
-                    {patient.sexo === 'M' ? 'Masculino' : patient.sexo === 'F' ? 'Femenino' : '—'}
-                  </span>
+                  <span className="pd-info-value">{SEXO_LABELS[patient.sexo] ?? '—'}</span>
                 </div>
                 <div className="pd-info-row">
                   <span className="pd-info-label">Tipo de documento:</span>
@@ -428,7 +517,7 @@ const PatientDetailVW = () => {
 
         {/* ── TAB: MEDICAL HISTORY ── */}
         {activeTab === 'history' && (
-          <div className="pd-tab-content">
+          <div className="pd-tab-content" role="tabpanel" id="pd-panel-history" aria-labelledby="pd-tab-history">
             <div className="pd-section">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                 <h3 className="pd-section-title" style={{ margin: 0 }}>Historias clínicas registradas</h3>
@@ -446,13 +535,7 @@ const PatientDetailVW = () => {
                     return (
                       <div key={history.id} className="mhc-history-card">
                         <div className="mhc-history-date">
-                          {new Date(history.fecha ?? history.created_at ?? Date.now()).toLocaleString("es-CO", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatDateTime(history.fecha ?? history.created_at)}
                         </div>
                         <div className="mhc-history-summary">
                           <span><b>Doctor:</b> {history.doctor || historyData.doctor || '—'}</span>
@@ -526,8 +609,14 @@ const PatientDetailVW = () => {
         )}
 
         {/* ── TAB: TREATMENTS & ODONTOGRAM ── */}
-        {activeTab === 'treatments' && (
-          <div className="pd-tab-content">
+        {treatmentsVisited && (
+          <div
+            className="pd-tab-content"
+            role="tabpanel"
+            id="pd-panel-treatments"
+            aria-labelledby="pd-tab-treatments"
+            hidden={activeTab !== 'treatments'}
+          >
             <details className="pd-accordion pd-accordion-odontogram" open={odontogramOpen} onToggle={(event) => setOdontogramOpen(event.currentTarget.open)}>
               <summary className="pd-accordion-summary">
                 <span>Odontograma</span>
@@ -565,7 +654,7 @@ const PatientDetailVW = () => {
 
         {/* ── TAB: COMPLIANCE (consentimiento informado y proteccion de datos) ── */}
         {activeTab === 'compliance' && (
-          <div className="pd-tab-content">
+          <div className="pd-tab-content" role="tabpanel" id="pd-panel-compliance" aria-labelledby="pd-tab-compliance">
             <div className="pd-section">
               <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '1rem' }}>
                 <FiShield size={16} />
@@ -770,7 +859,7 @@ const PatientDetailVW = () => {
             setHistoryModalOpen(false);
             setHistoryToEdit(null);
           }}
-          onSaved={() => { fetchPatientData(); }}
+          onSaved={() => { fetchPatientData({ silent: true }); }}
           startInForm={canEdit}
           initialHistory={historyToEdit}
         />

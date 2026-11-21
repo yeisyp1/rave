@@ -430,3 +430,18 @@
 
 /* Modal wide utility */
 .pt-modal-wide { max-width: 960px; width: calc(100% - 40px); }
+
+.bl-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--bl-text);
+}
+
+.bl-empty p {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}
+
+.bl-empty-detail {
+  font-size: 13px;
+}

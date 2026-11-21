@@ -9,6 +9,7 @@ import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
 import ModalViewInvoiceVW from '../modals/ModalViewInvoiceVW'
 import ModalPaymentsVW from '../modals/ModalPaymentsVW'
 import { generateInvoicePdf, parseLocalInvoiceDate } from '../utils/invoicePdf'
+import LoaderVW from '../components/LoaderVW'
 
 const BillingVW = () => {
   const dispatch = useDispatch()
@@ -16,6 +17,8 @@ const BillingVW = () => {
   const [totalIncome, setTotalIncome] = useState(0)
   const [totalPending, setTotalPending] = useState(0)
   const [totalAll, setTotalAll] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   const load = async () => {
     const { invoices, totalIncome, totalPending, totalAll } = await getBillingCtrlData()
@@ -23,6 +26,7 @@ const BillingVW = () => {
     setTotalIncome(totalIncome)
     setTotalPending(totalPending)
     setTotalAll(totalAll)
+    setLoadError('')
     return invoices
   }
 
@@ -33,7 +37,9 @@ const BillingVW = () => {
       try {
         await load()
       } catch (error) {
-        if (mounted) dispatch(showAlertModal({ message: `No se pudieron cargar las facturas: ${error.message}`, variant: 'error' }))
+        if (mounted) setLoadError(error.message || 'No se pudieron cargar las facturas.')
+      } finally {
+        if (mounted) setLoading(false)
       }
     }
     run()
@@ -117,7 +123,9 @@ const BillingVW = () => {
       <div className="bl-card">
         <div className="bl-card-header">
           <span className="bl-card-title">Historial de Facturas</span>
-          <span className="bl-card-count">{invoices.length} registros</span>
+          <span className="bl-card-count">
+            {loading ? 'Cargando...' : `${invoices.length} ${invoices.length === 1 ? 'registro' : 'registros'}`}
+          </span>
         </div>
 
         <div className="bl-table-wrap">
@@ -134,7 +142,31 @@ const BillingVW = () => {
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv) => (
+              {loading && (
+                <tr><td colSpan="7"><LoaderVW text="Cargando facturas..." className="loader-inline" /></td></tr>
+              )}
+              {!loading && loadError && (
+                <tr>
+                  <td colSpan="7" className="bl-empty" role="alert">
+                    <p>No se pudieron cargar las facturas.</p>
+                    <p className="bl-empty-detail">{loadError}</p>
+                    <button type="button" className="bl-btn-primary" onClick={() => { setLoading(true); load().catch((error) => setLoadError(error.message)).finally(() => setLoading(false)) }}>
+                      Reintentar
+                    </button>
+                  </td>
+                </tr>
+              )}
+              {!loading && !loadError && invoices.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="bl-empty">
+                    <p>Todavía no hay facturas registradas.</p>
+                    <button type="button" className="bl-btn-primary" onClick={() => setShowNewInvoiceModal(true)}>
+                      <FiPlus size={15} /> Crear la primera factura
+                    </button>
+                  </td>
+                </tr>
+              )}
+              {!loading && invoices.map((inv) => (
                 <tr key={inv.id} className="bl-row">
                   <td className="bl-id">#{String(inv.id).padStart(3, '0')}</td>
                   <td>

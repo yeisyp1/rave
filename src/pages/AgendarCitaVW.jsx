@@ -17,6 +17,32 @@ import '../styles/CitaModalVW.css'
 
 const formatInputDate = (date) => toLocalDateInput(date)
 
+const minutesBetween = (from, to) => {
+  const [fh, fm] = String(from).split(':').map(Number)
+  const [th, tm] = String(to).split(':').map(Number)
+  if ([fh, fm, th, tm].some(Number.isNaN)) return 30
+  return (th * 60 + tm) - (fh * 60 + fm)
+}
+
+const addMinutes = (time, minutes) => {
+  const [hours, mins] = String(time).split(':').map(Number)
+  if (Number.isNaN(hours) || Number.isNaN(mins)) return time
+  const total = (hours * 60 + mins + minutes) % (24 * 60)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+const buildEmptyForm = (patient) => ({
+  patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
+  document: patient?.numero_documento ?? '',
+  service: 'Valoración odontológica',
+  doctorId: '',
+  date: formatInputDate(new Date()),
+  startTime: '09:00',
+  endTime: '09:30',
+  location: 'Consultorio 1',
+  notes: '',
+})
+
 const AgendarCitaVW = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -24,24 +50,21 @@ const AgendarCitaVW = () => {
   const [patients, setPatients] = useState([])
   const [doctorOptions, setDoctorOptions] = useState([])
   const [googleToken, setGoogleToken] = useState(null)
+  const [checkingGoogle, setCheckingGoogle] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [showSuccessNotice, setShowSuccessNotice] = useState(false)
+  const [scheduledFor, setScheduledFor] = useState('')
   const [patientValidationError, setPatientValidationError] = useState(null)
-  const [form, setForm] = useState({
-    patientName: patient ? `${patient.nombre ?? ''} ${patient.apellidos ?? ''}`.trim() : '',
-    document: patient?.numero_documento ?? '',
-    service: 'Valoración odontológica',
-    doctorId: '',
-    date: formatInputDate(new Date()),
-    startTime: '09:00',
-    endTime: '09:30',
-    location: 'Consultorio 1',
-    notes: '',
-  })
+  const [form, setForm] = useState(() => buildEmptyForm(patient))
 
   useEffect(() => {
-    getGoogleTokenCtrl().then(setGoogleToken)
+    let mounted = true
+    getGoogleTokenCtrl()
+      .then((token) => { if (mounted) setGoogleToken(token) })
+      .catch(() => { if (mounted) setGoogleToken(null) })
+      .finally(() => { if (mounted) setCheckingGoogle(false) })
+    return () => { mounted = false }
   }, [])
 
   useEffect(() => {
@@ -124,6 +147,17 @@ const AgendarCitaVW = () => {
     }))
   }
 
+  const handleStartTimeChange = (startTime) => {
+    setForm((current) => {
+      const previousDuration = minutesBetween(current.startTime, current.endTime)
+      return {
+        ...current,
+        startTime,
+        endTime: addMinutes(startTime, previousDuration > 0 ? previousDuration : 30),
+      }
+    })
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
 
@@ -168,21 +202,24 @@ const AgendarCitaVW = () => {
       }
 
       const doctor = doctorOptions.find((item) => String(item.id) === String(form.doctorId))
+      const resolvedName = `${patientExists.nombre ?? ''} ${patientExists.apellidos ?? ''}`.trim()
 
       await createGoogleEventCtrl(googleToken, {
-        title: `${form.patientName} - ${form.service}`,
+        title: `${resolvedName} - ${form.service}`,
         description: form.notes.trim(),
         location: form.location,
         start,
         end,
         patientId: patientExists.id,
         service: form.service,
-        patientName: form.patientName,
+        patientName: resolvedName,
         doctorId: doctor?.id,
         doctorName: doctor ? `${doctor.nombre ?? ''} ${doctor.apellidos ?? ''}`.trim() : undefined,
       })
       setMessage('')
+      setScheduledFor(resolvedName)
       setShowSuccessNotice(true)
+      setForm(buildEmptyForm(null))
     } catch (error) {
       console.error(error)
       if (error instanceof ScheduleConflictError) {
@@ -202,7 +239,7 @@ const AgendarCitaVW = () => {
           <h1 className="admin-title">Agendar cita</h1>
         </div>
         <div className="admin-actions">
-          {!googleToken && (
+          {!checkingGoogle && !googleToken && (
             <button className="admin-btn" onClick={connectGoogleCalendarCtrl}>
               <FiCalendar /> Conectar Google
             </button>
@@ -257,7 +294,7 @@ const AgendarCitaVW = () => {
           </div>
           <div className="admin-field">
             <label htmlFor="cita-inicio">Inicio</label>
-            <input id="cita-inicio" className="admin-input" type="time" value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} required />
+            <input id="cita-inicio" className="admin-input" type="time" value={form.startTime} onChange={(event) => handleStartTimeChange(event.target.value)} required />
           </div>
           <div className="admin-field">
             <label htmlFor="cita-fin">Fin</label>
@@ -300,7 +337,7 @@ const AgendarCitaVW = () => {
         <div className="admin-toast" role="status" aria-live="polite">
           <div className="admin-toast-bar" />
           <div>
-            <div className="admin-toast-text">La cita de {form.patientName} se agendó correctamente.</div>
+            <div className="admin-toast-text">La cita de {scheduledFor} se agendó correctamente.</div>
           </div>
         </div>
       )}

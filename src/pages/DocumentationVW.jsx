@@ -1,44 +1,64 @@
-const Documentation = () => {
+import '../styles/AdminViewsVW.css'
+
+const SECTIONS = [
+  {
+    title: 'Dashboard',
+    text: 'Vista general de las métricas del consultorio: pacientes, citas, ingresos y alertas pendientes. Desde aquí también se generan los reportes del periodo.',
+  },
+  {
+    title: 'Pacientes',
+    text: 'Gestiona la información completa de tus pacientes. Puedes crear registros nuevos, editarlos y abrir su ficha con el historial de visitas y tratamientos.',
+  },
+  {
+    title: 'Calendario',
+    text: 'Administra las citas del consultorio. Requiere conectar Google Calendar: desde ahí se crean, editan y marcan como atendidas o no asistidas.',
+  },
+  {
+    title: 'Cartera',
+    text: 'Facturas y pagos de los pacientes. Permite registrar abonos, anular facturas con motivo y descargar comprobantes en PDF.',
+  },
+]
+
+const FAQ = [
+  ['¿Cómo crear una nueva cita?', 'Ve a Calendario y pulsa "Nueva cita", o usa "Agendar cita" desde la ficha del paciente.'],
+  ['¿Cómo registrar un nuevo paciente?', 'En Pacientes, pulsa "Nuevo paciente" y completa los cinco pasos del formulario.'],
+  ['¿Cómo generar reportes?', 'En el Dashboard, con el botón "Generar reporte"; se puede exportar la facturación a CSV.'],
+]
+
+const DocumentationVW = () => {
   return (
-    <div className="page">
-      <h1>Documentación</h1>
+    <div className="admin-page">
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-title">Documentación</h1>
+          <p className="admin-subtitle">Guía de uso de RAVE Odontología.</p>
+        </div>
+      </div>
 
-      <div className="card">
-        <h2>Guía de uso · RAVE Odontología</h2>
+      <div className="admin-grid">
+        {SECTIONS.map((section) => (
+          <div className="admin-card" key={section.title}>
+            <h2 className="admin-card-title">{section.title}</h2>
+            <p className="admin-row-sub">{section.text}</p>
+          </div>
+        ))}
+      </div>
 
-        <h3>Dashboard</h3>
-        <p>
-          El dashboard proporciona una vista general de las métricas principales del consultorio dental.
-          Incluye estadísticas de pacientes, citas, ingresos y tareas pendientes.
-        </p>
-
-        <h3>Pacientes</h3>
-        <p>
-          Gestiona la información completa de tus pacientes. Puedes crear nuevos registros,
-          editar información existente y acceder al historial de visitas y tratamientos.
-        </p>
-
-        <h3>Calendario</h3>
-        <p>
-          Administra las citas de tu consultorio. Visualiza el calendario mensual, programa nuevas citas
-          y realiza cambios en citas existentes.
-        </p>
-
-        <h3>Cartera</h3>
-        <p>
-          Gestiona las facturas y pagos de los pacientes. Genera reportes de ingresos,
-          visualiza facturas pendientes y descarga comprobantes.
-        </p>
-
-        <h3>Preguntas frecuentes</h3>
-        <ul>
-          <li><strong>¿Cómo crear una nueva cita?</strong> — Ve a Calendario y haz clic en "Nueva cita".</li>
-          <li><strong>¿Cómo registrar un nuevo paciente?</strong> — En Pacientes, selecciona "Nuevo paciente".</li>
-          <li><strong>¿Cómo generar reportes?</strong> — Desde el Dashboard, con el botón "Generar reporte".</li>
-        </ul>
+      <div className="admin-card">
+        <h2 className="admin-card-title">Preguntas frecuentes</h2>
+        <div className="admin-list">
+          {FAQ.map(([question, answer]) => (
+            <div className="admin-list-row" key={question}>
+              <div>
+                <div className="admin-row-title">{question}</div>
+                <div className="admin-row-sub">{answer}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
 }
 
-export default Documentation
+export default DocumentationVW

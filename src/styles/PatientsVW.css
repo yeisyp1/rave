@@ -391,3 +391,16 @@
   outline: 2px solid var(--field-focus-border);
   outline-offset: -2px;
 }
+
+.pt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 4px 2px;
+}
+
+.pt-pagination-info {
+  font-size: 13px;
+  color: var(--pt-text-soft);
+}

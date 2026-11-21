@@ -1,6 +1,6 @@
 import '../styles/DashboardVW.css'
 import '../styles/AdminViewsVW.css'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
@@ -17,6 +17,7 @@ import { showAlertModal } from '../app/store'
 import { RANGE_LABELS, computeDashboardCtrl, describeRangeCtrl, fetchDashboardRawCtrl } from '../controllers/DashboardCtrl'
 import { fetchReportCtrlData } from '../controllers/ReportsCtrl'
 import { toLocalDateInput } from '../utils/dates'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 
 // El dashboard consume datos reales de Supabase a través de DashboardCtrl. Las pocas
 // métricas que el esquema aún no registra (ausentismo, ocupación, carga por odontólogo)
@@ -313,6 +314,7 @@ const Dashboard = () => {
   const [raw, setRaw] = useState(null)
   const [fetching, setFetching] = useState(true)
   const [loadError, setLoadError] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [range, setRange] = useState({ mode: 'preset', preset: 3 })
   const [rangeMenu, setRangeMenu] = useState(false)
@@ -322,18 +324,23 @@ const Dashboard = () => {
   const [service, setService] = useState(0)
   const [alertState, setAlertState] = useState({})
   const [drawer, setDrawer] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [prefs, setPrefs] = useState(readPrefs)
   const [draftPrefs, setDraftPrefs] = useState(prefs)
   const [gran, setGran] = useState('d')
   const [tipId, setTipId] = useState(null)
-  const loadTimer = useRef(null)
 
   const [reportDrawer, setReportDrawer] = useState(false)
   const [reportRange, setReportRange] = useState(defaultReportRange())
   const [reportSections, setReportSections] = useState(REPORT_SECTIONS.map((s) => s.key))
   const [reportData, setReportData] = useState(null)
   const [reportLoading, setReportLoading] = useState(false)
+
+  const closeDrawer = useCallback(() => setDrawer(false), [])
+  const closeReportDrawer = useCallback(() => setReportDrawer(false), [])
+  const closeRangeMenu = useCallback(() => setRangeMenu(false), [])
+  const drawerRef = useModalBehavior(closeDrawer, { enabled: drawer })
+  const reportDrawerRef = useModalBehavior(closeReportDrawer, { enabled: reportDrawer })
+  const rangeMenuRef = useModalBehavior(closeRangeMenu, { enabled: rangeMenu })
 
   const showsReportSection = (key) => reportSections.includes(key)
   const toggleReportSection = (key) =>
@@ -364,36 +371,32 @@ const Dashboard = () => {
     [reportData]
   )
 
-  const loadDashboard = useCallback(async () => {
-    setFetching(true)
+  const loadDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (silent) setRefreshing(true)
+    else setFetching(true)
     setLoadError(null)
     try {
       const data = await fetchDashboardRawCtrl()
       setRaw(data)
       setLastUpdated(new Date())
     } catch (error) {
-      setLoadError(error.message || 'Error desconocido')
+      if (silent) {
+        dispatch(showAlertModal({ message: `No se pudo actualizar el dashboard: ${error.message}`, variant: 'error' }))
+      } else {
+        setLoadError(error.message || 'Error desconocido')
+      }
     } finally {
+      setRefreshing(false)
       setFetching(false)
     }
-  }, [])
+  }, [dispatch])
 
   useEffect(() => { loadDashboard() }, [loadDashboard])
 
-  useEffect(() => () => clearTimeout(loadTimer.current), [])
-
-  // Cálculo síncrono a partir de los datos crudos; el "loading" es solo el shimmer al cambiar filtros.
   const d = useMemo(
     () => (raw ? computeDashboardCtrl(raw, { range, dentist, service }) : null),
     [raw, range, dentist, service],
   )
-
-  const refresh = (apply) => {
-    apply()
-    setLoading(true)
-    clearTimeout(loadTimer.current)
-    loadTimer.current = setTimeout(() => setLoading(false), 500)
-  }
 
   const openDrawer = () => {
     setDraftPrefs(prefs)
@@ -548,8 +551,13 @@ const Dashboard = () => {
             <span className="rv-live-dot" />
             {lastUpdated ? `Actualizado a las ${lastUpdated.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` : 'Sin actualizar'}
           </div>
-          <button type="button" className="rv-btn" onClick={loadDashboard} disabled={fetching}>
-            <FiRefreshCw size={16} />{fetching ? 'Actualizando...' : 'Actualizar'}
+          <button
+            type="button"
+            className="rv-btn"
+            onClick={() => loadDashboard({ silent: true })}
+            disabled={refreshing}
+          >
+            <FiRefreshCw size={16} />{refreshing ? 'Actualizando...' : 'Actualizar'}
           </button>
           <button type="button" className="rv-btn" onClick={openDrawer}><FiSliders size={16} />Configurar indicadores</button>
           {canSeeReports && (
@@ -572,14 +580,14 @@ const Dashboard = () => {
           {rangeMenu && (
             <>
               <div className="rv-range-scrim" onClick={() => setRangeMenu(false)} />
-              <div className="rv-pop rv-range-menu">
+              <div className="rv-pop rv-range-menu" ref={rangeMenuRef} role="dialog" aria-label="Elegir el período">
                 {RANGE_LABELS.map((label, i) => (
                   <button
                     type="button"
                     key={label}
                     className={`rv-pop-item ${range.mode === 'preset' && range.preset === i ? 'active' : ''}`}
                     aria-current={range.mode === 'preset' && range.preset === i}
-                    onClick={() => { refresh(() => setRange({ mode: 'preset', preset: i })); setRangeMenu(false) }}
+                    onClick={() => { setRange({ mode: 'preset', preset: i }); setRangeMenu(false) }}
                   >
                     {label}
                   </button>
@@ -597,7 +605,7 @@ const Dashboard = () => {
                     style={{ marginTop: 8 }}
                     disabled={!customFrom}
                     onClick={() => {
-                      refresh(() => setRange({ mode: 'custom', from: customFrom, to: customTo || customFrom }))
+                      setRange({ mode: 'custom', from: customFrom, to: customTo || customFrom })
                       setRangeMenu(false)
                     }}
                   >
@@ -608,10 +616,10 @@ const Dashboard = () => {
             </>
           )}
         </div>
-        <select className="rv-select" aria-label="Filtrar por odontólogo" value={dentist} onChange={(e) => refresh(() => setDentist(+e.target.value))}>
+        <select className="rv-select" aria-label="Filtrar por odontólogo" value={dentist} onChange={(e) => setDentist(+e.target.value)}>
           {dentistOptions.map((t, i) => <option key={t + i} value={i}>{t}</option>)}
         </select>
-        <select className="rv-select" aria-label="Filtrar por servicio" value={service} onChange={(e) => refresh(() => setService(+e.target.value))}>
+        <select className="rv-select" aria-label="Filtrar por servicio" value={service} onChange={(e) => setService(+e.target.value)}>
           {serviceOptions.map((t, i) => <option key={t + i} value={i}>{t}</option>)}
         </select>
       </div>
@@ -859,9 +867,7 @@ const Dashboard = () => {
                       aria-label={`Cómo se calcula: ${k.label}`}
                       aria-expanded={tipId === k.id}
                       onMouseEnter={() => setTipId(k.id)}
-                      onMouseLeave={() => setTipId(null)}
-                      onFocus={() => setTipId(k.id)}
-                      onBlur={() => setTipId(null)}
+                      onMouseLeave={() => setTipId((current) => (current === k.id ? null : current))}
                       onClick={() => setTipId((current) => (current === k.id ? null : k.id))}
                     >
                       <FiInfo size={15} />
@@ -869,17 +875,8 @@ const Dashboard = () => {
                     <span className={`rv-status ${k.st}`} title={STATUS_LABEL[k.st]} />
                     <span className="sr-only">{STATUS_LABEL[k.st]}</span>
                   </div>
-                  {loading ? (
-                    <>
-                      <div className="rv-shimmer" style={{ height: 22, width: '70%' }} />
-                      <div className="rv-shimmer" style={{ height: 12, width: '45%' }} />
-                    </>
-                  ) : (
-                    <>
-                      <div className="rv-kpi-value">{k.value}</div>
-                      <div className={`rv-kpi-delta ${k.good ? 'good' : 'bad'}`}>{k.delta} <span>vs período anterior</span></div>
-                    </>
-                  )}
+                  <div className="rv-kpi-value">{k.value}</div>
+                  <div className={`rv-kpi-delta ${k.good ? 'good' : 'bad'}`}>{k.delta} <span>vs período anterior</span></div>
                   <Spark color={stColor[k.st]} trend={k.trend} />
                   <div className="rv-kpi-sub">{k.sub}</div>
                   {tipId === k.id && <div className="rv-tooltip">{k.def}</div>}
@@ -907,7 +904,7 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
-                {loading ? <div className="rv-shimmer" style={{ height: 150, borderRadius: 10 }} /> : <ChartBody kind={ch.kind} gran={gran} c={c} charts={d.charts} />}
+                <ChartBody kind={ch.kind} gran={gran} c={c} charts={d.charts} />
               </div>
             ))}
           </div>
@@ -929,10 +926,10 @@ const Dashboard = () => {
       {drawer && (
         <div className="rv-drawer-wrap">
           <div className="rv-scrim" onClick={() => setDrawer(false)} />
-          <aside className="rv-drawer">
+          <aside className="rv-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="rv-drawer-title">
             <div className="rv-drawer-head">
-              <div><div className="rv-drawer-title">Configurar indicadores</div><div className="rv-sub">Elige qué ver y cuándo alertar.</div></div>
-              <button type="button" className="rv-close" onClick={() => setDrawer(false)}><FiX size={16} /></button>
+              <div><div className="rv-drawer-title" id="rv-drawer-title">Configurar indicadores</div><div className="rv-sub">Elige qué ver y cuándo alertar.</div></div>
+              <button type="button" className="rv-close" onClick={() => setDrawer(false)} aria-label="Cerrar la configuración"><FiX size={16} /></button>
             </div>
             <div>
               <div className="rv-eyebrow">Umbrales de alerta</div>
@@ -996,10 +993,10 @@ const Dashboard = () => {
       {reportDrawer && (
         <div className="rv-drawer-wrap">
           <div className="rv-scrim" onClick={() => setReportDrawer(false)} />
-          <aside className="rv-drawer">
+          <aside className="rv-drawer" ref={reportDrawerRef} role="dialog" aria-modal="true" aria-labelledby="rv-report-title">
             <div className="rv-drawer-head">
-              <div><div className="rv-drawer-title">Generar reporte</div><div className="rv-sub">Elige el periodo y qué secciones incluir.</div></div>
-              <button type="button" className="rv-close" onClick={() => setReportDrawer(false)}><FiX size={16} /></button>
+              <div><div className="rv-drawer-title" id="rv-report-title">Generar reporte</div><div className="rv-sub">Elige el periodo y qué secciones incluir.</div></div>
+              <button type="button" className="rv-close" onClick={() => setReportDrawer(false)} aria-label="Cerrar el panel de reporte"><FiX size={16} /></button>
             </div>
             <div>
               <div className="rv-eyebrow">Periodo del reporte</div>

@@ -23,6 +23,7 @@ import {
   updateGoogleEventCtrl,
 } from '../controllers/CalendarCtrl'
 import { useIsMobile } from '../hooks/useMediaQuery'
+import { toLocalTimeInput } from '../utils/dates'
 import ModalNewEventVW from '../modals/ModalNewEventVW'
 import ModalViewEventVW from '../modals/ModalViewEventVW'
 
@@ -31,10 +32,21 @@ moment.updateLocale('es', { week: { dow: 1 } })
 const localizer = momentLocalizer(moment)
 
 const EVENT_STATES = {
-  confirmed: { color: '#1562b9', label: 'Confirmada' },
-  pending:   { color: '#8a5a00', label: 'Pendiente' },
-  attended:  { color: '#1b7f4f', label: 'Atendida' },
-  no_show:   { color: '#b3261e', label: 'No asistió' },
+  confirmed: { light: '#1562b9', dark: '#2f6fb8', label: 'Confirmada' },
+  pending:   { light: '#8a5a00', dark: '#9a6b14', label: 'Pendiente' },
+  attended:  { light: '#1b7f4f', dark: '#1f8a57', label: 'Atendida' },
+  no_show:   { light: '#b3261e', dark: '#c0392f', label: 'No asistió' },
+}
+
+const useDarkTheme = () => {
+  const read = () => document.documentElement.getAttribute('data-theme') === 'dark'
+  const [dark, setDark] = useState(read)
+  useEffect(() => {
+    const observer = new MutationObserver(() => setDark(read()))
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
+  return dark
 }
 
 /* ─────────────────────────────
@@ -45,6 +57,7 @@ const CalendarVW = () => {
   const [events,       setEvents]       = useState([])
   const [currentDate,  setCurrentDate]  = useState(new Date())
   const [googleToken,  setGoogleToken]  = useState(null)
+  const [checkingGoogle, setCheckingGoogle] = useState(true)
   const [syncing,      setSyncing]      = useState(false)
   const [syncError,    setSyncError]    = useState(null)
   const [lastSync,     setLastSync]     = useState(null)
@@ -56,6 +69,7 @@ const CalendarVW = () => {
   const [serviceOptions, setServiceOptions] = useState([])
   const [doctorOptions, setDoctorOptions] = useState([])
   const isMobile = useIsMobile()
+  const dark = useDarkTheme()
   const [view, setView] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 992 ? 'day' : 'week'))
 
   useEffect(() => {
@@ -81,9 +95,11 @@ const CalendarVW = () => {
         if (token) await syncEvents(token)
       } catch (err) {
         console.error(err)
-    }
+      } finally {
+        setCheckingGoogle(false)
       }
-      init()
+    }
+    init()
     // Inicialización única al montar; syncEvents se invoca con el token recién obtenido.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -258,7 +274,7 @@ const CalendarVW = () => {
     return {
       className: `cl-event cl-event-${key}`,
       style: {
-        backgroundColor: EVENT_STATES[key].color,
+        backgroundColor: EVENT_STATES[key][dark ? 'dark' : 'light'],
         borderRadius: '6px',
         border: 'none',
         color: '#fff',
@@ -298,12 +314,14 @@ const CalendarVW = () => {
           {/* Estado de sincronización */}
           {lastSync && !syncing && (
             <span className="cl-sync-info">
-              Sincronizado {moment(lastSync).fromNow()}
+              Sincronizado a las {toLocalTimeInput(lastSync)}
             </span>
           )}
 
           {/* Botón sincronizar / conectar */}
-          {googleToken ? (
+          {checkingGoogle ? (
+            <span className="cl-sync-info">Comprobando la conexión con Google...</span>
+          ) : googleToken ? (
             <button className="cl-btn-ghost" onClick={() => syncEvents()} disabled={syncing}>
               <FiRefreshCw size={14} style={{ animation: syncing ? 'cl-spin 1s linear infinite' : 'none' }} />
               {syncing ? 'Sincronizando...' : 'Sincronizar'}
@@ -324,7 +342,7 @@ const CalendarVW = () => {
           <button
             className="cl-btn-primary"
             onClick={() => setNewSlot({ start: new Date(), end: new Date(Date.now() + 30 * 60000) })}
-            disabled={!googleToken}
+            disabled={!googleToken || checkingGoogle}
             title={googleToken ? 'Nueva cita' : 'Conecta Google Calendar para crear citas'}
           >
             <FiPlus size={14} />
@@ -349,7 +367,7 @@ const CalendarVW = () => {
       <div className="cl-legend">
         {Object.entries(EVENT_STATES).map(([key, state]) => (
           <span key={key} className="cl-legend-item">
-            <i className="cl-legend-dot" style={{ background: state.color }} aria-hidden="true" />
+            <i className="cl-legend-dot" style={{ background: state[dark ? 'dark' : 'light'] }} aria-hidden="true" />
             {state.label}
           </span>
         ))}
@@ -362,13 +380,13 @@ const CalendarVW = () => {
       </div>
 
       {/* ── CALENDARIO ── */}
-      <div className="cl-calendar-wrap">
+      <div className="cl-calendar-wrap cl-calendar-sized">
         <Calendar
           localizer={localizer}
           events={events}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 'calc(100vh - 320px)', minHeight: 420 }}
+          style={{ height: '100%' }}
           date={currentDate}
           onNavigate={setCurrentDate}
           onSelectSlot={handleSelectSlot}

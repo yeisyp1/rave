@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../dao/SupabaseDAO";
 
+const sameProfile = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+};
+
 export function useAuthSessionCtrl() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -80,7 +90,7 @@ export function useAuthSessionCtrl() {
       if (!u || !mounted) return;
 
       const prof = await fetchProfileForUser(u);
-      if (prof && mounted) setProfile(prof);
+      if (prof && mounted) setProfile((current) => (sameProfile(current, prof) ? current : prof));
     };
 
     const handleVisibility = () => {
@@ -139,7 +149,7 @@ export function useAuthSessionCtrl() {
 
       if (mounted) {
         setUser(u);
-        setProfile(prof);
+        setProfile((current) => (sameProfile(current, prof) ? current : prof));
         setUnauthorized(false);
         setLoading(false);
       }
