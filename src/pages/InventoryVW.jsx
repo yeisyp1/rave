@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import AdminMessageVW from '../components/AdminMessageVW'
 import { confirmAction } from '../utils/confirmDialog'
@@ -25,8 +25,11 @@ const InventoryVW = () => {
   const profile = useProfile()
   const canWrite = isAdmin(profile)
   const [items, setItems] = useState([])
+  const itemsRef = useRef(items)
+  const pendingAdjustments = useRef(new Map())
   const [form, setForm] = useState(INVENTORY_EMPTY_FORM)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
@@ -35,12 +38,14 @@ const InventoryVW = () => {
   const loadItems = async () => {
     setLoading(true)
     setMessage('')
+    setLoadError('')
 
     try {
       const data = await loadInventoryItemsCtrl()
       setItems(data)
     } catch (error) {
       setMessage(`No se pudo cargar inventario: ${error.message}`)
+      setLoadError(error.message || '')
     } finally {
       setLoading(false)
     }
@@ -69,13 +74,24 @@ const InventoryVW = () => {
     setSaving(false)
   }
 
-  const adjustStock = async (item, amount) => {
-    const result = await adjustInventoryStockCtrl(item, amount)
-    if (!result.ok) {
-      dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${result.message}`, variant: 'error' }))
-      return
-    }
-    setItems((current) => current.map((row) => (row.id === item.id ? result.data : row)))
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+
+  const adjustStock = (item, amount) => {
+    const previous = pendingAdjustments.current.get(item.id) ?? Promise.resolve()
+
+    const next = previous.then(async () => {
+      const latest = itemsRef.current.find((row) => row.id === item.id) ?? item
+      const result = await adjustInventoryStockCtrl(latest, amount)
+      if (!result.ok) {
+        dispatch(showAlertModal({ message: `No se pudo actualizar stock: ${result.message}`, variant: 'error' }))
+        return
+      }
+      setItems((current) => current.map((row) => (row.id === item.id ? result.data : row)))
+    })
+
+    pendingAdjustments.current.set(item.id, next.catch(() => {}))
   }
 
   const startEdit = (item) => {
@@ -203,6 +219,13 @@ const InventoryVW = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={canWrite ? 6 : 5}><LoaderVW text="Cargando inventario..." className="loader-inline" /></td></tr>
+              ) : loadError ? (
+                <tr>
+                  <td colSpan={canWrite ? 6 : 5} className="admin-empty" role="alert">
+                    No se pudo cargar el inventario. {loadError}{' '}
+                    <button type="button" className="admin-btn" onClick={loadItems}>Reintentar</button>
+                  </td>
+                </tr>
               ) : items.length === 0 ? (
                 <tr><td colSpan={canWrite ? 6 : 5} className="admin-empty">No hay insumos registrados.</td></tr>
               ) : (

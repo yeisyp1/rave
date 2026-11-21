@@ -32,6 +32,7 @@ const DoctorsVW = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingEmail, setEditingEmail] = useState('')
 
   const profileByEmail = useMemo(() => {
     return new Map(profiles.map((profile) => [normalizeUserEmailCtrl(profile.email ?? ''), profile]))
@@ -73,6 +74,7 @@ const DoctorsVW = () => {
 
     if (result.ok) {
       setForm(DOCTOR_EMPTY_FORM)
+      setEditingEmail('')
       await loadUsers()
     }
 
@@ -126,11 +128,17 @@ const DoctorsVW = () => {
   }
 
   const handleEdit = (row) => {
+    setEditingEmail(row.email ?? '')
     setForm({
       full_name: row.full_name ?? '',
       email: row.email ?? '',
       role: row.role ?? 'assistant',
     })
+  }
+
+  const cancelEdit = () => {
+    setEditingEmail('')
+    setForm(DOCTOR_EMPTY_FORM)
   }
 
   const { totalAdmins, totalDentists, totalAssistants, totalActive } = computeDoctorsStatsCtrl(authorizedUsers, profileByEmail)
@@ -186,7 +194,9 @@ const DoctorsVW = () => {
 
       <div className="admin-grid two">
         <div className="admin-card">
-          <h2 className="admin-card-title">Nuevo acceso</h2>
+          <h2 className="admin-card-title">
+            {editingEmail ? `Editando el acceso de ${editingEmail}` : 'Nuevo acceso'}
+          </h2>
           <form className="admin-form" onSubmit={handleSubmit}>
             <div className="admin-field">
               <label htmlFor="doctors-nombre">Nombre</label>
@@ -222,8 +232,13 @@ const DoctorsVW = () => {
               </select>
             </div>
             <div className="admin-actions">
+              {editingEmail && (
+                <button className="admin-btn" type="button" onClick={cancelEdit}>
+                  Cancelar
+                </button>
+              )}
               <button className="admin-btn primary" type="submit" disabled={saving}>
-                <FiUserPlus /> {saving ? 'Guardando...' : 'Autorizar'}
+                <FiUserPlus /> {saving ? 'Guardando...' : editingEmail ? 'Guardar cambios' : 'Autorizar'}
               </button>
             </div>
           </form>
@@ -250,7 +265,7 @@ const DoctorsVW = () => {
             <div className="admin-list-row">
               <div>
                 <div className="admin-row-title">Asistente</div>
-                <div className="admin-row-sub">Pacientes, citas, historias clínicas y odontograma.</div>
+                <div className="admin-row-sub">Pacientes, citas y agenda. No accede a historias clínicas, laboratorio ni inventario.</div>
               </div>
               <span className="admin-pill role-assistant">Asistente</span>
             </div>
@@ -288,7 +303,15 @@ const DoctorsVW = () => {
                           {DOCTOR_ROLE_LABELS[row.role] ?? row.role ?? 'Asistente'}
                         </span>
                       </td>
-                      <td><span className={`admin-pill ${profile ? 'good' : 'warn'}`}>{profile ? 'Activo' : 'Pendiente'}</span></td>
+                      <td>
+                        {!row.active ? (
+                          <span className="admin-pill bad">Desactivado</span>
+                        ) : profile ? (
+                          <span className="admin-pill good">Activo</span>
+                        ) : (
+                          <span className="admin-pill warn">Pendiente</span>
+                        )}
+                      </td>
 
                       <td>
                         <div className="admin-actions">

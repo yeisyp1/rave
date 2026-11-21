@@ -42,7 +42,7 @@ const NewEventModal = ({
 
     setForm((prev) => ({
       ...prev,
-      title: selectedPatient ? getPatientFullName(selectedPatient) : value,
+      title: selectedPatient ? getPatientLabel(selectedPatient) : value,
     }))
   }
 

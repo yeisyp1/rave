@@ -308,8 +308,8 @@
   gap: 8px;
   height: 44px;
   padding: 0 20px;
-  background: var(--sidebar-active-bg);
-  color: var(--sidebar-active-text);
+  background: var(--button-primary);
+  color: var(--button-primary-text);
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -396,11 +396,11 @@
 @media (max-width: 768px) {
   .bl-page   { padding: 24px 16px; }
   .bl-title  { font-size: 28px; }
-  .bl-stats  { grid-template-columns: 1fr; }
+  .bl-stats  { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 480px) {
-  .bl-stats  { grid-template-columns: 1fr 1fr; }
+  .bl-stats  { grid-template-columns: 1fr; }
 }
 
 /* Invoice printable layout (used in modal and PDF preview) */

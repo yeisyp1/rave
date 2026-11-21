@@ -4,6 +4,7 @@ import AdminMessageVW from '../components/AdminMessageVW'
 import { confirmAction } from '../utils/confirmDialog'
 import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { formatDate } from '../utils/format'
 import { useProfile } from '../context/ProfileContext'
 import { isAdmin } from '../utils/roles'
 import {
@@ -208,7 +209,7 @@ const LaboratoryVW = () => {
       </div>
 
       <div className="admin-card">
-        <h2 className="admin-card-title">Trabajos activos</h2>
+        <h2 className="admin-card-title">Trabajos de laboratorio</h2>
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -255,12 +256,20 @@ const LaboratoryVW = () => {
                         )}
                       </td>
                       <td>{item.lab_name || '-'}</td>
-                      <td>{item.due_date || '-'}</td>
+                      <td>{formatDate(item.due_date)}</td>
                       <td><span className={`admin-pill ${item.status === 'Entregado' ? 'good' : item.status === 'En proceso' ? 'warn' : ''}`}>{item.status}</span></td>
                       <td>
                         <div className="admin-actions">
-                          <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>Proceso</button>
-                          <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>Entregado</button>
+                          {item.status !== 'En proceso' && item.status !== 'Entregado' && (
+                            <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'En proceso')}>
+                              Marcar en proceso
+                            </button>
+                          )}
+                          {item.status !== 'Entregado' && (
+                            <button className="admin-btn" type="button" onClick={() => updateStatus(item.id, 'Entregado')}>
+                              Marcar entregado
+                            </button>
+                          )}
                           <button className="admin-btn" type="button" onClick={() => startEdit(item)} title="Editar" aria-label={`Editar ${item.work_name}`}><FiEdit /></button>
                           {canDelete && (
                             <button className="admin-btn danger" type="button" onClick={() => removeCase(item)} title="Eliminar" aria-label={`Eliminar ${item.work_name}`}><FiTrash2 /></button>

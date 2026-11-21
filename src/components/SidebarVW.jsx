@@ -42,8 +42,12 @@ const Sidebar = ({ profile }) => {
     navigate('/login')
   }
 
-  const handleClick = () => {
-    if (isMobile) dispatch(closeSidebar())
+  const handleClick = (event) => {
+    if (isMobile) {
+      dispatch(closeSidebar())
+      return
+    }
+    event.currentTarget.blur()
   }
 
   const navItems = [

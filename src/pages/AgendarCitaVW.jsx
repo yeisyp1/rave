@@ -55,6 +55,7 @@ const AgendarCitaVW = () => {
   const [message, setMessage] = useState('')
   const [showSuccessNotice, setShowSuccessNotice] = useState(false)
   const [scheduledFor, setScheduledFor] = useState('')
+  const [ambiguousName, setAmbiguousName] = useState(false)
   const [patientValidationError, setPatientValidationError] = useState(null)
   const [form, setForm] = useState(() => buildEmptyForm(patient))
 
@@ -119,11 +120,11 @@ const AgendarCitaVW = () => {
 
   const normalizeText = (value) => String(value ?? '').trim().toLowerCase()
 
-  const findPatientMatch = (field, value) => {
+  const findPatientMatches = (field, value) => {
     const normalizedValue = normalizeText(value)
-    if (!normalizedValue) return null
+    if (!normalizedValue) return []
 
-    return patients.find((item) => {
+    return patients.filter((item) => {
       const fullName = `${item.nombre ?? ''} ${item.apellidos ?? ''}`.trim()
       if (field === 'document') return normalizeText(item.numero_documento) === normalizedValue
       return normalizeText(fullName) === normalizedValue
@@ -131,19 +132,24 @@ const AgendarCitaVW = () => {
   }
 
   const handlePatientChange = (field, value) => {
-    const matchedPatient = findPatientMatch(field, value)
-    if (matchedPatient) {
+    const matches = findPatientMatches(field, value)
+
+    if (matches.length === 1) {
+      const matched = matches[0]
+      setAmbiguousName(false)
       setForm((current) => ({
         ...current,
-        patientName: `${matchedPatient.nombre ?? ''} ${matchedPatient.apellidos ?? ''}`.trim(),
-        document: matchedPatient.numero_documento ?? '',
+        patientName: `${matched.nombre ?? ''} ${matched.apellidos ?? ''}`.trim(),
+        document: matched.numero_documento ?? '',
       }))
       return
     }
 
+    setAmbiguousName(field === 'patientName' && matches.length > 1)
     setForm((current) => ({
       ...current,
       [field]: value,
+      ...(field === 'patientName' && matches.length > 1 ? { document: '' } : {}),
     }))
   }
 
@@ -219,6 +225,7 @@ const AgendarCitaVW = () => {
       setMessage('')
       setScheduledFor(resolvedName)
       setShowSuccessNotice(true)
+      setAmbiguousName(false)
       setForm(buildEmptyForm(null))
     } catch (error) {
       console.error(error)
@@ -261,8 +268,14 @@ const AgendarCitaVW = () => {
               list="appointment-patient-names"
               value={form.patientName}
               onChange={(event) => handlePatientChange('patientName', event.target.value)}
+              aria-describedby={ambiguousName ? 'cita-paciente-ayuda' : undefined}
               required
             />
+            {ambiguousName && (
+              <small id="cita-paciente-ayuda" className="admin-row-sub">
+                Hay varios pacientes con ese nombre. Escribe el documento para identificarlo.
+              </small>
+            )}
           </div>
           <div className="admin-field">
             <label htmlFor="cita-documento">Documento</label>

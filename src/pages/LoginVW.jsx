@@ -188,7 +188,7 @@ const Login = () => {
                   autoComplete="current-password"
                   type={showPassword ? "text" : "password"}
                   className="field-input"
-                  placeholder="••••••••••"
+                  placeholder="Tu contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocused("password")}

@@ -14,6 +14,7 @@ import { getPatientFullName, getPatientLabel, findPatientByText } from '../utils
 const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEdit, onDelete, onNoShow, onAttended, onClose, deleting }) => {
   const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const today = toLocalDateInput(new Date())
   const originalDate = toLocalDateInput(event?.start ?? new Date())
   const uid = useId()
@@ -26,7 +27,7 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
     patientOptions.find((p) => String(p.id) === String(event?.resource?.patientId)) ||
     findPatient(event?.resource?.patient)
   const [form, setForm] = useState({
-    patientName: initialPatient ? getPatientFullName(initialPatient) : (event?.resource?.patient || ''),
+    patientName: initialPatient ? getPatientLabel(initialPatient) : (event?.resource?.patient || ''),
     service:     event?.resource?.service || '',
     description: event?.resource?.description || '',
     location:    event?.resource?.location || '',
@@ -39,12 +40,12 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
   const handlePatientChange = (e) => {
     const value = e.target.value
     const selected = findPatient(value)
-    setForm((prev) => ({ ...prev, patientName: selected ? getPatientFullName(selected) : value }))
+    setForm((prev) => ({ ...prev, patientName: selected ? getPatientLabel(selected) : value }))
   }
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.patientName.trim()) return dispatch(showAlertModal({ message: 'El paciente es obligatorio', variant: 'error' }))
     const patient = findPatient(form.patientName)
     if (!patient) return dispatch(showAlertModal({ message: 'Selecciona un paciente registrado en la base de datos', variant: 'error' }))
@@ -67,7 +68,8 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
     
     const patientName = getPatientFullName(patient)
     const service = form.service.trim()
-    onEdit({
+    setSaving(true)
+    const saved = await onEdit({
       ...form,
       patientId: patient.id,
       patientName,
@@ -78,7 +80,8 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
       start,
       end,
     })
-    setIsEditing(false)
+    setSaving(false)
+    if (saved !== false) setIsEditing(false)
   }
 
   const handleDelete = async () => {
@@ -109,14 +112,18 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
     if (confirmed) onAttended()
   }
 
-  const canMarkNoShow = onNoShow && !event?.allDay && new Date(event?.start) <= new Date()
-  const canMarkAttended = onAttended && !event?.allDay && new Date(event?.start) <= new Date()
+  const attendance = event?.resource?.attendance
+  const alreadyMarked = attendance === 'attended' || attendance === 'no_show'
+  const isPast = !event?.allDay && new Date(event?.start) <= new Date()
+  const canMarkNoShow = Boolean(onNoShow) && isPast && !alreadyMarked
+  const canMarkAttended = Boolean(onAttended) && isPast && !alreadyMarked
 
   return (
     <ModalShellVW
       overlayClassName="cl-overlay"
       onClose={onClose}
       closeOnBackdrop={!isEditing}
+      onEscape={isEditing ? undefined : onClose}
       labelledBy={fieldId('title')}
     >
       <div className="cl-modal">
@@ -189,6 +196,15 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
             </>
           ) : (
             <>
+              {alreadyMarked && (
+                <div className="cl-view-field">
+                  <span className="cl-label">Asistencia</span>
+                  <p className="cl-view-value">
+                    {attendance === 'attended' ? 'Atendida' : 'No asistió'}
+                  </p>
+                </div>
+              )}
+
               <div className="cl-view-field">
                 <span className="cl-label">Paciente</span>
                 <p className="cl-view-value">{event?.resource?.patient || '-'}</p>
@@ -237,9 +253,9 @@ const ModalViewEventVW = ({ event, patientOptions = [], doctorOptions = [], onEd
           {isEditing ? (
             <>
               <button className="cl-btn-ghost" onClick={() => setIsEditing(false)}>Cancelar</button>
-              <button className="cl-btn-primary" onClick={handleSave}>
+              <button className="cl-btn-primary" onClick={handleSave} disabled={saving}>
                 <FiSave size={14} style={{ verticalAlign: 'middle' }} />
-                Guardar cambios
+                {saving ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </>
           ) : (

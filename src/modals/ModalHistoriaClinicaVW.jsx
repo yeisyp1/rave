@@ -20,13 +20,12 @@ import logoDark from "../assets/logo.png";
 import logoLight from "../assets/logo1.png";
 import { FiChevronDown, FiImage, FiPlus, FiSave, FiTrash2, FiX } from "react-icons/fi";
 import { useModalBehavior } from "../hooks/useModalBehavior";
-import { promptReason } from "../utils/confirmDialog";
-import { toLocalDateTimeInput } from "../utils/dates";
+import { confirmAction, promptReason } from "../utils/confirmDialog";
+import { parseLocalDate, toLocalDateTimeInput } from "../utils/dates";
 import { formatDate, formatDateTime } from "../utils/format";
 import { useProfile } from "../context/ProfileContext";
 import { isClinicalStaff } from "../utils/roles";
-import OdontogramApp from "react-odontogram-editor-modul/src/App";
-import "react-odontogram-editor-modul/src/index.css";
+import OdontogramHostVW from "../components/OdontogramHostVW";
 import {
   captureOdontogramState,
   clearOdontogramDraft,
@@ -62,7 +61,7 @@ const NORMAL_OPTIONS = [
 const calcAge = (dob) => {
   if (!dob) return "";
   const today = new Date();
-  const birth = new Date(dob);
+  const birth = parseLocalDate(dob);
   let age = today.getFullYear() - birth.getFullYear();
   const monthDelta = today.getMonth() - birth.getMonth();
   if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) {
@@ -99,9 +98,26 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
   const [annulHistoryId, setAnnulHistoryId] = useState(null);
   const [annulReason, setAnnulReason] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
-  const handleClose = useCallback(() => onClose?.(), [onClose]);
+  const handleClose = useCallback(async () => {
+    if (!dirty) {
+      onClose?.();
+      return;
+    }
+    const discard = await confirmAction({
+      title: "Descartar la historia clínica",
+      message: "Si cierras ahora se perderá lo que escribiste en el formulario.",
+      confirmLabel: "Descartar",
+      cancelLabel: "Seguir editando",
+      variant: "danger",
+    });
+    if (discard) onClose?.();
+  }, [dirty, onClose]);
+
   const containerRef = useModalBehavior(handleClose);
+  const closeAnnulModal = useCallback(() => setShowAnnulModal(false), []);
+  const annulRef = useModalBehavior(closeAnnulModal, { enabled: showAnnulModal });
 
   // Pre-populate form with patient data when showing form
   useEffect(() => {
@@ -256,6 +272,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setDirty(true);
     setForm((prev) => ({
       ...prev,
       [name]: value,
@@ -304,6 +321,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
       setClinicalNote("");
       setMediaOpen(false);
       setMediaStatus("Guardado correctamente.");
+      setDirty(false);
       await fetchHistories();
       await fetchRadiographies(result.historyId);
       onSaved?.();
@@ -313,6 +331,23 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCloseForm = async () => {
+    if (dirty) {
+      const discard = await confirmAction({
+        title: "Descartar la historia clínica",
+        message: "Si cierras el formulario se perderá lo que escribiste.",
+        confirmLabel: "Descartar",
+        cancelLabel: "Seguir editando",
+        variant: "danger",
+      });
+      if (!discard) return;
+    }
+    setForm(HISTORIA_EMPTY_FORM);
+    setShowForm(false);
+    setEditingHistoryId(null);
+    setDirty(false);
   };
 
   const handleNewHistory = () => {
@@ -494,7 +529,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
   return createPortal(
     <div
       className="mhc-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <div className="mhc-modal" ref={containerRef} role="dialog" aria-modal="true" aria-labelledby="mhc-title">
         <div className="mhc-modal-header">
@@ -522,7 +557,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                 <img src={logoDark} alt="RAVE" className="mhc-logo-dark mhc-logo" />
               </div>
             )}
-            <button className="mhc-modal-close" onClick={onClose} type="button" aria-label="Cerrar">
+            <button className="mhc-modal-close" onClick={handleClose} type="button" aria-label="Cerrar">
               <FiX size={18} />
             </button>
           </div>
@@ -697,7 +732,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                         if (event.target.closest("button")) event.preventDefault();
                       }}
                     >
-                      <OdontogramApp
+                      <OdontogramHostVW
                         title={`Odontograma - ${patient.nombre} ${patient.apellidos}`}
                         patientName={String(patient.numero_documento ?? '').trim()}
                         numberingSystem="FDI"
@@ -732,7 +767,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                             setDragging(false);
                             const dropped = Array.from(event.dataTransfer.files ?? [])
                               .filter((file) => file.type.startsWith('image/'));
-                            if (dropped.length > 0) setSelectedRadiographies(dropped);
+                            if (dropped.length > 0) { setDirty(true); setSelectedRadiographies(dropped); }
                           }}
                         >
                           <input
@@ -740,7 +775,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                             accept="image/*"
                             multiple
                             className="pd-upload-input"
-                            onChange={(event) => setSelectedRadiographies(Array.from(event.target.files ?? []))}
+                            onChange={(event) => { setDirty(true); setSelectedRadiographies(Array.from(event.target.files ?? [])); }}
                           />
                           <span>Haz clic, pulsa Entrar o arrastra aquí tus archivos</span>
                           <small>JPG, PNG o WEBP</small>
@@ -765,7 +800,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                           className="pd-notes-textarea"
                           placeholder="Escribe aquí las notas clínicas del paciente..."
                           value={clinicalNote}
-                          onChange={(event) => setClinicalNote(event.target.value)}
+                          onChange={(event) => { setDirty(true); setClinicalNote(event.target.value); }}
                           disabled={!canEdit}
                           aria-label="Notas clínicas"
                         />
@@ -825,15 +860,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
                       Tu rol permite consultar la historia, pero no modificarla.
                     </p>
                   )}
-                  <button
-                    type="button"
-                    className="mhc-btn-ghost"
-                    onClick={() => {
-                      setShowForm(false);
-                      setForm(HISTORIA_EMPTY_FORM);
-                      setEditingHistoryId(null);
-                    }}
-                  >
+                  <button type="button" className="mhc-btn-ghost" onClick={handleCloseForm}>
                     Cancelar
                   </button>
                   {canEdit && (
@@ -927,7 +954,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
       {/* Modal de anulación */}
       {showAnnulModal && (
         <div className="mhc-overlay mhc-annul-overlay" onClick={(e) => e.target === e.currentTarget && setShowAnnulModal(false)}>
-          <div className="mhc-modal mhc-annul-modal" role="dialog" aria-labelledby="mhc-annul-title">
+          <div className="mhc-modal mhc-annul-modal" ref={annulRef} role="dialog" aria-modal="true" aria-labelledby="mhc-annul-title">
             <h3 id="mhc-annul-title">Anular historia clínica</h3>
             <p className="mhc-annul-hint">La atención queda registrada como anulada. No se borra del sistema.</p>
             <label className="mhc-field">

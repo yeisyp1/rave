@@ -8,7 +8,8 @@ import { updatePatientDAO } from '../dao/PatientsDAO';
 import { logPatientAccessDAO } from '../dao/AuditDAO';
 import {
   captureOdontogramState,
-  loadOdontogramDraft,
+  clearOdontogramDraft,
+  pickOdontogramState,
   restoreOdontogramState,
   saveOdontogramDraft,
   waitForOdontogramReady,
@@ -28,8 +29,7 @@ import {
   FiShield,
   FiDownload,
 } from 'react-icons/fi'
-import OdontogramApp from 'react-odontogram-editor-modul/src/App';
-import 'react-odontogram-editor-modul/src/index.css';
+import OdontogramHostVW from '../components/OdontogramHostVW';
 import ModalPatientsVW from '../modals/ModalPatientsVW';
 import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW';
 import { usePatientModal } from '../hooks/usePatientModal';
@@ -54,11 +54,9 @@ const PatientDetailVW = () => {
   const [loadError, setLoadError] = useState('');
   const [savedOdontogram, setSavedOdontogram] = useState(null);
   const [odontogramReady, setOdontogramReady] = useState(false);
-  const [treatmentsVisited, setTreatmentsVisited] = useState(activeTab === 'treatments');
-
-  if (activeTab === 'treatments' && !treatmentsVisited) setTreatmentsVisited(true);
   // Permite abrir directamente en una pestaña (ej. "Ver historia clínica" desde la lista de pacientes).
   const [activeTab, setActiveTab] = useState(location.state?.tab ?? 'personal');
+  const [treatmentsVisited, setTreatmentsVisited] = useState(activeTab === 'treatments');
   const [procedures, setProcedures] = useState([]);
   const [clinicalHistories, setClinicalHistories] = useState([]);
   const [numberingSystem, setNumberingSystem] = useState('FDI');
@@ -73,6 +71,8 @@ const PatientDetailVW = () => {
   const [savingRequest, setSavingRequest] = useState(false);
   const [savingOdontogram, setSavingOdontogram] = useState(false);
   const [authorizationMedium, setAuthorizationMedium] = useState('');
+
+  if (activeTab === 'treatments' && !treatmentsVisited) setTreatmentsVisited(true);
 
   // Usar el custom hook para la lógica del modal
   const patientModal = usePatientModal(() => fetchPatientData({ silent: true }));
@@ -113,7 +113,7 @@ const PatientDetailVW = () => {
     let active = true;
     waitForOdontogramReady().then((ready) => {
       if (!active || !ready) return;
-      restoreOdontogramState(loadOdontogramDraft(patientId) || savedOdontogram);
+      restoreOdontogramState(pickOdontogramState(patientId, savedOdontogram));
       setOdontogramReady(true);
     });
 
@@ -146,6 +146,8 @@ const PatientDetailVW = () => {
 
       const result = await saveOdontogramCtrl(patientId, odontogramData);
       if (result.ok) {
+        clearOdontogramDraft(patientId);
+        await fetchPatientData({ silent: true });
         dispatch(showAlertModal({ message: result.message, variant: 'success' }));
       } else {
         dispatch(showAlertModal({ message: result.message, variant: 'error' }));
@@ -624,7 +626,7 @@ const PatientDetailVW = () => {
               </summary>
               <div className="pd-accordion-body pd-section-odontogram">
                 <div className="pd-odontogram-container">
-                  <OdontogramApp
+                  <OdontogramHostVW
                     title={odontogramTitle}
                     patientName={patientName}
                     numberingSystem={numberingSystem}

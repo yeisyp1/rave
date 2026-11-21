@@ -4,7 +4,7 @@
   --bg-primary: #f5f6fa;
   --bg-secondary: #ffffff;
   --text-primary: #1a202c;
-  --text-secondary: #64748b;
+  --text-secondary: #5b6878;
   --text: var(--text-primary);
   --border-color: #e2e8f0;
   --header-bg: #ffffff;
@@ -547,7 +547,7 @@ summary:focus-visible,
   border-radius: 8px;
   border: none;
   background: var(--button-primary);
-  color: #fff;
+  color: var(--button-primary-text);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;

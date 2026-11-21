@@ -4,13 +4,14 @@ import { useModalBehavior } from '../hooks/useModalBehavior'
 const ModalShellVW = ({
   overlayClassName,
   onClose,
+  onEscape,
   closeOnBackdrop = true,
   labelledBy,
   label,
   role = 'dialog',
   children,
 }) => {
-  const containerRef = useModalBehavior(onClose)
+  const containerRef = useModalBehavior(onEscape === undefined ? onClose : onEscape)
 
   const content = (
     <div

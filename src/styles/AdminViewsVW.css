@@ -155,7 +155,7 @@
 }
 
 .admin-chip.active {
-  color: var(--white);
+  color: var(--button-primary-text);
   background: var(--button-primary);
   border-color: var(--button-primary);
 }
@@ -217,7 +217,7 @@
 }
 
 .admin-btn.primary {
-  color: var(--white);
+  color: var(--button-primary-text);
   background: var(--button-primary);
   border-color: var(--button-primary);
 }
@@ -604,4 +604,10 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
+}
+
+.admin-btn-toggle {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
 }

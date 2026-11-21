@@ -1,7 +1,7 @@
 /* Dashboard (diseño Rave · variante B · solo interfaz) */
 .rv-dash {
-  --rv-bg: #F3F6F8; --rv-surface: #FFFFFF; --rv-surface2: #F7F9FA; --rv-ink: #1B2733; --rv-mut: #66737F; --rv-line: #E3E8ED;
-  --rv-pr: #1562b9; --rv-prsoft: #E4EFFA; --rv-prink: #123679;
+  --rv-bg: #f5f6fa; --rv-surface: #FFFFFF; --rv-surface2: #f7f9fa; --rv-ink: #1B2733; --rv-mut: #66737F; --rv-line: #E3E8ED;
+  --rv-pr: #1562b9; --rv-prsoft: #E4EFFA; --rv-prink: #123679; --rv-on-pr: #ffffff;
   --rv-g: #22B06B; --rv-a: #F0A81C; --rv-r: #E5484D; --rv-gt: #0F7A4A; --rv-at: #8A5A00; --rv-rt: #B42A2A;
   --rv-gbg: rgba(34,176,107,.12); --rv-abg: rgba(240,168,28,.14); --rv-rbg: rgba(229,72,77,.08);
   --rv-rbd: rgba(229,72,77,.22); --rv-abd: rgba(240,168,28,.3);
@@ -10,8 +10,8 @@
   min-height: 100%; padding: var(--page-pad-y) var(--page-pad-x) 44px; box-sizing: border-box;
 }
 [data-theme="dark"] .rv-dash {
-  --rv-bg: #0E141A; --rv-surface: #161E26; --rv-surface2: #1B252E; --rv-ink: #E8EEF3; --rv-mut: #94A1AD; --rv-line: #26323D;
-  --rv-pr: #6FA8E3; --rv-prsoft: rgba(162,205,255,.15); --rv-prink: #A2CDFF;
+  --rv-bg: #0f2236; --rv-surface: #162d47; --rv-surface2: #1a3552; --rv-ink: #E8EEF3; --rv-mut: #94A1AD; --rv-line: #26323D;
+  --rv-pr: #6FA8E3; --rv-prsoft: rgba(162,205,255,.15); --rv-prink: #A2CDFF; --rv-on-pr: #0f2236;
   --rv-g: #34C77B; --rv-a: #F0B429; --rv-r: #F26B6B; --rv-gt: #5FD39A; --rv-at: #F3C25B; --rv-rt: #FF9A9C;
   --rv-gbg: rgba(52,199,123,.16); --rv-abg: rgba(240,180,41,.15); --rv-rbg: rgba(242,107,107,.15);
   --rv-rbd: rgba(242,107,107,.3); --rv-abd: rgba(240,180,41,.28);
@@ -32,7 +32,7 @@
 @keyframes rvShim { 0% { background-position: -240px 0; } 100% { background-position: 240px 0; } }
 
 .rv-btn { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--rv-line); background: var(--rv-surface); color: var(--rv-ink); font-size: 13px; font-weight: 500; cursor: pointer; }
-.rv-btn.primary { background: var(--rv-pr); border-color: var(--rv-pr); color: #fff; font-weight: 600; }
+.rv-btn.primary { background: var(--rv-pr); border-color: var(--rv-pr); color: var(--rv-on-pr); font-weight: 600; }
 .rv-btn.wide { justify-content: center; padding: 11px; font-size: 14px; }
 
 .rv-pop { position: absolute; z-index: 30; background: var(--rv-surface); border: 1px solid var(--rv-line); border-radius: 12px; padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.16); }
@@ -44,7 +44,7 @@
 .rv-filters { position: sticky; top: 0; z-index: 20; background: var(--rv-bg); padding: 16px 0 14px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .rv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-chip { cursor: pointer; padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 500; border: 1px solid var(--rv-line); background: var(--rv-surface); color: var(--rv-ink); }
-.rv-chip.active { background: var(--rv-pr); border-color: var(--rv-pr); color: #fff; }
+.rv-chip.active { background: var(--rv-pr); border-color: var(--rv-pr); color: var(--rv-on-pr); }
 
 .rv-range-wrap { position: relative; }
 .rv-range-trigger { display: inline-flex; align-items: center; gap: 7px; }
@@ -80,7 +80,7 @@
 .rv-alert-top { display: flex; align-items: center; gap: 8px; }
 .rv-alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); }
 .rv-alert-sev { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tx); }
-.rv-icon-btn { width: 26px; height: 26px; border-radius: 7px; border: 0; background: transparent; color: var(--tx); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.rv-icon-btn { width: 32px; height: 32px; border-radius: 7px; border: 0; background: transparent; color: var(--tx); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .rv-icon-btn.muted { color: var(--rv-mut); }
 .rv-icon-btn:hover { background: rgba(127,127,127,.15); }
 .rv-alert-body { display: flex; align-items: baseline; gap: 10px; }
@@ -106,7 +106,7 @@
 .rv-kpi-top { display: flex; align-items: center; gap: 8px; }
 .rv-kpi-icon { width: 30px; height: 30px; border-radius: 9px; background: var(--rv-prsoft); color: var(--rv-prink); display: flex; align-items: center; justify-content: center; flex: none; }
 .rv-kpi-label { font-size: 12.5px; font-weight: 500; color: var(--rv-mut); line-height: 1.25; flex: 1; }
-.rv-info { background: none; border: 0; padding: 0; color: var(--rv-mut); display: flex; cursor: help; flex: none; }
+.rv-info { background: none; border: 0; padding: 4px; margin: -4px; color: var(--rv-mut); display: flex; cursor: help; flex: none; }
 .rv-status { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .rv-kpi-value { font-size: clamp(17px, 4.2vw, 21px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
 .rv-kpi-delta { font-size: 12px; font-weight: 600; }
@@ -171,7 +171,7 @@
 .rv-row-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rv-row-sub { font-size: 12px; color: var(--rv-mut); }
 .rv-wa { color: var(--rv-g); display: flex; }
-.rv-time { font-size: 13px; font-weight: 600; width: 52px; text-align: right; }
+.rv-time { font-size: 13px; font-weight: 600; min-width: 72px; white-space: nowrap; text-align: right; }
 .rv-amount { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 .rv-pill { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
 .rv-pill.g { background: var(--rv-gbg); color: var(--rv-gt); }

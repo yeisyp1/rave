@@ -6,22 +6,27 @@ import {
 import { FiSearch, FiUser } from 'react-icons/fi'
 import ModalHistoriaClinicaVW from '../modals/ModalHistoriaClinicaVW'
 import LoaderVW from '../components/LoaderVW'
+import '../styles/AdminViewsVW.css'
 import '../styles/HistoriaClinicaVW.css'
 
 const HistoriaClinicaVW = () => {
   const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [selectedPatient, setSelectedPatient] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
   const getPatients = async () => {
     setLoading(true)
+    setLoadError('')
     try {
       const data = await loadHistoriaPatientsCtrl()
       setPatients(data)
     } catch (error) {
       console.error('Error cargando pacientes:', error)
+      setPatients([])
+      setLoadError(error.message || 'No se pudo cargar la lista de pacientes.')
     }
     setLoading(false)
   }
@@ -57,6 +62,7 @@ const HistoriaClinicaVW = () => {
           <FiSearch className="hc-search-icon" />
           <input
             className="hc-search"
+            aria-label="Buscar pacientes"
             placeholder="Buscar paciente por nombre o documento..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -91,7 +97,15 @@ const HistoriaClinicaVW = () => {
                       <div className="hc-empty-icon">
                         <FiUser size={48} />
                       </div>
-                      <p>{search ? 'Sin resultados para la busqueda' : 'No hay pacientes registrados'}</p>
+                      {loadError ? (
+                        <>
+                          <p>No se pudo cargar la lista de pacientes.</p>
+                          <p>{loadError}</p>
+                          <button type="button" className="admin-btn" onClick={getPatients}>Reintentar</button>
+                        </>
+                      ) : (
+                        <p>{search ? 'Sin resultados para la búsqueda' : 'No hay pacientes registrados'}</p>
+                      )}
                     </td>
                   </tr>
                 ) : (

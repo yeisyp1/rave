@@ -10,6 +10,7 @@ import ModalViewInvoiceVW from '../modals/ModalViewInvoiceVW'
 import ModalPaymentsVW from '../modals/ModalPaymentsVW'
 import { generateInvoicePdf, parseLocalInvoiceDate } from '../utils/invoicePdf'
 import LoaderVW from '../components/LoaderVW'
+import { formatMoney } from '../utils/format'
 
 const BillingVW = () => {
   const dispatch = useDispatch()
@@ -51,6 +52,8 @@ const BillingVW = () => {
   const [showViewInvoiceModal, setShowViewInvoiceModal] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
   const [paymentsInvoice, setPaymentsInvoice] = useState(null)
+
+  const statValue = (value) => (loading || loadError ? '—' : formatMoney(value))
 
   const handleDownloadInvoice = (inv) => generateInvoicePdf(inv)
 
@@ -99,7 +102,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon green">
             <FiCheck size={20} />
           </div>
-          <div className="bl-stat-value">${totalIncome.toLocaleString('es-CO')}</div>
+          <div className="bl-stat-value">{statValue(totalIncome)}</div>
           <div className="bl-stat-label">Ingresos cobrados</div>
         </div>
 
@@ -107,7 +110,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon red">
             <FiClock size={20} />
           </div>
-          <div className="bl-stat-value danger">${totalPending.toLocaleString('es-CO')}</div>
+          <div className="bl-stat-value danger">{statValue(totalPending)}</div>
           <div className="bl-stat-label">Pendiente de cobro</div>
         </div>
 
@@ -115,7 +118,7 @@ const BillingVW = () => {
           <div className="bl-stat-icon gold">
             <FiDollarSign size={20} />
           </div>
-          <div className="bl-stat-value">${totalAll.toLocaleString('es-CO')}</div>
+          <div className="bl-stat-value">{statValue(totalAll)}</div>
           <div className="bl-stat-label">Total facturado</div>
         </div>
       </div>
@@ -171,8 +174,8 @@ const BillingVW = () => {
                   <td className="bl-id">#{String(inv.id).padStart(3, '0')}</td>
                   <td>
                     <div className="bl-patient">
-                      <div className="bl-avatar">{inv.patient[0].toUpperCase()}</div>
-                      <span className="bl-patient-name">{inv.patient}</span>
+                      <div className="bl-avatar">{(inv.patient?.[0] ?? '?').toUpperCase()}</div>
+                      <span className="bl-patient-name">{inv.patient || 'Sin paciente'}</span>
                     </div>
                   </td>
                   <td className="bl-date">
@@ -182,11 +185,11 @@ const BillingVW = () => {
                       year: 'numeric',
                     })}
                   </td>
-                  <td className="bl-amount">${inv.amount.toLocaleString('es-CO')}</td>
+                  <td className="bl-amount">{formatMoney(inv.amount)}</td>
                   <td className="bl-amount">
-                    {inv.isVoid ? '—' : `$${inv.balance.toLocaleString('es-CO')}`}
+                    {inv.isVoid ? '—' : formatMoney(inv.balance)}
                     {inv.paid > 0 && !inv.isVoid && (
-                      <span className="bl-balance-note">Pagado ${inv.paid.toLocaleString('es-CO')}</span>
+                      <span className="bl-balance-note">Pagado {formatMoney(inv.paid)}</span>
                     )}
                   </td>
                   <td>

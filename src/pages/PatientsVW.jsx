@@ -222,7 +222,8 @@ const PatientsVW = () => {
                       <td>{p.eps || "—"}</td>
                       <td>{p.email || "—"}</td>
 
-                      <td className="pt-actions">
+                      <td className="pt-actions-cell">
+                        <div className="pt-actions">
 
                         {/* Historia */}
                         <button
@@ -270,6 +271,7 @@ const PatientsVW = () => {
                           </button>
                         )}
 
+                        </div>
                       </td>
                     </tr>
                   ))

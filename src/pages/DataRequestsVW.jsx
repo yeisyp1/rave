@@ -134,6 +134,7 @@ const DataRequestsVW = () => {
                         )}
                         <select
                           className="admin-input"
+                          aria-label={`Estado de la solicitud de ${item.request_type}`}
                           value={item.status}
                           onChange={(event) => changeStatus(item.id, event.target.value)}
                         >

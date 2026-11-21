@@ -101,8 +101,8 @@
 }
 
 .mhc-btn-odontogram {
-  background: var(--blue-soft);
-  color: white;
+  background: var(--button-primary);
+  color: var(--button-primary-text);
   border: none;
   padding: 0.625rem 1.25rem;
   border-radius: 8px;
@@ -577,8 +577,8 @@
 /* ── BUTTONS ── */
 .mhc-btn-primary {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--gold, var(--gold)), var(--gold-deep));
-  color: white;
+  background: var(--button-primary);
+  color: var(--button-primary-text);
   border: none;
   border-radius: 6px;
   font-size: 0.95rem;
@@ -621,8 +621,8 @@
 
 .mhc-btn-new {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, var(--gold, var(--gold)), var(--gold-deep));
-  color: white;
+  background: var(--button-primary);
+  color: var(--button-primary-text);
   border: none;
   border-radius: 6px;
   font-size: 0.85rem;

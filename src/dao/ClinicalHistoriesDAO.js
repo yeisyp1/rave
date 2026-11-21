@@ -84,7 +84,7 @@ export const listHistoryCityDepartmentsDAO = async () => {
 export const getLatestOdontogramDAO = async (patientId) => {
   const { data, error } = await supabase
     .from("clinical_histories")
-    .select("odontograma")
+    .select("odontograma, fecha")
     .eq("patient_id", patientId)
     .not("odontograma", "is", null)
     .order("fecha", { ascending: false })
@@ -92,7 +92,8 @@ export const getLatestOdontogramDAO = async (patientId) => {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.odontograma ?? null;
+  if (!data?.odontograma) return null;
+  return { state: data.odontograma, savedAt: data.fecha ?? null };
 };
 
 export const saveOdontogramDAO = async (patientId, odontogramData) => {

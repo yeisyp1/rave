@@ -7,6 +7,7 @@ import {
   updatePatientDAO,
 } from "../dao/PatientsDAO";
 import { PatientModel } from "../models/PatientModel";
+import { parseLocalDate } from "../utils/dates";
 
 export const PATIENT_EMPTY_FORM = {
   tipo_documento: "",
@@ -42,7 +43,7 @@ export const PATIENT_STEPS = [
 export const calcPatientAgeCtrl = (dob) => {
   if (!dob) return "";
   const today = new Date();
-  const birth = new Date(dob);
+  const birth = parseLocalDate(dob);
   let age = today.getFullYear() - birth.getFullYear();
   const monthDelta = today.getMonth() - birth.getMonth();
   if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate()))

@@ -7,11 +7,12 @@ import { confirmAction } from "../utils/confirmDialog";
 import { getLatestLegalDocumentDAO } from "../dao/LegalDocumentsDAO";
 import "../styles/ModalPatientsVW.css";
 import { FiX, FiCheck, FiChevronDown } from 'react-icons/fi'
+import { parseLocalDate } from "../utils/dates";
 
 const calcAge = (dob) => {
   if (!dob) return "";
   const today = new Date();
-  const birth = new Date(dob);
+  const birth = parseLocalDate(dob);
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;

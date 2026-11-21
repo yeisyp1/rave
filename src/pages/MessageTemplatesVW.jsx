@@ -201,7 +201,13 @@ const MessageTemplatesVW = () => {
                       <td>{template.subject || '-'}</td>
                       <td>{template.body}</td>
                       <td>
-                        <button className={`admin-pill ${template.active ? 'good' : 'bad'}`} type="button" onClick={() => toggleActive(template)}>
+                        <button
+                          className={`admin-btn admin-btn-toggle ${template.active ? 'success' : ''}`}
+                          type="button"
+                          onClick={() => toggleActive(template)}
+                          aria-pressed={template.active}
+                          title={template.active ? 'Desactivar la plantilla' : 'Activar la plantilla'}
+                        >
                           {template.active ? 'Activa' : 'Inactiva'}
                         </button>
                       </td>

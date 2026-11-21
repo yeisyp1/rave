@@ -1,5 +1,4 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit'
-import { GoSidebarCollapse } from 'react-icons/go'
 
 const uiSlice = createSlice({
   name: 'ui',

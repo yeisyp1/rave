@@ -177,7 +177,8 @@
 
 /* MOBILE STYLES */
 @media (max-width: 991px) {
-  .main-area {
+  .main-area,
+  .sidebar.sidebar-narrow-unfoldable ~ .main-area {
     margin-left: 0;
   }
 

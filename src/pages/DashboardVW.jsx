@@ -334,6 +334,7 @@ const Dashboard = () => {
   const [reportSections, setReportSections] = useState(REPORT_SECTIONS.map((s) => s.key))
   const [reportData, setReportData] = useState(null)
   const [reportLoading, setReportLoading] = useState(false)
+  const [generatedRange, setGeneratedRange] = useState(null)
 
   const closeDrawer = useCallback(() => setDrawer(false), [])
   const closeReportDrawer = useCallback(() => setReportDrawer(false), [])
@@ -349,10 +350,16 @@ const Dashboard = () => {
     setReportSections((prev) => (prev.length === REPORT_SECTIONS.length ? [] : REPORT_SECTIONS.map((s) => s.key)))
 
   const generateReport = async () => {
+    if (reportRange.from && reportRange.to && reportRange.from > reportRange.to) {
+      dispatch(showAlertModal({ message: 'La fecha "desde" debe ser anterior a la fecha "hasta".', variant: 'error' }))
+      return
+    }
+
     setReportLoading(true)
     try {
       const result = await fetchReportCtrlData(reportRange)
       setReportData(result)
+      setGeneratedRange(reportRange)
       setReportDrawer(false)
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo generar el reporte: ${error.message}`, variant: 'error' }))
@@ -596,14 +603,14 @@ const Dashboard = () => {
                 <div className="rv-range-custom">
                   <div className="rv-eyebrow" style={{ marginBottom: 6 }}>Rango personalizado</div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Desde" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Hasta" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Desde" max={customTo || undefined} value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                    <input type="date" className="rv-select" style={{ width: '100%' }} aria-label="Hasta" min={customFrom || undefined} value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
                   </div>
                   <button
                     type="button"
                     className="rv-btn primary wide"
                     style={{ marginTop: 8 }}
-                    disabled={!customFrom}
+                    disabled={!customFrom || (Boolean(customTo) && customFrom > customTo)}
                     onClick={() => {
                       setRange({ mode: 'custom', from: customFrom, to: customTo || customFrom })
                       setRangeMenu(false)
@@ -628,13 +635,13 @@ const Dashboard = () => {
         <section className="admin-card" style={{ marginBottom: 18 }}>
           <div className="rv-section-head">
             <h2>Reporte generado</h2>
-            <span className="rv-sub">{reportRange.from} a {reportRange.to}</span>
+            <span className="rv-sub">{generatedRange?.from} a {generatedRange?.to}</span>
             <div className="rv-spacer" />
             <button
               className="rv-btn"
               type="button"
               disabled={!showsReportSection('facturacion') || !reportInvoiceRows.length}
-              onClick={() => downloadCsv(`facturacion_${reportRange.from}_a_${reportRange.to}.csv`, reportInvoiceRows)}
+              onClick={() => downloadCsv(`facturacion_${generatedRange?.from}_a_${generatedRange?.to}.csv`, reportInvoiceRows)}
             >
               <FiDownload size={15} /> Exportar CSV
             </button>
@@ -866,8 +873,10 @@ const Dashboard = () => {
                       className="rv-info"
                       aria-label={`Cómo se calcula: ${k.label}`}
                       aria-expanded={tipId === k.id}
-                      onMouseEnter={() => setTipId(k.id)}
-                      onMouseLeave={() => setTipId((current) => (current === k.id ? null : current))}
+                      onPointerEnter={(event) => { if (event.pointerType === 'mouse') setTipId(k.id) }}
+                      onPointerLeave={(event) => {
+                        if (event.pointerType === 'mouse') setTipId((current) => (current === k.id ? null : current))
+                      }}
                       onClick={() => setTipId((current) => (current === k.id ? null : k.id))}
                     >
                       <FiInfo size={15} />
@@ -1009,6 +1018,7 @@ const Dashboard = () => {
                     className="rv-select"
                     style={{ width: '100%', boxSizing: 'border-box' }}
                     value={reportRange.from}
+                    max={reportRange.to || undefined}
                     onChange={(e) => setReportRange({ ...reportRange, from: e.target.value })}
                   />
                 </div>
@@ -1020,6 +1030,7 @@ const Dashboard = () => {
                     className="rv-select"
                     style={{ width: '100%', boxSizing: 'border-box' }}
                     value={reportRange.to}
+                    min={reportRange.from || undefined}
                     onChange={(e) => setReportRange({ ...reportRange, to: e.target.value })}
                   />
                 </div>

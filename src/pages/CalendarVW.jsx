@@ -122,7 +122,17 @@ const CalendarVW = () => {
   }, [googleToken])
 
   /* ── Seleccionar slot → abrir modal ── */
-  const handleSelectSlot = ({ start, end }) => {
+  const handleSelectSlot = ({ start, end, action }) => {
+    const sameInstant = new Date(start).getTime() === new Date(end).getTime()
+    const isWholeDay = action === 'click' && view === 'month'
+
+    if (sameInstant || isWholeDay) {
+      const slotStart = new Date(start)
+      slotStart.setHours(9, 0, 0, 0)
+      setNewSlot({ start: slotStart, end: new Date(slotStart.getTime() + 30 * 60000) })
+      return
+    }
+
     setNewSlot({ start, end })
   }
 
@@ -188,13 +198,14 @@ const CalendarVW = () => {
 
   /* ── Editar evento ── */
   const handleEditEvent = async (payload) => {
-    if (!selectedEvent) return
+    if (!selectedEvent) return false
     try {
       const updatedEvent = await updateGoogleEventCtrl(googleToken, selectedEvent.resource.googleId, payload)
       setEvents((prev) =>
         prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
       )
       setSelectedEvent(null)
+      return true
     } catch (err) {
       console.error(err)
       dispatch(showAlertModal({
@@ -203,6 +214,7 @@ const CalendarVW = () => {
           : 'Error al actualizar la cita',
         variant: 'error'
       }))
+      return false
     }
   }
 

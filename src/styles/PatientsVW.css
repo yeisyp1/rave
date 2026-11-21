@@ -270,7 +270,7 @@
   height: 44px;
   padding: 0 20px;
   background: var(--button-primary);
-  color: #fff;
+  color: var(--button-primary-text);
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -340,9 +340,13 @@
 /* ─────────────────────────────
    ACTIONS CELL
 ───────────────────────────── */
+.pt-actions-cell {
+  white-space: nowrap;
+}
+
 .pt-actions {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -350,8 +354,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 34px;
+  height: 34px;
   padding: 0;
 
   background: transparent;
@@ -403,4 +407,30 @@
 .pt-pagination-info {
   font-size: 13px;
   color: var(--pt-text-soft);
+}
+
+@media (max-width: 991px) {
+  .pt-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pt-search-wrap {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .pt-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pt-actions {
+    gap: 6px;
+  }
+
+  .pt-pagination {
+    justify-content: center;
+  }
 }

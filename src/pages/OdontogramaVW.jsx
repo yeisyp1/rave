@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import OdontogramApp from 'react-odontogram-editor-modul/src/App';
-import 'react-odontogram-editor-modul/src/index.css';
+import OdontogramHostVW from '../components/OdontogramHostVW';
 import { loadOdontogramPatientCtrl } from '../controllers/HistoriaClinicaCtrl';
 import LoaderVW from '../components/LoaderVW';
 import {
   captureOdontogramState,
-  loadOdontogramDraft,
+  pickOdontogramState,
   restoreOdontogramState,
   saveOdontogramDraft,
   waitForOdontogramReady,
@@ -50,7 +49,7 @@ const Odontograma = () => {
     let active = true;
     waitForOdontogramReady().then((ready) => {
       if (!active || !ready) return;
-      restoreOdontogramState(loadOdontogramDraft(patientId) || savedOdontogram);
+      restoreOdontogramState(pickOdontogramState(patientId, savedOdontogram));
     });
 
     return () => {
@@ -84,7 +83,7 @@ const Odontograma = () => {
       {loading ? (
         <LoaderVW text="Cargando información del paciente..." />
       ) : (
-        <OdontogramApp
+        <OdontogramHostVW
           title={odontogramTitle}
           patientName={patientName}
           numberingSystem={numberingSystem}
