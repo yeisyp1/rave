@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import AdminMessageVW from '../components/AdminMessageVW'
 import { confirmAction } from '../utils/confirmDialog'
 import { FiCheckCircle, FiClock, FiEdit, FiPlus, FiTrash2, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { formatDate } from '../utils/format'
 import { useProfile } from '../context/ProfileContext'
 import { isAdmin } from '../utils/roles'
@@ -32,14 +33,12 @@ const LaboratoryVW = () => {
   const [patients, setPatients] = useState([])
   const [procedures, setProcedures] = useState([])
   const [treatments, setTreatments] = useState([])
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ work_name: '', lab_name: '', due_date: '' })
 
-  const loadData = async () => {
-    setLoading(true)
+  const { loading, reload: loadData } = useAsyncLoad(async () => {
     setMessage('')
 
     try {
@@ -49,25 +48,20 @@ const LaboratoryVW = () => {
       setProcedures(proceduresData)
     } catch (error) {
       setMessage(`No se pudo cargar laboratorio: ${error.message}`)
-    } finally {
-      setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    loadData()
-  }, [])
+  })
 
   const stats = useMemo(() => computeLaboratoryStatsCtrl(cases), [cases])
 
   const selectedPatientId = findLaboratoryPatient(patients, form.patient)?.id
 
-  useEffect(() => {
-    let mounted = true
-    loadLaboratoryPatientTreatmentsCtrl(selectedPatientId)
-      .then((data) => { if (mounted) setTreatments(data) })
-      .catch(() => { if (mounted) setTreatments([]) })
-    return () => { mounted = false }
+  useAsyncLoad(async (isCurrent) => {
+    try {
+      const data = await loadLaboratoryPatientTreatmentsCtrl(selectedPatientId)
+      if (isCurrent()) setTreatments(data)
+    } catch {
+      if (isCurrent()) setTreatments([])
+    }
   }, [selectedPatientId])
 
   const selectTreatment = (treatmentId) => {

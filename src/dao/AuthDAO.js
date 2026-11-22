@@ -1,4 +1,4 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
 export const signInWithPasswordDAO = (email, password) =>
   supabase.auth.signInWithPassword({ email, password });
@@ -34,9 +34,5 @@ export const resetPasswordForEmailDAO = (email, redirectTo) =>
 // authorized_emails (solo admins o el propio usuario ya autenticado pueden verla).
 // Esta función RPC (security definer) expone únicamente un booleano para que un
 // visitante anónimo pueda verificar su propia autorización en /crear-contrasena.
-export const checkAuthorizedEmailDAO = async (email) => {
-  const { data, error } = await supabase.rpc("check_authorized_email", { p_email: email });
-
-  if (error) throw error;
-  return data;
-};
+export const checkAuthorizedEmailDAO = (email) =>
+  unwrap(supabase.rpc("check_authorized_email", { p_email: email }));

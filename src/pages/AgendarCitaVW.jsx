@@ -10,6 +10,7 @@ import {
   ScheduleConflictError,
 } from '../controllers/CalendarCtrl'
 import { getPatientByDocumentCtrl } from '../controllers/PatientsCtrl'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import ModalShellVW from '../components/ModalShellVW'
 import { toLocalDateInput } from '../utils/dates'
 import '../styles/AdminViewsVW.css'
@@ -50,7 +51,6 @@ const AgendarCitaVW = () => {
   const [patients, setPatients] = useState([])
   const [doctorOptions, setDoctorOptions] = useState([])
   const [googleToken, setGoogleToken] = useState(null)
-  const [checkingGoogle, setCheckingGoogle] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [showSuccessNotice, setShowSuccessNotice] = useState(false)
@@ -59,45 +59,34 @@ const AgendarCitaVW = () => {
   const [patientValidationError, setPatientValidationError] = useState(null)
   const [form, setForm] = useState(() => buildEmptyForm(patient))
 
-  useEffect(() => {
-    let mounted = true
-    getGoogleTokenCtrl()
-      .then((token) => { if (mounted) setGoogleToken(token) })
-      .catch(() => { if (mounted) setGoogleToken(null) })
-      .finally(() => { if (mounted) setCheckingGoogle(false) })
-    return () => { mounted = false }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    const loadPatients = async () => {
-      try {
-        const data = await listAppointmentPatientsCtrl()
-        if (mounted) setPatients(data ?? [])
-      } catch (error) {
-        console.error('No se pudieron cargar los pacientes para agendar cita:', error)
-        if (mounted) setPatients([])
-      }
+  const { loading: checkingGoogle } = useAsyncLoad(async () => {
+    try {
+      const token = await getGoogleTokenCtrl()
+      setGoogleToken(token)
+    } catch {
+      setGoogleToken(null)
     }
+  })
 
-    loadPatients()
-    return () => {
-      mounted = false
+  useAsyncLoad(async () => {
+    try {
+      const data = await listAppointmentPatientsCtrl()
+      setPatients(data ?? [])
+    } catch (error) {
+      console.error('No se pudieron cargar los pacientes para agendar cita:', error)
+      setPatients([])
     }
-  }, [])
+  })
 
-  useEffect(() => {
-    let mounted = true
-    listAppointmentDoctorsCtrl()
-      .then((data) => { if (mounted) setDoctorOptions(data ?? []) })
-      .catch((error) => {
-        console.error('No se pudieron cargar los odontólogos para agendar cita:', error)
-        if (mounted) setDoctorOptions([])
-      })
-    return () => {
-      mounted = false
+  useAsyncLoad(async () => {
+    try {
+      const data = await listAppointmentDoctorsCtrl()
+      setDoctorOptions(data ?? [])
+    } catch (error) {
+      console.error('No se pudieron cargar los odontólogos para agendar cita:', error)
+      setDoctorOptions([])
     }
-  }, [])
+  })
 
   useEffect(() => {
     if (!patient) return

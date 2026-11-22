@@ -1,51 +1,18 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
-export const listInventoryItemsDAO = async () => {
-  const { data, error } = await supabase
-    .from("inventory_items")
-    .select("*")
-    .order("created_at", { ascending: false });
+export const listInventoryItemsDAO = async () =>
+  (await unwrap(
+    supabase.from("inventory_items").select("*").order("created_at", { ascending: false })
+  )) ?? [];
 
-  if (error) throw error;
-  return data ?? [];
-};
+export const createInventoryItemDAO = (payload) =>
+  unwrap(supabase.from("inventory_items").insert([payload]).select("*").single());
 
-export const createInventoryItemDAO = async (payload) => {
-  const { data, error } = await supabase
-    .from("inventory_items")
-    .insert([payload])
-    .select("*")
-    .single();
+export const updateInventoryItemStockDAO = (id, stock) =>
+  unwrap(supabase.from("inventory_items").update({ stock }).eq("id", id).select("*").single());
 
-  if (error) throw error;
-  return data;
-};
+export const updateInventoryItemDAO = (id, payload) =>
+  unwrap(supabase.from("inventory_items").update(payload).eq("id", id).select("*").single());
 
-export const updateInventoryItemStockDAO = async (id, stock) => {
-  const { data, error } = await supabase
-    .from("inventory_items")
-    .update({ stock })
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateInventoryItemDAO = async (id, payload) => {
-  const { data, error } = await supabase
-    .from("inventory_items")
-    .update(payload)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const deleteInventoryItemDAO = async (id) => {
-  const { error } = await supabase.from("inventory_items").delete().eq("id", id);
-  if (error) throw error;
-};
+export const deleteInventoryItemDAO = (id) =>
+  unwrap(supabase.from("inventory_items").delete().eq("id", id));

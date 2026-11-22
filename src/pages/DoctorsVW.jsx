@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import AdminMessageVW from '../components/AdminMessageVW'
 import { confirmAction } from '../utils/confirmDialog'
 import { FiEdit, FiRefreshCw, FiTrash2, FiUserPlus, FiUsers, FiMail } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { showAlertModal } from '../app/store'
 import {
   DOCTOR_EMPTY_FORM,
@@ -29,7 +30,6 @@ const DoctorsVW = () => {
   const [authorizedUsers, setAuthorizedUsers] = useState([])
   const [profiles, setProfiles] = useState([])
   const [form, setForm] = useState(DOCTOR_EMPTY_FORM)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editingEmail, setEditingEmail] = useState('')
@@ -38,8 +38,7 @@ const DoctorsVW = () => {
     return new Map(profiles.map((profile) => [normalizeUserEmailCtrl(profile.email ?? ''), profile]))
   }, [profiles])
 
-  const loadUsers = async () => {
-    setLoading(true)
+  const { loading, reload: loadUsers } = useAsyncLoad(async () => {
     setMessage('')
 
     const { authorizedUsers: users, authorizedError, profiles: staffProfiles, profilesError } = await loadAuthorizedUsersCtrl()
@@ -55,15 +54,7 @@ const DoctorsVW = () => {
     } else {
       setProfiles(staffProfiles)
     }
-
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    // Carga inicial de usuarios autorizados al montar la vista.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadUsers()
-  }, [])
+  })
 
   const handleSubmit = async (event) => {
     event.preventDefault()

@@ -1,4 +1,4 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
 export const listClinicalHistoriesByPatientDAO = async (patientId) => {
   return supabase
@@ -82,64 +82,64 @@ export const listHistoryCityDepartmentsDAO = async () => {
 };
 
 export const getLatestOdontogramDAO = async (patientId) => {
-  const { data, error } = await supabase
-    .from("clinical_histories")
-    .select("odontograma, fecha")
-    .eq("patient_id", patientId)
-    .not("odontograma", "is", null)
-    .order("fecha", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
+  const data = await unwrap(
+    supabase
+      .from("clinical_histories")
+      .select("odontograma, fecha")
+      .eq("patient_id", patientId)
+      .not("odontograma", "is", null)
+      .order("fecha", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  );
   if (!data?.odontograma) return null;
   return { state: data.odontograma, savedAt: data.fecha ?? null };
 };
 
 export const saveOdontogramDAO = async (patientId, odontogramData) => {
   // Get the latest clinical history or create a new one
-  const { data: histories, error: getError } = await supabase
-    .from("clinical_histories")
-    .select("id")
-    .eq("patient_id", patientId)
-    .order("fecha", { ascending: false })
-    .limit(1);
-
-  if (getError) throw getError;
+  const histories = await unwrap(
+    supabase
+      .from("clinical_histories")
+      .select("id")
+      .eq("patient_id", patientId)
+      .order("fecha", { ascending: false })
+      .limit(1)
+  );
 
   const doctor = await getCurrentDoctorLabelDAO();
   const timestamp = new Date().toISOString();
 
   if (histories && histories.length > 0) {
     // Update existing latest history
-    const { error: updateError } = await supabase
-      .from("clinical_histories")
-      .update({
-        odontograma: odontogramData,
-        updated_at: timestamp,
-      })
-      .eq("id", histories[0].id);
-
-    if (updateError) throw updateError;
+    await unwrap(
+      supabase
+        .from("clinical_histories")
+        .update({
+          odontograma: odontogramData,
+          updated_at: timestamp,
+        })
+        .eq("id", histories[0].id)
+    );
     return { id: histories[0].id, created: false };
   } else {
     // Create new history record with odontogram
-    const { data: newHistory, error: insertError } = await supabase
-      .from("clinical_histories")
-      .insert([
-        {
-          patient_id: patientId,
-          doctor: doctor || null,
-          fecha: timestamp,
-          motivo_consulta: "Actualización de odontograma",
-          history_data: { tipo: "odontograma_update" },
-          odontograma: odontogramData,
-        },
-      ])
-      .select("id")
-      .single();
-
-    if (insertError) throw insertError;
+    const newHistory = await unwrap(
+      supabase
+        .from("clinical_histories")
+        .insert([
+          {
+            patient_id: patientId,
+            doctor: doctor || null,
+            fecha: timestamp,
+            motivo_consulta: "Actualización de odontograma",
+            history_data: { tipo: "odontograma_update" },
+            odontograma: odontogramData,
+          },
+        ])
+        .select("id")
+        .single()
+    );
     return { id: newHistory.id, created: true };
   }
 };

@@ -1,4 +1,4 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 
@@ -131,25 +131,23 @@ export const signInGoogleCalendarDAO = async () => {
   });
 };
 
-export const listAppointmentPatientsDAO = async () => {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("id,nombre,apellidos,numero_documento")
-    .order("nombre", { ascending: true });
-
-  if (error) throw error;
-  return data ?? [];
-};
+export const listAppointmentPatientsDAO = async () =>
+  (await unwrap(
+    supabase
+      .from("patients")
+      .select("id,nombre,apellidos,numero_documento")
+      .order("nombre", { ascending: true })
+  )) ?? [];
 
 export const listAppointmentServiceTypesDAO = async () => {
-  const { data, error } = await supabase
-    .from("procedure_catalog")
-    .select("name")
-    .eq("active", true)
-    .order("name", { ascending: true })
-    .limit(500);
-
-  if (error) throw error;
+  const data = await unwrap(
+    supabase
+      .from("procedure_catalog")
+      .select("name")
+      .eq("active", true)
+      .order("name", { ascending: true })
+      .limit(500)
+  );
 
   const serviceNames = (data ?? [])
     .map((row) => String(row.name || "").trim())

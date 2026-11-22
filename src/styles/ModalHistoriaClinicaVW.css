@@ -1,14 +1,6 @@
 /* ── OVERLAY ── */
 .mhc-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: rgba(158, 149, 149, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: var(--z-modal);
   padding: 1rem;
   animation: fadeIn 0.2s ease-out;

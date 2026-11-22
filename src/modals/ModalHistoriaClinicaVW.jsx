@@ -528,7 +528,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
 
   return createPortal(
     <div
-      className="mhc-overlay"
+      className="modal-overlay mhc-overlay"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <div className="mhc-modal" ref={containerRef} role="dialog" aria-modal="true" aria-labelledby="mhc-title">
@@ -953,7 +953,7 @@ const ModalHistoriaClinicaVW = ({ patient, onClose, onSaved, startInForm = false
 
       {/* Modal de anulación */}
       {showAnnulModal && (
-        <div className="mhc-overlay mhc-annul-overlay" onClick={(e) => e.target === e.currentTarget && setShowAnnulModal(false)}>
+        <div className="modal-overlay mhc-overlay mhc-annul-overlay" onClick={(e) => e.target === e.currentTarget && setShowAnnulModal(false)}>
           <div className="mhc-modal mhc-annul-modal" ref={annulRef} role="dialog" aria-modal="true" aria-labelledby="mhc-annul-title">
             <h3 id="mhc-annul-title">Anular historia clínica</h3>
             <p className="mhc-annul-hint">La atención queda registrada como anulada. No se borra del sistema.</p>

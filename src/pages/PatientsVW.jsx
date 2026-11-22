@@ -8,6 +8,7 @@ import {
   reactivatePatientCtrl,
 } from "../controllers/PatientsCtrl";
 import { usePatientModal } from "../hooks/usePatientModal";
+import { useAsyncLoad } from "../hooks/useAsyncLoad";
 import { confirmAction } from "../utils/confirmDialog";
 import ModalPatientsVW from "../modals/ModalPatientsVW";
 import LoaderVW from "../components/LoaderVW";
@@ -23,16 +24,12 @@ const PatientsVW = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const dispatch = useDispatch();
   const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState(() => searchParams.get("buscar") ?? "");
   const [statusFilter, setStatusFilter] = useState("activos");
   const [page, setPage] = useState(1);
 
-  const patientModal = usePatientModal(() => getPatients({ silent: true }));
-
-  const getPatients = async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
+  const fetchPatients = async () => {
     setLoadError("");
     try {
       const data = await loadPatientsCtrl(statusFilter);
@@ -42,14 +39,15 @@ const PatientsVW = () => {
       setPatients([]);
       setLoadError(error.message || "No se pudo cargar la lista de pacientes.");
     }
-    if (!silent) setLoading(false);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { getPatients(); }, [statusFilter]);
+  const patientModal = usePatientModal(fetchPatients);
+
+  const { loading, reload: getPatients } = useAsyncLoad(fetchPatients, [statusFilter]);
 
   useEffect(() => {
     const term = searchParams.get("buscar") ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearch(term);
   }, [searchParams]);
 
@@ -84,14 +82,14 @@ const PatientsVW = () => {
     if (!result.ok) dispatch(showAlertModal({ message: result.message, variant: "error" }));
     else {
       dispatch(showAlertModal({ message: result.message, variant: "success" }));
-      getPatients({ silent: true });
+      fetchPatients();
     }
   };
 
   const reactivatePatient = async (id) => {
     const result = await reactivatePatientCtrl(id);
     dispatch(showAlertModal({ message: result.message, variant: result.ok ? "success" : "error" }));
-    if (result.ok) getPatients({ silent: true });
+    if (result.ok) fetchPatients();
   };
 
   /* ── Filtro de búsqueda ── */

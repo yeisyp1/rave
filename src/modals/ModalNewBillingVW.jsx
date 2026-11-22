@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { toLocalDateInput } from '../utils/dates';
 import { useModalBehavior } from '../hooks/useModalBehavior';
+import { useAsyncLoad } from '../hooks/useAsyncLoad';
 import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import { FiX } from 'react-icons/fi';
@@ -32,21 +33,14 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
         (p) => String(p.numero_documento) === String(form.patientDocument)
     );
 
-    useEffect(() => {
-        let mounted = true;
-
-        loadBillableProceduresCtrl(matchedPatient?.id)
-            .then((procedures) => {
-                if (mounted) setBillableProcedures(procedures);
-            })
-            .catch((err) => {
-                console.error('Error cargando tratamientos por facturar:', err);
-                if (mounted) setBillableProcedures([]);
-            });
-
-        return () => {
-            mounted = false;
-        };
+    useAsyncLoad(async (isCurrent) => {
+        try {
+            const procedures = await loadBillableProceduresCtrl(matchedPatient?.id);
+            if (isCurrent()) setBillableProcedures(procedures);
+        } catch (err) {
+            console.error('Error cargando tratamientos por facturar:', err);
+            if (isCurrent()) setBillableProcedures([]);
+        }
     }, [matchedPatient?.id]);
 
     const selectedProcedures = billableProcedures.filter((procedure) => selectedProcedureIds.includes(procedure.id));
@@ -64,25 +58,15 @@ const ModalNewInvoiceVW = ({ onClose = () => {}, onSaved = () => {} }) => {
         setExtraItems((current) => current.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
     };
 
-    useEffect(() => {
-        let mounted = true;
-
-        const load = async () => {
-            try {
-                const data = await loadPatientsCtrl();
-                if (mounted) setPatients(data ?? []);
-            } catch (err) {
-                console.error('Error cargando pacientes:', err);
-                if (mounted) setPatients([]);
-            }
-        };
-
-        load();
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
+    useAsyncLoad(async () => {
+        try {
+            const data = await loadPatientsCtrl();
+            setPatients(data ?? []);
+        } catch (err) {
+            console.error('Error cargando pacientes:', err);
+            setPatients([]);
+        }
+    });
 
     const handleChange = (e) => {
         const { name, value } = e.target;

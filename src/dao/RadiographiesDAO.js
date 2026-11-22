@@ -1,49 +1,45 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
 export const RADIOGRAPHY_BUCKET = "radiographies";
 
-export const listPatientRadiographiesDAO = async (patientId, limit = 6) => {
-  const { data, error } = await supabase
-    .from("radiographies")
-    .select("*")
-    .eq("patient_id", patientId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+export const listPatientRadiographiesDAO = async (patientId, limit = 6) =>
+  (await unwrap(
+    supabase
+      .from("radiographies")
+      .select("*")
+      .eq("patient_id", patientId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  )) ?? [];
 
-  if (error) throw error;
-  return data ?? [];
-};
-
-export const listHistoryRadiographiesDAO = async (patientId, historyId, limit = 6) => {
-  const { data, error } = await supabase
-    .from("radiographies")
-    .select("*")
-    .eq("patient_id", patientId)
-    .eq("clinical_history_id", historyId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-  return data ?? [];
-};
+export const listHistoryRadiographiesDAO = async (patientId, historyId, limit = 6) =>
+  (await unwrap(
+    supabase
+      .from("radiographies")
+      .select("*")
+      .eq("patient_id", patientId)
+      .eq("clinical_history_id", historyId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  )) ?? [];
 
 export const createRadiographiesDAO = async (rows) => {
   const { error } = await supabase.from("radiographies").insert(rows);
   if (error) throw new Error(error.message || "No se pudo guardar el registro de radiografía");
 };
 
-export const annulRadiographyDAO = async (id, motivo, userId) => {
-  const { error } = await supabase
-    .from("radiographies")
-    .update({
-      anulada: true,
-      motivo_anulacion: motivo,
-      anulada_por: userId,
-      anulada_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-  if (error) throw error;
-};
+export const annulRadiographyDAO = (id, motivo, userId) =>
+  unwrap(
+    supabase
+      .from("radiographies")
+      .update({
+        anulada: true,
+        motivo_anulacion: motivo,
+        anulada_por: userId,
+        anulada_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+  );
 
 export const getRadiographySignedUrlDAO = async (filePath) => {
   const { data, error } = await supabase.storage

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useModalBehavior } from '../hooks/useModalBehavior'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { promptReason } from '../utils/confirmDialog'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
@@ -34,12 +35,13 @@ const ModalPaymentsVW = ({ invoice, onClose = () => {}, onChanged = () => {} }) 
     }
   }
 
-  useEffect(() => {
-    let mounted = true
-    loadInvoicePaymentsCtrl(invoice.id)
-      .then((data) => { if (mounted) setPayments(data) })
-      .catch((error) => dispatch(showAlertModal({ message: `No se pudieron cargar los pagos: ${error.message}`, variant: 'error' })))
-    return () => { mounted = false }
+  useAsyncLoad(async (isCurrent) => {
+    try {
+      const data = await loadInvoicePaymentsCtrl(invoice.id)
+      if (isCurrent()) setPayments(data)
+    } catch (error) {
+      if (isCurrent()) dispatch(showAlertModal({ message: `No se pudieron cargar los pagos: ${error.message}`, variant: 'error' }))
+    }
   }, [invoice.id, dispatch])
 
   const handleChange = (e) => {

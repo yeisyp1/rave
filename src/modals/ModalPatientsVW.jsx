@@ -98,7 +98,7 @@ export default function ModalPatients({
   if (!showModal) return null;
 
   const modal = (
-    <div className="pt-overlay" onClick={(e) => e.target === e.currentTarget && requestClose()}>
+    <div className="modal-overlay pt-overlay" onClick={(e) => e.target === e.currentTarget && requestClose()}>
       <div className="pt-modal" ref={containerRef} role="dialog" aria-modal="true" aria-labelledby="pt-modal-title">
 
         {/* Modal header */}

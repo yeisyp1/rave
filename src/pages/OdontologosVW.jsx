@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { confirmAction } from '../utils/confirmDialog'
 import { useDispatch } from 'react-redux'
 import { FiCheck, FiEdit, FiPlus, FiUserCheck, FiUserX, FiUsers, FiX } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { showAlertModal } from '../app/store'
 import {
   ODONTOLOGO_EMPTY_FORM,
@@ -17,27 +18,18 @@ const OdontologosVW = () => {
   const dispatch = useDispatch()
   const [doctors, setDoctors] = useState([])
   const [form, setForm] = useState(ODONTOLOGO_EMPTY_FORM)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(ODONTOLOGO_EMPTY_FORM)
 
-  const loadDoctors = async () => {
-    setLoading(true)
+  const { loading, reload: loadDoctors } = useAsyncLoad(async () => {
     try {
       const data = await loadOdontologosCtrl()
       setDoctors(data)
     } catch (error) {
       dispatch(showAlertModal({ message: `No se pudo cargar el catálogo de odontólogos: ${error.message}`, variant: 'error' }))
-    } finally {
-      setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    loadDoctors()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  })
 
   const activeCount = doctors.filter((doc) => doc.activo).length
 

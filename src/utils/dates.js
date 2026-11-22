@@ -30,5 +30,3 @@ export const toLocalTimeInput = (value = new Date()) => {
   if (Number.isNaN(date.getTime())) return ''
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
-
-export const todayLocalInput = () => toLocalDateInput(new Date())

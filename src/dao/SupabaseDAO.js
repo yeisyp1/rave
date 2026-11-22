@@ -12,16 +12,8 @@ export const getCurrentUserIdDAO = async () => {
   return user?.id ?? null;
 };
 
-export const getPatients = async () => {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching patients:", error);
-    return null;
-  }
-
+export const unwrap = async (queryPromise) => {
+  const { data, error } = await queryPromise;
+  if (error) throw error;
   return data;
 };

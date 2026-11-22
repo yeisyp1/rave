@@ -26,7 +26,7 @@ const AlertModalVW = () => {
   const Icon = ICONS[variant] || FiInfo
 
   const modal = (
-    <div className="am-overlay" onClick={(event) => event.target === event.currentTarget && close()}>
+    <div className="modal-overlay am-overlay" onClick={(event) => event.target === event.currentTarget && close()}>
       <div
         ref={containerRef}
         className="am-modal"

@@ -1,110 +1,95 @@
-import { supabase } from "./SupabaseDAO";
+import { supabase, unwrap } from "./SupabaseDAO";
 
-export const upsertAppointmentByGoogleIdDAO = async (payload) => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .upsert([payload], { onConflict: "google_event_id" })
-    .select("*")
-    .single();
+export const upsertAppointmentByGoogleIdDAO = (payload) =>
+  unwrap(
+    supabase
+      .from("appointments")
+      .upsert([payload], { onConflict: "google_event_id" })
+      .select("*")
+      .single()
+  );
 
-  if (error) throw error;
-  return data;
-};
-
-export const cancelAppointmentByGoogleIdDAO = async (googleEventId) => {
-  const { error } = await supabase
-    .from("appointments")
-    .update({ status: "Cancelada" })
-    .eq("google_event_id", googleEventId);
-
-  if (error) throw error;
-};
+export const cancelAppointmentByGoogleIdDAO = (googleEventId) =>
+  unwrap(
+    supabase
+      .from("appointments")
+      .update({ status: "Cancelada" })
+      .eq("google_event_id", googleEventId)
+  );
 
 export const markAppointmentNoShowByGoogleIdDAO = async (googleEventId) => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .update({ status: "No asistida" })
-    .eq("google_event_id", googleEventId)
-    .select("id");
-
-  if (error) throw error;
+  const data = await unwrap(
+    supabase
+      .from("appointments")
+      .update({ status: "No asistida" })
+      .eq("google_event_id", googleEventId)
+      .select("id")
+  );
   if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
 };
 
 export const markAppointmentAttendedByGoogleIdDAO = async (googleEventId) => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .update({ status: "Atendida" })
-    .eq("google_event_id", googleEventId)
-    .select("id");
-
-  if (error) throw error;
+  const data = await unwrap(
+    supabase
+      .from("appointments")
+      .update({ status: "Atendida" })
+      .eq("google_event_id", googleEventId)
+      .select("id")
+  );
   if (!data?.length) throw new Error("La cita no está registrada en la base de datos.");
 };
 
 // Todas las citas registradas en Supabase (para el dashboard).
-export const listAllAppointmentsDAO = async () => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .select("id, patient_id, doctor_id, start_at, end_at, service_type, status, source, reminder_sent_at, patients(nombre, apellidos)")
-    .order("start_at", { ascending: false });
+export const listAllAppointmentsDAO = async () =>
+  (await unwrap(
+    supabase
+      .from("appointments")
+      .select("id, patient_id, doctor_id, start_at, end_at, service_type, status, source, reminder_sent_at, patients(nombre, apellidos)")
+      .order("start_at", { ascending: false })
+  )) ?? [];
 
-  if (error) throw error;
-  return data ?? [];
-};
+export const listWhatsappAppointmentRequestsDAO = async () =>
+  (await unwrap(
+    supabase
+      .from("appointments")
+      .select("*, patients(nombre, apellidos, numero_documento, celular)")
+      .in("status", ["Solicitada", "Cancelación solicitada"])
+      .order("created_at", { ascending: false })
+  )) ?? [];
 
-export const listWhatsappAppointmentRequestsDAO = async () => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .select("*, patients(nombre, apellidos, numero_documento, celular)")
-    .in("status", ["Solicitada", "Cancelación solicitada"])
-    .order("created_at", { ascending: false });
+export const updateAppointmentStatusDAO = (id, status) =>
+  unwrap(
+    supabase
+      .from("appointments")
+      .update({ status })
+      .eq("id", id)
+      .select("*")
+      .single()
+  );
 
-  if (error) throw error;
-  return data ?? [];
-};
+export const getPatientContactDAO = (patientId) =>
+  unwrap(
+    supabase
+      .from("patients")
+      .select("nombre, celular, telefono")
+      .eq("id", patientId)
+      .single()
+  );
 
-export const updateAppointmentStatusDAO = async (id, status) => {
-  const { data, error } = await supabase
-    .from("appointments")
-    .update({ status })
-    .eq("id", id)
-    .select("*")
-    .single();
+export const getActiveWhatsappTemplateDAO = () =>
+  unwrap(
+    supabase
+      .from("message_templates")
+      .select("*")
+      .eq("active", true)
+      .eq("channel", "WhatsApp")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+  );
 
-  if (error) throw error;
-  return data;
-};
-
-export const getPatientContactDAO = async (patientId) => {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("nombre, celular, telefono")
-    .eq("id", patientId)
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const getActiveWhatsappTemplateDAO = async () => {
-  const { data, error } = await supabase
-    .from("message_templates")
-    .select("*")
-    .eq("active", true)
-    .eq("channel", "WhatsApp")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-};
-
-export const createOutboundWhatsappMessageDAO = async (payload) => {
-  const { error } = await supabase.from("whatsapp_messages").insert([payload]);
-  if (error) throw error;
-};
+export const createOutboundWhatsappMessageDAO = (payload) =>
+  unwrap(supabase.from("whatsapp_messages").insert([payload]));
 
 export const checkAppointmentAvailabilityDAO = async (start, end, ignoreGoogleEventId = null) => {
   // Citas confirmadas que se cruzan con el rango [start, end)
@@ -117,7 +102,5 @@ export const checkAppointmentAvailabilityDAO = async (start, end, ignoreGoogleEv
 
   if (ignoreGoogleEventId) query = query.neq("google_event_id", ignoreGoogleEventId);
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+  return (await unwrap(query)) ?? [];
 };

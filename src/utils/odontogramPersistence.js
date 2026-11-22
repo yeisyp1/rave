@@ -1,7 +1,5 @@
 const draftKey = (patientId) => `rave:odontograma:draft:${patientId}`;
 
-export const getOdontogramDraftKey = (patientId) => draftKey(patientId);
-
 const roots = [];
 
 export const pushOdontogramRoot = (element) => {

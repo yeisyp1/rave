@@ -209,8 +209,9 @@ const savePatientHistoryCtrl = async (
   }
 
   if (Object.keys(patientChanges).length > 0) {
-    const { error: updateError } = await updatePatientDAO(patientId, patientChanges);
-    if (updateError) {
+    try {
+      await updatePatientDAO(patientId, patientChanges);
+    } catch (updateError) {
       console.error("Error actualizando datos del paciente:", updateError);
       return {
         ok: false,

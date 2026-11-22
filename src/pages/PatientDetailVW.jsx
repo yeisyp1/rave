@@ -167,15 +167,11 @@ const PatientDetailVW = () => {
     }
 
     try {
-      const { error } = await updatePatientDAO(patient.id, { autorizacion_datos_medio: authorizationMedium });
-      if (error) {
-        dispatch(showAlertModal({ message: 'Error al guardar el medio de autorización', variant: 'error' }));
-      } else {
-        dispatch(showAlertModal({ message: 'Medio de autorización guardado exitosamente', variant: 'success' }));
-      }
+      await updatePatientDAO(patient.id, { autorizacion_datos_medio: authorizationMedium });
+      dispatch(showAlertModal({ message: 'Medio de autorización guardado exitosamente', variant: 'success' }));
     } catch (error) {
       console.error('Error saving authorization medium:', error);
-      dispatch(showAlertModal({ message: 'Error al guardar', variant: 'error' }));
+      dispatch(showAlertModal({ message: 'Error al guardar el medio de autorización', variant: 'error' }));
     }
   };
 
@@ -191,11 +187,10 @@ const PatientDetailVW = () => {
     if (!confirmed) return;
 
     try {
-      const { error } = await updatePatientDAO(patient.id, {
+      await updatePatientDAO(patient.id, {
         whatsapp_baja: baja,
         whatsapp_baja_motivo: baja ? 'Registrada por el personal de la clínica' : null,
       });
-      if (error) throw error;
       setPatient((current) => ({ ...current, whatsapp_baja: baja }));
       dispatch(showAlertModal({
         message: baja ? 'El paciente no recibirá más mensajes por WhatsApp' : 'El paciente volverá a recibir mensajes por WhatsApp',

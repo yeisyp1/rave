@@ -71,31 +71,43 @@ export const savePatientCtrl = async ({ form, editingId }) => {
   }
 
   if (editingId) {
-    const { error } = await updatePatientDAO(editingId, form);
-    if (error) return { ok: false, message: "Error al actualizar", error };
-    return { ok: true, message: "Paciente actualizado" };
+    try {
+      await updatePatientDAO(editingId, form);
+      return { ok: true, message: "Paciente actualizado" };
+    } catch (error) {
+      return { ok: false, message: "Error al actualizar", error };
+    }
   }
 
-  const { error } = await createPatientDAO(form);
-  if (error?.code === "23505")
-    return { ok: false, message: "Este documento ya existe", error };
-  if (error) return { ok: false, message: "Error al guardar", error };
-  return { ok: true, message: "Paciente registrado" };
+  try {
+    await createPatientDAO(form);
+    return { ok: true, message: "Paciente registrado" };
+  } catch (error) {
+    if (error?.code === "23505")
+      return { ok: false, message: "Este documento ya existe", error };
+    return { ok: false, message: "Error al guardar", error };
+  }
 };
 
 export const deletePatientCtrl = async (id) => {
   // Soft delete: inactivates the patient
-  const { error } = await deletePatientDAO(id);
-  if (error) return { ok: false, message: "Error al inactivar el paciente", error };
-  return { ok: true, message: "Paciente inactivado correctamente" };
+  try {
+    await deletePatientDAO(id);
+    return { ok: true, message: "Paciente inactivado correctamente" };
+  } catch (error) {
+    return { ok: false, message: "Error al inactivar el paciente", error };
+  }
 };
 
 export const inactivatePatientCtrl = deletePatientCtrl;
 
 export const reactivatePatientCtrl = async (id) => {
-  const { error } = await reactivatePatientDAO(id);
-  if (error) return { ok: false, message: "Error al reactivar el paciente", error };
-  return { ok: true, message: "Paciente reactivado correctamente" };
+  try {
+    await reactivatePatientDAO(id);
+    return { ok: true, message: "Paciente reactivado correctamente" };
+  } catch (error) {
+    return { ok: false, message: "Error al reactivar el paciente", error };
+  }
 };
 
 export const canNextPatientStepCtrl = (step, form) => {

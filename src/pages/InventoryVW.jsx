@@ -4,6 +4,7 @@ import AdminMessageVW from '../components/AdminMessageVW'
 import { confirmAction } from '../utils/confirmDialog'
 import { FiArchive, FiEdit, FiPlus, FiTrash2, FiTrendingDown, FiX, FiCheck } from 'react-icons/fi'
 import LoaderVW from '../components/LoaderVW'
+import { useAsyncLoad } from '../hooks/useAsyncLoad'
 import { useProfile } from '../context/ProfileContext'
 import { isAdmin } from '../utils/roles'
 import {
@@ -28,15 +29,13 @@ const InventoryVW = () => {
   const itemsRef = useRef(items)
   const pendingAdjustments = useRef(new Map())
   const [form, setForm] = useState(INVENTORY_EMPTY_FORM)
-  const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', category: '', stock: '', min_stock: '', unit: '' })
 
-  const loadItems = async () => {
-    setLoading(true)
+  const { loading, reload: loadItems } = useAsyncLoad(async () => {
     setMessage('')
     setLoadError('')
 
@@ -46,14 +45,8 @@ const InventoryVW = () => {
     } catch (error) {
       setMessage(`No se pudo cargar inventario: ${error.message}`)
       setLoadError(error.message || '')
-    } finally {
-      setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    loadItems()
-  }, [])
+  })
 
   const { lowStockCount, totalStock } = useMemo(() => computeInventoryStatsCtrl(items), [items])
   const { nameOptions, categoryOptions, unitOptions } = useMemo(() => computeInventoryOptionsCtrl(items), [items])
