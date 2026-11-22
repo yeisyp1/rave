@@ -243,8 +243,6 @@
 /* ─────────────────────────────
    SPINNERS & ANIMATIONS
 ───────────────────────────── */
-@keyframes cl-spin { to { transform: rotate(360deg); } }
-
 .cl-spinner {
   width: 14px;
   height: 14px;
@@ -252,7 +250,7 @@
   border-top-color: var(--white);
   border-radius: 50%;
   display: inline-block;
-  animation: cl-spin 0.7s linear infinite;
+  animation: spin 0.7s linear infinite;
 }
 
 .cl-spinner-sm {
@@ -262,6 +260,6 @@
   border-top-color: var(--gold);
   border-radius: 50%;
   display: inline-block;
-  animation: cl-spin 0.7s linear infinite;
+  animation: spin 0.7s linear infinite;
 }
 

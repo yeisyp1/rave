@@ -9,7 +9,6 @@
   padding: var(--page-pad-y) var(--page-pad-x);
 }
 
-.pd-loading,
 .pd-error-detail {
   font-size: 13px;
   color: var(--text-secondary);
@@ -24,19 +23,6 @@
   gap: 1rem;
   min-height: 50vh;
   color: var(--text-secondary);
-}
-
-.pd-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--border-color);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* ── HEADER ── */
@@ -251,11 +237,6 @@
   flex-direction: column;
   min-height: 0;
   animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 /* ── INFO GRID ── */
@@ -519,8 +500,7 @@
   width: 100%;
 }
 
-/* El boton de guardar conserva su tamano natural y se alinea a la derecha,
-   igual que el de .pd-media-actions. */
+/* El boton de guardar conserva su tamano natural y se alinea a la derecha. */
 .pd-odontogram-container > .pd-btn-action-primary {
   flex: 0 0 auto;
   width: auto;
@@ -615,11 +595,6 @@
   border-color: var(--primary-color);
 }
 
-.pd-media-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .pd-info-message {
   display: flex;
   align-items: center;
@@ -628,26 +603,6 @@
   margin-bottom: 1.5rem;
   color: var(--text-secondary);
   font-size: 0.875rem;
-}
-
-.pd-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.pd-btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
 }
 
 .pd-btn-secondary {

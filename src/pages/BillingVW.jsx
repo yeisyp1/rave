@@ -1,9 +1,9 @@
 import '../styles/BillingVW.css'
 import { promptReason } from '../utils/confirmDialog'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { showAlertModal } from '../app/store'
-import { annulBillingInvoiceCtrl, getBillingCtrlData } from '../controllers/BillingCtrl'
+import { annulBillingInvoiceCtrl, computeBillingTotalsCtrl, getBillingCtrlData } from '../controllers/BillingCtrl'
 import { FiPlus, FiCheck, FiClock, FiDollarSign, FiEye, FiDownload } from 'react-icons/fi'
 import ModalNewInvoiceVW from '../modals/ModalNewBillingVW'
 import ModalViewInvoiceVW from '../modals/ModalViewInvoiceVW'
@@ -15,18 +15,14 @@ import { formatMoney } from '../utils/format'
 const BillingVW = () => {
   const dispatch = useDispatch()
   const [invoices, setInvoices] = useState([])
-  const [totalIncome, setTotalIncome] = useState(0)
-  const [totalPending, setTotalPending] = useState(0)
-  const [totalAll, setTotalAll] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
+  const { totalIncome, totalPending, totalAll } = useMemo(() => computeBillingTotalsCtrl(invoices), [invoices])
+
   const load = async () => {
-    const { invoices, totalIncome, totalPending, totalAll } = await getBillingCtrlData()
+    const { invoices } = await getBillingCtrlData()
     setInvoices(invoices)
-    setTotalIncome(totalIncome)
-    setTotalPending(totalPending)
-    setTotalAll(totalAll)
     setLoadError('')
     return invoices
   }

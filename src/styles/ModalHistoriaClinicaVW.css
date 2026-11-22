@@ -6,16 +6,6 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
 /* ── MODAL ── */
 .mhc-modal {
   background: white;
@@ -558,12 +548,6 @@
   border-top-color: var(--gold, var(--gold));
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* ── BUTTONS ── */

@@ -16,6 +16,15 @@ export const PAYMENT_METHODS = ["Efectivo", "Tarjeta", "Transferencia", "Otro"];
 const sumActivePayments = (payments) =>
   (payments ?? []).filter((payment) => !payment.anulado).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
+export const computeBillingTotalsCtrl = (invoices) => {
+  const activeInvoices = invoices.filter((invoice) => !invoice.isVoid);
+  return {
+    totalIncome: activeInvoices.reduce((sum, invoice) => sum + invoice.paid, 0),
+    totalPending: activeInvoices.reduce((sum, invoice) => sum + invoice.balance, 0),
+    totalAll: activeInvoices.reduce((sum, invoice) => sum + invoice.amount, 0),
+  };
+};
+
 export const getBillingCtrlData = async () => {
   const raw = await getBillingInvoicesDAO();
   const invoices = (raw ?? []).map((invoice) => new BillingModel({
@@ -31,16 +40,9 @@ export const getBillingCtrlData = async () => {
     raw: invoice,
   }));
 
-  const activeInvoices = invoices.filter((invoice) => !invoice.isVoid);
-  const totalIncome = activeInvoices.reduce((sum, invoice) => sum + invoice.paid, 0);
-  const totalPending = activeInvoices.reduce((sum, invoice) => sum + invoice.balance, 0);
-  const totalAll = activeInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
-
   return {
     invoices,
-    totalIncome,
-    totalPending,
-    totalAll,
+    ...computeBillingTotalsCtrl(invoices),
   };
 };
 

@@ -2,10 +2,10 @@
   padding: var(--page-pad-y) var(--page-pad-x);
   max-width: 1400px;
   margin: 0 auto;
-  animation: fadeIn 0.3s ease-in;
+  animation: hcFadeSlideIn 0.3s ease-in;
 }
 
-@keyframes fadeIn {
+@keyframes hcFadeSlideIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -111,10 +111,10 @@
   border: 1px solid #e0e0e0;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.3s ease-out;
+  animation: hcCardSlideUp 0.3s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes hcCardSlideUp {
   from {
     opacity: 0;
     transform: translateY(10px);
