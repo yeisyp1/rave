@@ -42,7 +42,7 @@ const ConfirmDialogVW = () => {
 
   const content = (
     <div
-      className="am-overlay"
+      className="modal-overlay am-overlay"
       onClick={(event) => event.target === event.currentTarget && cancel()}
     >
       <div
